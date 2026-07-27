@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SuperNebula23 - Music Player</title>
+
+  <!-- Twemoji CDN for crisp cross-platform emoji rendering -->
+  <script src="https://cdn.jsdelivr.net/npm/@twemoji/api@latest/dist/twemoji.min.js" crossorigin="anonymous"></script>
+
+  <style>
+    :root {
+      --bg-color: #0f111a;
+      --card-bg: #1a1d2e;
+      --accent: #7c3aed;
+      --accent-hover: #6d28d9;
+      --text-main: #f3f4f6;
+      --text-muted: #9ca3af;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background-color: var(--bg-color);
+      color: var(--text-main);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* Target Twemoji parsed images */
+    img.emoji {
+      height: 1em;
+      width: 1em;
+      margin: 0 0.25em;
+      vertical-align: -0.1em;
+    }
+
+    /* Top Navigation Header */
+    header {
+      padding: 1.25rem 2rem;
+      background-color: rgba(26, 29, 46, 0.8);
+      backdrop-filter: blur(10px);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+
+    .brand-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      text-decoration: none;
+      color: var(--text-main);
+      font-weight: 700;
+      font-size: 1.2rem;
+      transition: color 0.2s ease;
+    }
+
+    .brand-link:hover {
+      color: var(--accent);
+    }
+
+    /* Main Content Layout */
+    main {
+      max-width: 650px;
+      width: 100%;
+      margin: 3rem auto;
+      padding: 0 1.5rem;
+    }
+
+    .player-header {
+      margin-bottom: 1.5rem;
+    }
+
+    .player-header h1 {
+      font-size: 1.8rem;
+      margin-bottom: 0.5rem;
+    }
+
+    .player-header p {
+      color: var(--text-muted);
+      font-size: 0.95rem;
+    }
+
+    /* Track List Component */
+    .song-list {
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+    }
+
+    .song-card {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 1rem 1.25rem;
+      background-color: var(--card-bg);
+      border-radius: 12px;
+      border: 1px solid rgba(255, 255, 255, 0.03);
+      transition: transform 0.2s ease, border-color 0.2s ease;
+    }
+
+    .song-card:hover {
+      transform: translateY(-2px);
+      border-color: rgba(124, 58, 237, 0.4);
+    }
+
+    .song-info {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+
+    .song-details h3 {
+      font-size: 1rem;
+      font-weight: 600;
+    }
+
+    .song-details span {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+    }
+
+    .play-btn {
+      background-color: var(--accent);
+      color: white;
+      border: none;
+      border-radius: 50%;
+      width: 42px;
+      height: 42px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      font-size: 1rem;
+      transition: background-color 0.2s ease;
+      flex-shrink: 0;
+    }
+
+    .play-btn:hover {
+      background-color: var(--accent-hover);
+    }
+
+    .play-btn.playing {
+      background-color: #ef4444; /* red stop/pause state */
+    }
+
+    /* Fixed Bottom Audio Player */
+    .now-playing-bar {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background-color: #151726;
+      border-top: 1px solid rgba(255, 255, 255, 0.08);
+      padding: 1rem 2rem;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    audio {
+      width: 100%;
+      max-width: 600px;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Top Left Corner Navigation Header -->
+  <header>
+    <a href="https://supernebula23.github.io/" class="brand-link" id="brandLink">
+      <span>🌌</span> SuperNebula23
+    </a>
+  </header>
+
+  <!-- Main Playlist Interface -->
+  <main>
+    <div class="player-header">
+      <h1 id="pageTitle">🎵 Featured Playlist</h1>
+      <p>Select a track to play directly from the <code>songs/</code> directory.</p>
+    </div>
+
+    <div class="song-list">
+      <!-- Song 1 -->
+      <div class="song-card">
+        <div class="song-info">
+          <span class="emoji-icon">🎧</span>
+          <div class="song-details">
+            <h3>Nebula Dreams</h3>
+            <span>songs/song1.mp3</span>
+          </div>
+        </div>
+        <button class="play-btn" onclick="playSong('songs/song1.mp3', this)">▶</button>
+      </div>
+
+      <!-- Song 2 -->
+      <div class="song-card">
+        <div class="song-info">
+          <span class="emoji-icon">✨</span>
+          <div class="song-details">
+            <h3>Starlight Odyssey</h3>
+            <span>songs/song2.mp3</span>
+          </div>
+        </div>
+        <button class="play-btn" onclick="playSong('songs/song2.mp3', this)">▶</button>
+      </div>
+
+      <!-- Song 3 -->
+      <div class="song-card">
+        <div class="song-info">
+          <span class="emoji-icon">🌌</span>
+          <div class="song-details">
+            <h3>Cosmic Velocity</h3>
+            <span>songs/song3.mp3</span>
+          </div>
+        </div>
+        <button class="play-btn" onclick="playSong('songs/song3.mp3', this)">▶</button>
+      </div>
+    </div>
+  </main>
+
+  <!-- HTML5 Audio Controller -->
+  <div class="now-playing-bar">
+    <audio id="globalAudio" controls>
+      Your browser does not support the audio element.
+    </audio>
+  </div>
+
+  <script>
+    // Initialize Twemoji to parse all emojis across the page
+    document.addEventListener("DOMContentLoaded", () => {
+      twemoji.parse(document.body);
+    });
+
+    const audioPlayer = document.getElementById('globalAudio');
+    let currentButton = null;
+
+    function playSong(filePath, btn) {
+      // If clicking the same song that is currently playing -> toggle pause/play
+      if (audioPlayer.src.endsWith(encodeURI(filePath)) && !audioPlayer.paused) {
+        audioPlayer.pause();
+        btn.textContent = '▶';
+        return;
+      }
+
+      // Reset previous active play button icon
+      if (currentButton && currentButton !== btn) {
+        currentButton.textContent = '▶';
+        currentButton.classList.remove('playing');
+      }
+
+      // Load and play new track
+      audioPlayer.src = filePath;
+      audioPlayer.play();
+      
+      btn.textContent = '⏸';
+      btn.classList.add('playing');
+      currentButton = btn;
+
+      // Ensure Twemoji parses any updated emojis inside buttons
+      twemoji.parse(btn);
+    }
+
+    // Reset button icon when track finishes playing naturally
+    audioPlayer.addEventListener('ended', () => {
+      if (currentButton) {
+        currentButton.textContent = '▶';
+        currentButton.classList.remove('playing');
+        twemoji.parse(currentButton);
+      }
+    });
+  </script>
+</body>
+</html>

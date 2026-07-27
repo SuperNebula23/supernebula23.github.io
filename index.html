@@ -1,0 +1,422 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SuperNebula 🌌</title>
+    <style>
+        :root {
+            --bg-color: #f7f9fc;
+            --card-bg: rgba(255, 255, 255, 0.75);
+            --text-primary: #1e1b4b;
+            --text-secondary: #64748b;
+            --accent-glow: rgba(147, 51, 234, 0.15);
+            --border-color: rgba(226, 232, 240, 0.8);
+            --pink-floyd-spectrum: linear-gradient(
+                90deg, 
+                #ff0000 0%, 
+                #ff7f00 16.6%, 
+                #ffff00 33.3%, 
+                #00ff00 50%, 
+                #0000ff 66.6%, 
+                #4b0082 83.3%, 
+                #9400d3 100%
+            );
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-primary);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            position: relative;
+            overflow-x: hidden;
+            padding: 2rem 1rem;
+        }
+
+        /* Ambient Cosmic Background Elements */
+        .ambient-bg {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            pointer-events: none;
+            z-index: -1;
+            overflow: hidden;
+        }
+
+        .orb {
+            position: absolute;
+            border-radius: 50%;
+            filter: blur(80px);
+            opacity: 0.5;
+            animation: float 20s infinite ease-in-out alternate;
+        }
+
+        .orb-1 {
+            width: 400px;
+            height: 400px;
+            background: #e0e7ff;
+            top: -100px;
+            left: -100px;
+        }
+
+        .orb-2 {
+            width: 500px;
+            height: 500px;
+            background: #fae8ff;
+            bottom: -150px;
+            right: -100px;
+            animation-delay: -10s;
+        }
+
+        @keyframes float {
+            0% { transform: translate(0, 0) scale(1); }
+            100% { transform: translate(50px, 40px) scale(1.1); }
+        }
+
+        /* Interactive Prism Area (Pink Floyd Triangulation) */
+        .prism-container {
+            position: relative;
+            width: 260px;
+            height: 220px;
+            margin: 2rem 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+        }
+
+        .prism-svg {
+            width: 100%;
+            height: 100%;
+            filter: drop-shadow(0 10px 15px rgba(0,0,0,0.05));
+            transition: transform 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+
+        .prism-container:hover .prism-svg {
+            transform: scale(1.05) rotate(2deg);
+        }
+
+        .emoji-core {
+            position: absolute;
+            font-size: 3rem;
+            top: 52%;
+            left: 50%;
+            transform: translate(-50%, -40%);
+            user-select: none;
+            animation: pulse-space 4s ease-in-out infinite;
+        }
+
+        @keyframes pulse-space {
+            0%, 100% { transform: translate(-50%, -40%) scale(1); filter: drop-shadow(0 0 0px rgba(0,0,0,0)); }
+            50% { transform: translate(-50%, -40%) scale(1.15); filter: drop-shadow(0 0 12px rgba(168, 85, 247, 0.4)); }
+        }
+
+        /* Light Ray Spectrum Animation */
+        .light-ray-in {
+            stroke: #94a3b8;
+            stroke-dasharray: 8;
+            animation: ray-dash 30s linear infinite;
+        }
+
+        .spectrum-beam {
+            opacity: 0.85;
+            transition: opacity 0.3s;
+        }
+
+        .prism-container:hover .spectrum-beam {
+            opacity: 1;
+            filter: drop-shadow(0 0 8px rgba(236, 72, 153, 0.3));
+        }
+
+        /* Profile Header */
+        header {
+            text-align: center;
+            max-width: 600px;
+            margin-bottom: 2.5rem;
+        }
+
+        .title {
+            font-size: 3rem;
+            font-weight: 800;
+            letter-spacing: -0.05em;
+            background: linear-gradient(135deg, #0f172a 0%, #4338ca 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 0.5rem;
+        }
+
+        .tagline {
+            font-size: 1.125rem;
+            color: var(--text-secondary);
+            font-weight: 400;
+        }
+
+        /* Prism Divider Line */
+        .spectrum-bar {
+            width: 100%;
+            max-width: 800px;
+            height: 3px;
+            background: var(--pink-floyd-spectrum);
+            border-radius: 3px;
+            margin: 1.5rem 0 3rem 0;
+            opacity: 0.7;
+        }
+
+        /* Cards Grid */
+        .main-content {
+            width: 100%;
+            max-width: 800px;
+            display: flex;
+            flex-direction: column;
+            gap: 2rem;
+        }
+
+        .section-title {
+            font-size: 0.875rem;
+            text-transform: uppercase;
+            letter-spacing: 0.15em;
+            color: var(--text-secondary);
+            margin-bottom: 1rem;
+            font-weight: 600;
+        }
+
+        .repo-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 1.25rem;
+        }
+
+        .card {
+            background: var(--card-bg);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            padding: 1.5rem;
+            transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+            text-decoration: none;
+            color: inherit;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 3px;
+            background: var(--pink-floyd-spectrum);
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+
+        .card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 12px 24px -8px rgba(0, 0, 0, 0.08);
+            border-color: rgba(192, 132, 252, 0.4);
+        }
+
+        .card:hover::before {
+            opacity: 1;
+        }
+
+        .repo-name {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #0f172a;
+            margin-bottom: 0.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .repo-desc {
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+            line-height: 1.5;
+            margin-bottom: 1.25rem;
+        }
+
+        .repo-meta {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            font-weight: 500;
+        }
+
+        .badge {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background-color: #8b5cf6;
+        }
+
+        /* Action / Connect Button */
+        .connect-btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.75rem;
+            background: #0f172a;
+            color: #ffffff;
+            padding: 0.875rem 2rem;
+            border-radius: 9999px;
+            text-decoration: none;
+            font-weight: 500;
+            font-size: 0.95rem;
+            margin-top: 1rem;
+            transition: all 0.25s ease;
+            box-shadow: 0 4px 12px rgba(15, 23, 42, 0.15);
+        }
+
+        .connect-btn:hover {
+            background: #312e81;
+            transform: scale(1.02);
+            box-shadow: 0 6px 20px rgba(49, 46, 129, 0.25);
+        }
+
+        footer {
+            margin-top: 4rem;
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            text-align: center;
+        }
+
+        footer a {
+            color: inherit;
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="ambient-bg">
+        <div class="orb orb-1"></div>
+        <div class="orb orb-2"></div>
+    </div>
+
+    <!-- Pink Floyd-inspired Light Spectrum & Prism Section -->
+    <div class="prism-container" title="Click to launch cosmic mode!">
+        <svg class="prism-svg" viewBox="0 0 300 240" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <!-- Incoming white light beam -->
+            <line x1="0" y1="170" x2="115" y2="120" stroke="#cbd5e1" stroke-width="2.5" class="light-ray-in" />
+            
+            <!-- Prism Triangle -->
+            <polygon points="150,30 230,170 70,170" fill="rgba(255, 255, 255, 0.6)" stroke="rgba(148, 163, 184, 0.5)" stroke-width="2" />
+            <polygon points="150,30 230,170 70,170" fill="url(#prism-grad)" opacity="0.3" />
+
+            <!-- Refracted Spectrum Rays -->
+            <g class="spectrum-beam">
+                <path d="M185 125 L300 90" stroke="#ff4d4d" stroke-width="3" />
+                <path d="M187 128 L300 102" stroke="#ffa64d" stroke-width="3" />
+                <path d="M189 131 L300 114" stroke="#ffff4d" stroke-width="3" />
+                <path d="M191 134 L300 126" stroke="#4dff88" stroke-width="3" />
+                <path d="M193 137 L300 138" stroke="#4d94ff" stroke-width="3" />
+                <path d="M195 140 L300 150" stroke="#b366ff" stroke-width="3" />
+            </g>
+
+            <defs>
+                <linearGradient id="prism-grad" x1="150" y1="30" x2="150" y2="170" gradientUnits="userSpaceOnUse">
+                    <stop stop-color="white" stop-opacity="0.8"/>
+                    <stop offset="1" stop-color="#e2e8f0" stop-opacity="0.2"/>
+                </linearGradient>
+            </defs>
+        </svg>
+
+        <!-- Space Emoji Centerpiece -->
+        <div class="emoji-core">🌌</div>
+    </div>
+
+    <header>
+        <h1 class="title">SuperNebula</h1>
+        <p class="tagline">Exploring the outer rim of code, design, and digital space.</p>
+    </header>
+
+    <div class="spectrum-bar"></div>
+
+    <main class="main-content">
+        <div>
+            <h2 class="section-title">Featured Observatories</h2>
+            <div class="repo-grid">
+                
+                <a href="https://github.com/SuperNebula" target="_blank" class="card">
+                    <div>
+                        <div class="repo-name">
+                            <span>starlight-engine</span>
+                            <span style="font-size: 0.8rem;">↗</span>
+                        </div>
+                        <p class="repo-desc">A lightweight graphics framework built for rendering real-time celestial events.</p>
+                    </div>
+                    <div class="repo-meta">
+                        <span><span class="badge" style="background:#f59e0b;"></span> TypeScript</span>
+                        <span>★ 128</span>
+                    </div>
+                </a>
+
+                <a href="https://github.com/SuperNebula" target="_blank" class="card">
+                    <div>
+                        <div class="repo-name">
+                            <span>dark-side-ui</span>
+                            <span style="font-size: 0.8rem;">↗</span>
+                        </div>
+                        <p class="repo-desc">Minimalist component library inspired by vintage album art and geometric optics.</p>
+                    </div>
+                    <div class="repo-meta">
+                        <span><span class="badge" style="background:#6366f1;"></span> CSS / HTML</span>
+                        <span>★ 84</span>
+                    </div>
+                </a>
+
+                <a href="https://github.com/SuperNebula" target="_blank" class="card">
+                    <div>
+                        <div class="repo-name">
+                            <span>orbit-cli</span>
+                            <span style="font-size: 0.8rem;">↗</span>
+                        </div>
+                        <p class="repo-desc">Terminal utility for syncing distributed project states across local developer environments.</p>
+                    </div>
+                    <div class="repo-meta">
+                        <span><span class="badge" style="background:#10b981;"></span> Go</span>
+                        <span>★ 42</span>
+                    </div>
+                </a>
+
+            </div>
+        </div>
+
+        <div style="text-align: center; margin-top: 1.5rem;">
+            <a href="https://github.com/SuperNebula" target="_blank" class="connect-btn">
+                <svg width="20" height="20" fill="currentColor" viewBox="0 0 24 24">
+                    <path fill-rule="evenodd" clip-rule="evenodd" d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.53 1.032 1.53 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z"/>
+                </svg>
+                Visit GitHub @SuperNebula
+            </a>
+        </div>
+    </main>
+
+    <footer>
+        <p>HI</p>
+    </footer>
+
+</body>
+</html>

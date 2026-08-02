@@ -430,9 +430,6 @@
       <button class="nav-btn" id="nav-defender" onclick="routeTo('/space_defender')">
         <span>SPACE DEFENDER</span>
       </button>
-      <a class="nav-btn" href="https://supernebula23.github.io/voxel_web_edition" target="_self">
-        <span>VOXEL CRAFT</span>
-      </a>
     </nav>
   </header>
 
@@ -451,7 +448,7 @@
           <h3>FLAPPY BIRD</h3>
           <p>The iconic arcade flapper. Tap or press space to flap through endless retro pipes and score big!</p>
           <div class="card-actions">
-            <a class="play-btn" href="https://supernebula23.github.io/flappybird">
+            <a class="play-btn" href="https://supernebula.github.io/games/flappybird">
               <span>PLAY</span>
             </a>
           </div>
@@ -464,20 +461,7 @@
           <h3>SPACE DEFENDER</h3>
           <p>Blast through invading alien armadas in this action-packed 8-bit galactic shooter!</p>
           <div class="card-actions">
-            <a class="play-btn" href="https://supernebula23.github.io/space_defender">
-              <span>PLAY</span>
-            </a>
-          </div>
-        </div>
-
-        <!-- Game Card 3: Voxel Craft -->
-        <div class="game-card">
-          <span class="card-badge">3D WORLD</span>
-          <div class="card-icon">🧊</div>
-          <h3>VOXEL CRAFT</h3>
-          <p>Explore, place, and mine 3D voxel blocks in your browser. Sandbox creation engine!</p>
-          <div class="card-actions">
-            <a class="play-btn" href="https://supernebula23.github.io/voxel_web_edition">
+            <a class="play-btn" href="https://supernebula.github.io/games/space_defender">
               <span>PLAY</span>
             </a>
           </div>
@@ -670,19 +654,19 @@
       [homeView, flappyView, defenderView].forEach(v => v.classList.remove('active-view'));
       [navHome, navFlappy, navDefender].forEach(n => n.classList.remove('active'));
 
-      let cleanPath = path.replace('#', '').replace('/', '');
+      let cleanPath = path.replace('#', '').replace(/^\//, '');
 
-      if (cleanPath === 'flappybird') {
+      if (cleanPath.includes('flappybird')) {
         flappyView.classList.add('active-view');
         navFlappy.classList.add('active');
         if (updateHistory) {
-          try { history.pushState({ path: '/flappybird' }, 'Flappy Bird', '#flappybird'); } catch (e) {}
+          try { history.pushState({ path: '/games/flappybird' }, 'Flappy Bird', '#flappybird'); } catch (e) {}
         }
-      } else if (cleanPath === 'space_defender') {
+      } else if (cleanPath.includes('space_defender')) {
         defenderView.classList.add('active-view');
         navDefender.classList.add('active');
         if (updateHistory) {
-          try { history.pushState({ path: '/space_defender' }, 'Space Defender', '#space_defender'); } catch (e) {}
+          try { history.pushState({ path: '/games/space_defender' }, 'Space Defender', '#space_defender'); } catch (e) {}
         }
       } else {
         homeView.classList.add('active-view');

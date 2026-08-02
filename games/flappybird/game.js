@@ -2,6 +2,7 @@ const RAD = Math.PI / 180;
 const scrn = document.getElementById("canvas");
 const sctx = scrn.getContext("2d");
 scrn.tabIndex = 1;
+
 scrn.addEventListener("click", () => {
   switch (state.curr) {
     case state.getReady:
@@ -269,7 +270,7 @@ const UI = {
         try {
           this.score.best = Math.max(
             this.score.curr,
-            localStorage.getItem("best")
+            localStorage.getItem("best") || 0
           );
           localStorage.setItem("best", this.score.best);
           let bs = `BEST  :     ${this.score.best}`;

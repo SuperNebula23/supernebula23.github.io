@@ -3,27 +3,47 @@ html, body {
     padding: 0;
     width: 100%;
     height: 100%;
-    background-color: #30c0df;
+    background-color: #1a1a1a; /* Dark background to pad around the phone view on desktop */
+    display: flex;
+    justify-content: center;
+    align-items: center;
     overflow: hidden;
 }
 
 #canvas {
     display: block;
-    width: 100vw;
-    height: 100vh;
+    background-color: #30c0df;
+    
+    /* Phone Sizing Logic */
+    width: 100vw; 
+    height: calc(100vw * (667 / 375)); /* Maintains mobile aspect ratio */
+    
+    /* Desktop Bounds: Keeps it phone-sized on larger screens */
+    max-width: 375px; 
+    max-height: 667px;
+    
+    /* Adds a neat phone-like border on desktop */
+    border-radius: 12px;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.5);
 }
 
+/* Updated Home Button Styling */
 #home-btn {
     position: absolute;
     top: 20px;
     left: 20px;
-    padding: 10px 20px;
+    padding: 8px 16px;
     background-color: rgba(255, 255, 255, 0.9);
     color: #000;
     text-decoration: none;
     font-family: 'Squada One', sans-serif;
-    font-size: 22px;
+    font-size: 20px;
     border: 2px solid black;
     border-radius: 8px;
     z-index: 100;
+    transition: transform 0.1s ease;
+}
+
+#home-btn:hover {
+    transform: scale(1.05);
 }

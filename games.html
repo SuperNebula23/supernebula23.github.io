@@ -150,7 +150,7 @@
 
     .games-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
       gap: 24px;
       width: 100%;
       margin-bottom: 30px;
@@ -192,6 +192,15 @@
 
     .card-badge.neon {
       background: var(--neon-cyan);
+    }
+
+    .card-badge.gold {
+      background: var(--text-gold);
+    }
+
+    .card-badge.red {
+      background: #ff4757;
+      color: #fff;
     }
 
     .card-icon {
@@ -430,6 +439,12 @@
       <button class="nav-btn" id="nav-defender" onclick="routeTo('/space_defender')">
         <span>SPACE DEFENDER</span>
       </button>
+      <a class="nav-btn" id="nav-2048" href="https://supernebula23.github.io/games/2028.html">
+        <span>2048</span>
+      </a>
+      <a class="nav-btn" id="nav-amongus" href="https://supernebula23.github.io/games/amongus.html">
+        <span>AMONG US</span>
+      </a>
     </nav>
   </header>
 
@@ -462,6 +477,32 @@
           <p>Blast through invading alien armadas in this action-packed 8-bit galactic shooter!</p>
           <div class="card-actions">
             <a class="play-btn" href="https://supernebula23.github.io/games/space_defender">
+              <span>PLAY</span>
+            </a>
+          </div>
+        </div>
+
+        <!-- Game Card 3: 2048 -->
+        <div class="game-card">
+          <span class="card-badge gold">PUZZLE</span>
+          <div class="card-icon">🔢</div>
+          <h3>2048</h3>
+          <p>Join the numbers and reach the 2048 tile in this highly addictive sliding block puzzle!</p>
+          <div class="card-actions">
+            <a class="play-btn" href="https://supernebula23.github.io/games/2028.html">
+              <span>PLAY</span>
+            </a>
+          </div>
+        </div>
+
+        <!-- Game Card 4: Among Us -->
+        <div class="game-card">
+          <span class="card-badge red">SURVIVAL</span>
+          <div class="card-icon">🚀</div>
+          <h3>AMONG US</h3>
+          <p>Uncover the imposter or sabotage the spaceship crew in this mini web edition!</p>
+          <div class="card-actions">
+            <a class="play-btn" href="https://supernebula23.github.io/games/amongus.html">
               <span>PLAY</span>
             </a>
           </div>

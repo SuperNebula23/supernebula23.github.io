@@ -28,38 +28,24 @@
       flex-direction: column;
       align-items: center;
       min-height: 100vh;
-      padding-bottom: 2rem;
+      padding: 2rem 1rem;
+      position: relative;
     }
 
-    /* Navigation Bar */
-    nav {
-      width: 100%;
-      background-color: rgba(22, 27, 51, 0.8);
-      backdrop-filter: blur(10px);
-      padding: 1rem 2rem;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-      margin-bottom: 2rem;
-    }
-
-    .brand {
-      font-size: 1.5rem;
-      font-weight: bold;
-      background: linear-gradient(45deg, #7b2cbf, #3a0ca3, #4cc9f0);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-    }
-
+    /* Floating Home Button */
     .home-btn {
+      position: absolute;
+      top: 1.5rem;
+      left: 1.5rem;
       text-decoration: none;
       color: var(--text-color);
       background-color: var(--accent-color);
       padding: 0.6rem 1.2rem;
       border-radius: 8px;
       font-weight: 600;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
       transition: background-color 0.2s ease, transform 0.1s ease;
+      z-index: 10;
     }
 
     .home-btn:hover {
@@ -74,13 +60,13 @@
       align-items: center;
       width: 100%;
       max-width: 900px;
-      padding: 0 1rem;
+      margin-top: 1rem;
     }
 
     .game-card {
       background-color: var(--card-bg);
       border-radius: 12px;
-      padding: 1.5rem;
+      padding: 2rem;
       box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
       display: flex;
       flex-direction: column;
@@ -90,10 +76,15 @@
     }
 
     h1 {
-      margin-bottom: 1rem;
-      font-size: 2rem;
+      margin-bottom: 1.5rem;
+      font-size: 2.2rem;
+      text-align: center;
+      background: linear-gradient(45deg, #f8f9fa, #a0aab8);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
     }
 
+    /* Scaled Scratch Iframe Container */
     .game-wrapper {
       position: relative;
       background: #000;
@@ -101,17 +92,23 @@
       overflow: hidden;
       margin-bottom: 1.5rem;
       border: 2px solid var(--accent-color);
+      /* Scaled size with 4:3 aspect ratio */
+      width: 100%;
+      max-width: 800px;
+      aspect-ratio: 4 / 3;
     }
 
     iframe {
-      display: block;
+      width: 100%;
+      height: 100%;
       border: none;
+      display: block;
     }
 
     /* Credits Section */
     .credits {
       color: var(--muted-text);
-      font-size: 0.95rem;
+      font-size: 1rem;
       text-align: center;
     }
 
@@ -128,30 +125,25 @@
 </head>
 <body>
 
-  <!-- Navigation -->
-  <nav>
-    <div class="brand">SuperNebula Games</div>
-    <a href="https://supernebula23.github.io/games" class="home-btn">🏠 Home</a>
-  </nav>
+  <!-- Floating Home Link -->
+  <a href="https://supernebula23.github.io/games" class="home-btn">🏠 Home</a>
 
   <!-- Game Container -->
   <main>
     <div class="game-card">
-      <h1>Paper Minecraft / Tower Defense</h1>
+      <h1>Tower Defense</h1>
       
-      <!-- Embedded Game -->
+      <!-- Scaled Embed -->
       <div class="game-wrapper">
         <iframe src="https://scratch.mit.edu/projects/15200040/embed" 
                 allowtransparency="true" 
-                width="485" 
-                height="402" 
                 frameborder="0" 
                 scrolling="no" 
                 allowfullscreen>
         </iframe>
       </div>
 
-      <!-- Attribution / Credits -->
+      <!-- Credits -->
       <p class="credits">
         This game was originally created by 
         <a href="https://scratch.mit.edu/users/griffpatch/" target="_blank" rel="noopener noreferrer">griffpatch</a> 

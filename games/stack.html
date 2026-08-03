@@ -1,0 +1,474 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Block Tower Arcade Machine</title>
+  <style>
+    body {
+      background: #08080c;
+      margin: 0;
+      padding: 20px 0;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      font-family: 'Trebuchet MS', 'Segoe UI', sans-serif;
+      color: #fff;
+      user-select: none;
+    }
+
+    /* Cabinet Outer Frame */
+    .arcade-cabinet {
+      position: relative;
+      width: 520px;
+      background: #111116;
+      border-radius: 16px;
+      padding: 20px 25px 30px 25px;
+      box-shadow: 
+        0 0 50px rgba(0, 150, 255, 0.2),
+        inset 0 0 15px rgba(255, 255, 255, 0.1);
+      border: 4px solid #282835;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    /* Home Button / Back Link */
+    .home-btn {
+      position: absolute;
+      top: -15px;
+      left: 15px;
+      background: #1f293d;
+      color: #00d8ff;
+      border: 2px solid #00d8ff;
+      border-radius: 20px;
+      padding: 6px 14px;
+      font-size: 12px;
+      font-weight: bold;
+      text-decoration: none;
+      letter-spacing: 1px;
+      box-shadow: 0 0 10px rgba(0, 216, 255, 0.4);
+      transition: all 0.2s ease;
+      z-index: 10;
+    }
+
+    .home-btn:hover {
+      background: #00d8ff;
+      color: #000;
+      box-shadow: 0 0 18px rgba(0, 216, 255, 0.8);
+    }
+
+    /* Neon LED Side Bezels */
+    .arcade-cabinet::before, .arcade-cabinet::after {
+      content: '';
+      position: absolute;
+      top: 15px;
+      bottom: 15px;
+      width: 6px;
+      border-radius: 3px;
+      background: linear-gradient(180deg, #00f2ff, #7928ca, #ff0080, #00f2ff);
+      box-shadow: 0 0 12px #00f2ff, 0 0 20px #ff0080;
+    }
+    .arcade-cabinet::before { left: 8px; }
+    .arcade-cabinet::after { right: 8px; }
+
+    /* Top Marquee Header */
+    .marquee {
+      width: 100%;
+      background: #000;
+      border: 3px solid #00d8ff;
+      border-radius: 8px;
+      padding: 10px 0;
+      text-align: center;
+      box-shadow: 0 0 15px rgba(0, 216, 255, 0.6), inset 0 0 10px rgba(0, 216, 255, 0.4);
+      margin-bottom: 15px;
+    }
+
+    .marquee-title {
+      font-size: 32px;
+      font-weight: 900;
+      font-style: italic;
+      letter-spacing: 2px;
+      background: linear-gradient(180deg, #fff 20%, #ffeb3b 60%, #e65100 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      text-transform: uppercase;
+      filter: drop-shadow(0 2px 4px rgba(0,0,0,0.8));
+    }
+
+    .marquee-subtitle {
+      font-size: 14px;
+      font-weight: bold;
+      color: #00f2ff;
+      letter-spacing: 4px;
+      text-transform: uppercase;
+    }
+
+    /* Glass Playfield Box */
+    .screen-container {
+      position: relative;
+      width: 440px;
+      height: 620px;
+      background: #030814;
+      border: 4px solid #1f293d;
+      border-radius: 6px;
+      box-shadow: inset 0 0 30px rgba(0,0,0,0.9);
+      overflow: hidden;
+    }
+
+    canvas {
+      position: absolute;
+      top: 0;
+      left: 0;
+    }
+
+    /* Lower Arcade Control & Door Panel */
+    .control-panel {
+      width: 100%;
+      margin-top: 15px;
+      background: #181820;
+      border: 2px solid #333;
+      border-radius: 8px;
+      padding: 15px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      box-sizing: border-box;
+    }
+
+    .start-btn {
+      background: radial-gradient(circle, #ff3366 0%, #a00028 100%);
+      border: 4px solid #ff809d;
+      width: 140px;
+      height: 45px;
+      border-radius: 25px;
+      color: white;
+      font-weight: bold;
+      font-size: 16px;
+      letter-spacing: 1px;
+      box-shadow: 0 5px 0 #500014, 0 8px 15px rgba(255, 0, 80, 0.4);
+      cursor: pointer;
+      text-shadow: 0 1px 2px #000;
+      transition: all 0.05s ease;
+    }
+
+    .start-btn:active {
+      transform: translateY(4px);
+      box-shadow: 0 1px 0 #500014, 0 3px 8px rgba(255, 0, 80, 0.4);
+    }
+
+    .prize-out-door {
+      margin-top: 15px;
+      width: 80%;
+      height: 40px;
+      background: #0a0a0d;
+      border: 2px solid #333;
+      border-radius: 4px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      color: #ff0055;
+      font-weight: 900;
+      letter-spacing: 3px;
+      font-size: 14px;
+      box-shadow: inset 0 3px 8px rgba(0,0,0,0.8);
+    }
+  </style>
+</head>
+
+<body>
+
+  <div class="arcade-cabinet">
+    <!-- Home Navigation Button -->
+    <a href="/games" class="home-btn">🏠 RETURN TO GAMES</a>
+
+    <!-- Top Glowing Header -->
+    <div class="marquee">
+      <div class="marquee-title">BLOCK TOWER</div>
+      <div class="marquee-subtitle">WIN PRIZES!</div>
+    </div>
+
+    <!-- Screen Glass -->
+    <div class="screen-container">
+      <canvas id="gameCanvas" width="440" height="620"></canvas>
+      <canvas id="uiCanvas" width="440" height="620"></canvas>
+    </div>
+
+    <!-- Physical Control Deck -->
+    <div class="control-panel">
+      <button class="start-btn" id="dropBtn">STACK / DROP</button>
+      <div class="prize-out-door">PRIZE OUT</div>
+    </div>
+  </div>
+
+  <script>
+    // System & Grid Configuration
+    const canvas = document.getElementById("gameCanvas");
+    const ctx = canvas.getContext("2d");
+    const uiCanvas = document.getElementById("uiCanvas");
+    const uiCtx = uiCanvas.getContext("2d");
+
+    const COLS = 10;
+    const ROWS = 15;
+    const CELL_SIZE = 36;
+    const GRID_OFFSET_X = (canvas.width - (COLS * CELL_SIZE)) / 2; // Center horizontally
+    const GRID_OFFSET_Y = 40;
+
+    // Game Threshold Levels
+    const MINOR_PRIZE_ROW = 8;  // Row 8 from bottom
+    const MAJOR_PRIZE_ROW = 15; // Row 15 (Top row)
+
+    // Game Engine State
+    let gameState = {
+      started: false,
+      gameOver: false,
+      won: false,
+      currentRow: 0,
+      blockWidth: 4, // Initial block length in grid cells
+      blockX: 0,
+      direction: 1,
+      speed: 12, // Lower = faster
+      frameCounter: 0,
+      grid: Array(ROWS).fill(null).map(() => Array(COLS).fill(0)),
+      fallingBricks: []
+    };
+
+    // Input Handlers
+    function handleAction() {
+      if (!gameState.started) {
+        startGame();
+        return;
+      }
+      if (gameState.gameOver) {
+        resetGame();
+        return;
+      }
+      dropBlock();
+    }
+
+    document.getElementById("dropBtn").addEventListener("click", handleAction);
+    window.addEventListener("keydown", (e) => {
+      if (e.code === "Space") {
+        e.preventDefault();
+        handleAction();
+      }
+    });
+
+    function resetGame() {
+      gameState = {
+        started: true,
+        gameOver: false,
+        won: false,
+        currentRow: 0,
+        blockWidth: 4,
+        blockX: 0,
+        direction: 1,
+        speed: 12,
+        frameCounter: 0,
+        grid: Array(ROWS).fill(null).map(() => Array(COLS).fill(0)),
+        fallingBricks: []
+      };
+    }
+
+    function startGame() {
+      resetGame();
+    }
+
+    function dropBlock() {
+      const row = gameState.currentRow;
+      let landedCount = 0;
+      let newWidth = 0;
+
+      // Calculate overlaps with previous row
+      for (let c = 0; c < gameState.blockWidth; c++) {
+        const col = gameState.blockX + c;
+        if (col >= 0 && col < COLS) {
+          if (row === 0 || gameState.grid[row - 1][col] === 1) {
+            gameState.grid[row][col] = 1;
+            landedCount++;
+            newWidth++;
+          } else {
+            // Overhanging brick drops away
+            gameState.fallingBricks.push({
+              x: GRID_OFFSET_X + col * CELL_SIZE,
+              y: GRID_OFFSET_Y + (ROWS - 1 - row) * CELL_SIZE,
+              vy: 2
+            });
+          }
+        }
+      }
+
+      // Check win/loss state
+      if (landedCount === 0) {
+        gameState.gameOver = true;
+        return;
+      }
+
+      gameState.blockWidth = newWidth;
+      gameState.currentRow++;
+
+      // Adjust speed & difficulty dynamically as player climbs
+      if (gameState.currentRow > 4) gameState.speed = 9;
+      if (gameState.currentRow >= MINOR_PRIZE_ROW) gameState.speed = 6;
+      if (gameState.currentRow > 11) gameState.speed = 4;
+
+      // Win condition check
+      if (gameState.currentRow >= ROWS) {
+        gameState.gameOver = true;
+        gameState.won = true;
+      } else {
+        gameState.blockX = 0;
+      }
+    }
+
+    // Main Game Loop
+    function update() {
+      if (gameState.started && !gameState.gameOver) {
+        gameState.frameCounter++;
+        if (gameState.frameCounter >= gameState.speed) {
+          gameState.frameCounter = 0;
+
+          // Move current block side-to-side
+          gameState.blockX += gameState.direction;
+          if (gameState.blockX + gameState.blockWidth >= COLS) {
+            gameState.blockX = COLS - gameState.blockWidth;
+            gameState.direction = -1;
+          } else if (gameState.blockX <= 0) {
+            gameState.blockX = 0;
+            gameState.direction = 1;
+          }
+        }
+      }
+
+      // Update falling piece animations
+      gameState.fallingBricks.forEach(p => {
+        p.y += p.vy;
+        p.vy += 0.8;
+      });
+      gameState.fallingBricks = gameState.fallingBricks.filter(p => p.y < canvas.height);
+    }
+
+    // Render Functions
+    function drawGridBackground() {
+      ctx.fillStyle = "#040a17";
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      // Draw Arcade Grid Outer Frame
+      ctx.strokeStyle = "#1b2a47";
+      ctx.lineWidth = 2;
+      ctx.strokeRect(GRID_OFFSET_X - 4, GRID_OFFSET_Y - 4, (COLS * CELL_SIZE) + 8, (ROWS * CELL_SIZE) + 8);
+
+      // Matrix Grid Slots
+      for (let r = 0; r < ROWS; r++) {
+        for (let c = 0; c < COLS; c++) {
+          const x = GRID_OFFSET_X + c * CELL_SIZE;
+          const y = GRID_OFFSET_Y + (ROWS - 1 - r) * CELL_SIZE;
+
+          ctx.fillStyle = "#081326";
+          ctx.fillRect(x + 2, y + 2, CELL_SIZE - 4, CELL_SIZE - 4);
+        }
+      }
+
+      // Prize Level Divider Lines
+      drawPrizeLine(MINOR_PRIZE_ROW, "MINOR PRIZE", "#00d8ff");
+      drawPrizeLine(MAJOR_PRIZE_ROW, "MAJOR PRIZE", "#ff0055");
+    }
+
+    function drawPrizeLine(rowNum, label, color) {
+      const y = GRID_OFFSET_Y + (ROWS - rowNum) * CELL_SIZE;
+      
+      ctx.strokeStyle = color;
+      ctx.lineWidth = 2;
+      ctx.setLineDash([6, 4]);
+      ctx.beginPath();
+      ctx.moveTo(GRID_OFFSET_X - 10, y);
+      ctx.lineTo(GRID_OFFSET_X + (COLS * CELL_SIZE) + 10, y);
+      ctx.stroke();
+      ctx.setLineDash([]);
+
+      ctx.fillStyle = color;
+      ctx.font = "bold 11px sans-serif";
+      ctx.fillText(label, GRID_OFFSET_X + 6, y - 5);
+    }
+
+    function drawSingleBrick(x, y, color = "#00f0ff") {
+      ctx.fillStyle = color;
+      ctx.fillRect(x + 2, y + 2, CELL_SIZE - 4, CELL_SIZE - 4);
+
+      // Glowing interior inset
+      ctx.fillStyle = "#ffffff";
+      ctx.globalAlpha = 0.4;
+      ctx.fillRect(x + 6, y + 6, CELL_SIZE - 12, CELL_SIZE - 12);
+      ctx.globalAlpha = 1.0;
+    }
+
+    function render() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      uiCtx.clearRect(0, 0, uiCanvas.width, uiCanvas.height);
+
+      drawGridBackground();
+
+      // Draw Stacked Bricks
+      for (let r = 0; r < ROWS; r++) {
+        for (let c = 0; c < COLS; c++) {
+          if (gameState.grid[r][c] === 1) {
+            const x = GRID_OFFSET_X + c * CELL_SIZE;
+            const y = GRID_OFFSET_Y + (ROWS - 1 - r) * CELL_SIZE;
+            drawSingleBrick(x, y, "#00f0ff");
+          }
+        }
+      }
+
+      // Draw Active Moving Line
+      if (gameState.started && !gameState.gameOver) {
+        const r = gameState.currentRow;
+        for (let c = 0; c < gameState.blockWidth; c++) {
+          const col = gameState.blockX + c;
+          const x = GRID_OFFSET_X + col * CELL_SIZE;
+          const y = GRID_OFFSET_Y + (ROWS - 1 - r) * CELL_SIZE;
+          drawSingleBrick(x, y, "#ffeb3b");
+        }
+      }
+
+      // Draw Loose Falling Bricks
+      gameState.fallingBricks.forEach(p => {
+        drawSingleBrick(p.x, p.y, "#ff3366");
+      });
+
+      // UI Text Overlay
+      if (!gameState.started) {
+        drawOverlayText("PRESS TO PLAY", "STACK TO WIN PRIZES!");
+      } else if (gameState.gameOver) {
+        if (gameState.won) {
+          drawOverlayText("MAJOR PRIZE WINNER!", "CLICK TO PLAY AGAIN");
+        } else if (gameState.currentRow >= MINOR_PRIZE_ROW) {
+          drawOverlayText("MINOR PRIZE WINNER!", "CLICK TO RETRY FOR MAJOR");
+        } else {
+          drawOverlayText("GAME OVER", "CLICK TO TRY AGAIN");
+        }
+      }
+    }
+
+    function drawOverlayText(main, sub) {
+      uiCtx.fillStyle = "rgba(0, 0, 0, 0.75)";
+      uiCtx.fillRect(0, canvas.height / 2 - 60, canvas.width, 120);
+
+      uiCtx.textAlign = "center";
+      uiCtx.fillStyle = "#fff";
+      uiCtx.font = "900 24px sans-serif";
+      uiCtx.fillText(main, canvas.width / 2, canvas.height / 2 - 5);
+
+      uiCtx.fillStyle = "#ff0055";
+      uiCtx.font = "bold 14px sans-serif";
+      uiCtx.fillText(sub, canvas.width / 2, canvas.height / 2 + 25);
+    }
+
+    function loop() {
+      update();
+      render();
+      requestAnimationFrame(loop);
+    }
+
+    loop();
+  </script>
+</body>
+</html>

@@ -62,14 +62,14 @@
       cursor: pointer;
     }
 
-    .nav-links {
+    /* Category Dropdown Styling */
+    .category-select-wrapper {
+      position: relative;
       display: flex;
-      gap: 10px;
       align-items: center;
-      flex-wrap: wrap;
     }
 
-    .nav-btn {
+    .category-select {
       background: #1a3a4f;
       color: #fff;
       border: 3px solid #000;
@@ -78,27 +78,25 @@
       font-family: 'Press Start 2P', cursive;
       font-size: 10px;
       cursor: pointer;
-      text-decoration: none;
       box-shadow: 0 3px 0 #000;
+      outline: none;
+      appearance: none;
+      -webkit-appearance: none;
+      -moz-appearance: none;
+      padding-right: 30px;
       transition: all 0.1s ease;
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
     }
 
-    .nav-btn:hover {
+    .category-select:hover {
       background: var(--border-accent);
-      transform: translateY(-2px);
-      box-shadow: 0 5px 0 #000;
     }
 
-    .nav-btn:active {
-      transform: translateY(2px);
-      box-shadow: 0 1px 0 #000;
-    }
-
-    .nav-btn.active {
-      background: var(--border-accent);
+    .select-arrow {
+      position: absolute;
+      right: 10px;
+      pointer-events: none;
+      font-size: 8px;
+      color: #fff;
     }
 
     main.content-area {
@@ -113,14 +111,10 @@
     .view-section {
       width: 100%;
       max-width: 960px;
-      display: none;
-      animation: fadeIn 0.25s ease-out;
-    }
-
-    .view-section.active-view {
       display: flex;
       flex-direction: column;
       align-items: center;
+      animation: fadeIn 0.25s ease-out;
     }
 
     @keyframes fadeIn {
@@ -171,6 +165,10 @@
       overflow: hidden;
     }
 
+    .game-card.hidden {
+      display: none !important;
+    }
+
     .game-card:hover {
       transform: translateY(-4px);
       box-shadow: 0 12px 0 #000;
@@ -200,6 +198,11 @@
 
     .card-badge.red {
       background: #ff4757;
+      color: #fff;
+    }
+
+    .card-badge.purple {
+      background: var(--neon-magenta);
       color: #fff;
     }
 
@@ -257,153 +260,15 @@
       gap: 8px;
     }
 
-    .play-btn.secondary {
-      background: #1a3a4f;
-      font-size: 9px;
-      padding: 8px;
-    }
-
     .play-btn:hover {
       background: #e04e00;
       transform: translateY(-2px);
       box-shadow: 0 6px 0 #000;
     }
 
-    .play-btn.secondary:hover {
-      background: #234d69;
-    }
-
     .play-btn:active {
       transform: translateY(2px);
       box-shadow: 0 2px 0 #000;
-    }
-
-    .game-wrapper {
-      position: relative;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      width: 100%;
-    }
-
-    .top-bar {
-      width: min(92vw, 440px);
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 12px;
-    }
-
-    .top-bar.wide {
-      width: min(92vw, 600px);
-    }
-
-    #canvas-container {
-      position: relative;
-      border: 4px solid #000;
-      border-radius: 12px;
-      box-shadow: 0 16px 40px rgba(0,0,0,0.8);
-      overflow: hidden;
-      background: #70c5ce;
-      width: min(92vw, 440px);
-      aspect-ratio: 288 / 512;
-      max-height: 75vh;
-    }
-
-    #defender-canvas-container {
-      position: relative;
-      border: 4px solid #1a3a4f;
-      border-radius: 12px;
-      box-shadow: 0 16px 40px rgba(0,0,0,0.8), 0 0 20px rgba(0, 255, 255, 0.15);
-      overflow: hidden;
-      background: #000;
-      width: min(92vw, 600px);
-      aspect-ratio: 3 / 4;
-      max-height: 70vh;
-    }
-
-    canvas {
-      display: block;
-      width: 100%;
-      height: 100%;
-      image-rendering: pixelated;
-      image-rendering: crisp-edges;
-    }
-
-    .controls-hint {
-      margin-top: 14px;
-      font-size: 10px;
-      color: #a0c4d6;
-      text-align: center;
-      letter-spacing: 1px;
-      text-shadow: 1px 1px 0 #000;
-    }
-
-    .flash-overlay {
-      position: absolute;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      background: white;
-      opacity: 0;
-      pointer-events: none;
-      transition: opacity 0.1s ease-out;
-    }
-
-    .sound-toggle-btn {
-      background: #152d3e;
-      border: 2px solid #000;
-      color: #fff;
-      padding: 6px 10px;
-      border-radius: 6px;
-      cursor: pointer;
-      font-size: 10px;
-      box-shadow: 0 2px 0 #000;
-    }
-
-    /* Space Defender Mobile Controls */
-    #mobile-controls {
-      display: flex;
-      width: min(92vw, 600px);
-      justify-content: space-between;
-      margin-top: 15px;
-      gap: 10px;
-    }
-
-    .control-group {
-      display: flex;
-      gap: 10px;
-    }
-
-    .ctrl-btn {
-      background: rgba(21, 45, 62, 0.8);
-      border: 2px solid var(--border-accent);
-      color: var(--border-accent);
-      width: 54px;
-      height: 54px;
-      border-radius: 50%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 20px;
-      box-shadow: 0 4px 0 rgba(248, 88, 0, 0.4);
-      cursor: pointer;
-    }
-    
-    .ctrl-btn.shoot-btn {
-      border-color: var(--neon-magenta);
-      color: var(--neon-magenta);
-      box-shadow: 0 4px 0 rgba(255, 0, 255, 0.4);
-      width: 80px;
-      border-radius: 16px;
-      font-size: 12px;
-      font-family: inherit;
-    }
-
-    .ctrl-btn:active {
-      transform: translateY(3px);
-      box-shadow: 0 1px 0 transparent;
     }
 
     @media (max-width: 600px) {
@@ -413,9 +278,9 @@
       .brand-title span {
         display: none;
       }
-      .nav-btn {
-        padding: 6px 8px;
+      .category-select {
         font-size: 8px;
+        padding: 6px 24px 6px 8px;
       }
     }
   </style>
@@ -423,29 +288,23 @@
 <body>
 
   <header class="site-header">
-    <a class="brand-title" onclick="routeTo('/')">
+    <a class="brand-title" href="#">
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
         <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
       </svg>
       <span>SUPERNEBULA GAMES</span>
     </a>
-    <nav class="nav-links">
-      <button class="nav-btn" id="nav-home" onclick="routeTo('/')">
-        <span>HOME</span>
-      </button>
-      <button class="nav-btn" id="nav-flappy" onclick="routeTo('/flappybird')">
-        <span>FLAPPY BIRD</span>
-      </button>
-      <button class="nav-btn" id="nav-defender" onclick="routeTo('/space_defender')">
-        <span>SPACE DEFENDER</span>
-      </button>
-      <a class="nav-btn" id="nav-2048" href="https://supernebula23.github.io/games/2028.html">
-        <span>2048</span>
-      </a>
-      <a class="nav-btn" id="nav-amongus" href="https://supernebula23.github.io/games/amongus.html">
-        <span>AMONG US</span>
-      </a>
-    </nav>
+    
+    <!-- Category Dropdown Filter -->
+    <div class="category-select-wrapper">
+      <select class="category-select" id="categoryFilter" onchange="filterCategory(this.value)">
+        <option value="all">ALL CATEGORIES</option>
+        <option value="arcade">ARCADE</option>
+        <option value="puzzle">PUZZLE</option>
+        <option value="survival">SURVIVAL</option>
+      </select>
+      <span class="select-arrow">▼</span>
+    </div>
   </header>
 
   <main class="content-area">
@@ -457,7 +316,7 @@
 
       <div class="games-grid">
         <!-- Game Card 1: Flappy Bird -->
-        <div class="game-card">
+        <div class="game-card" data-category="arcade">
           <span class="card-badge">OG CLASSIC</span>
           <div class="card-icon">🐤</div>
           <h3>FLAPPY BIRD</h3>
@@ -470,20 +329,33 @@
         </div>
 
         <!-- Game Card 2: Space Defender -->
-        <div class="game-card">
+        <div class="game-card" data-category="arcade">
           <span class="card-badge neon">RETRO SHOOTER</span>
           <div class="card-icon">👾</div>
           <h3>SPACE DEFENDER</h3>
           <p>Blast through invading alien armadas in this action-packed 8-bit galactic shooter!</p>
           <div class="card-actions">
-            <a class="play-btn" href="https://supernebula23.github.io/games/space_defender">
+            <a class="play-btn" href="https://supernebula23.github.io/games/space_defender.html">
               <span>PLAY</span>
             </a>
           </div>
         </div>
 
-        <!-- Game Card 3: 2048 -->
-        <div class="game-card">
+        <!-- Game Card 3: Stack -->
+        <div class="game-card" data-category="arcade">
+          <span class="card-badge purple">ARCADE</span>
+          <div class="card-icon">🥞</div>
+          <h3>STACK</h3>
+          <p>Stack blocks as high as you can in this skill-based precision timing game!</p>
+          <div class="card-actions">
+            <a class="play-btn" href="https://supernebula23.github.io/games/stack.html">
+              <span>PLAY</span>
+            </a>
+          </div>
+        </div>
+
+        <!-- Game Card 4: 2048 -->
+        <div class="game-card" data-category="puzzle">
           <span class="card-badge gold">PUZZLE</span>
           <div class="card-icon">🔢</div>
           <h3>2048</h3>
@@ -495,8 +367,8 @@
           </div>
         </div>
 
-        <!-- Game Card 4: Among Us -->
-        <div class="game-card">
+        <!-- Game Card 5: Among Us -->
+        <div class="game-card" data-category="survival">
           <span class="card-badge red">SURVIVAL</span>
           <div class="card-icon">🚀</div>
           <h3>AMONG US</h3>
@@ -509,1105 +381,20 @@
         </div>
       </div>
     </section>
-
-    <section id="flappy-view" class="view-section">
-      <div class="game-wrapper">
-        <div class="top-bar">
-          <button class="nav-btn" onclick="routeTo('/')">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M19 12H5M12 19l-7-7 7-7"/>
-            </svg>
-            <span>HUB</span>
-          </button>
-          <button class="sound-toggle-btn" id="soundToggleFlappy" onclick="toggleMute()">SFX: ON</button>
-        </div>
-
-        <div id="canvas-container">
-          <canvas id="gameCanvas" width="288" height="512"></canvas>
-          <div id="flash" class="flash-overlay"></div>
-        </div>
-
-        <div class="controls-hint">PRESS SPACE / TAP TO FLAP</div>
-      </div>
-    </section>
-
-    <section id="defender-view" class="view-section">
-      <div class="game-wrapper">
-        <div class="top-bar wide">
-          <button class="nav-btn" onclick="routeTo('/')">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M19 12H5M12 19l-7-7 7-7"/>
-            </svg>
-            <span>HUB</span>
-          </button>
-          <button class="sound-toggle-btn" id="soundToggleDefender" onclick="toggleMute()">SFX: ON</button>
-        </div>
-
-        <div id="defender-canvas-container">
-          <canvas id="defenderCanvas" width="600" height="800"></canvas>
-        </div>
-
-        <div id="mobile-controls">
-          <div class="control-group">
-            <div class="ctrl-btn" id="btn-left">◄</div>
-            <div class="ctrl-btn" id="btn-right">►</div>
-          </div>
-          <div class="ctrl-btn shoot-btn" id="btn-shoot">FIRE</div>
-        </div>
-
-        <div class="controls-hint">ARROWS / A & D TO MOVE • SPACE TO FIRE</div>
-      </div>
-    </section>
   </main>
 
   <script>
-    const AudioEngine = {
-      ctx: null,
-      muted: false,
-      init() {
-        if (!this.ctx) {
-          const AudioContext = window.AudioContext || window.webkitAudioContext;
-          if (AudioContext) {
-            this.ctx = new AudioContext();
-          }
-        }
-        if (this.ctx && this.ctx.state === 'suspended') {
-          this.ctx.resume();
-        }
-      },
-      playFlap() {
-        if (this.muted || !this.ctx) return;
-        const osc = this.ctx.createOscillator();
-        const gain = this.ctx.createGain();
-        osc.type = 'square';
-        osc.frequency.setValueAtTime(320, this.ctx.currentTime);
-        osc.frequency.exponentialRampToValueAtTime(620, this.ctx.currentTime + 0.08);
-        gain.gain.setValueAtTime(0.2, this.ctx.currentTime);
-        gain.gain.linearRampToValueAtTime(0.01, this.ctx.currentTime + 0.08);
-        osc.connect(gain);
-        gain.connect(this.ctx.destination);
-        osc.start();
-        osc.stop(this.ctx.currentTime + 0.08);
-      },
-      playScore() {
-        if (this.muted || !this.ctx) return;
-        const osc = this.ctx.createOscillator();
-        const gain = this.ctx.createGain();
-        osc.type = 'sine';
-        osc.frequency.setValueAtTime(523.25, this.ctx.currentTime);
-        osc.frequency.setValueAtTime(880, this.ctx.currentTime + 0.08);
-        gain.gain.setValueAtTime(0.25, this.ctx.currentTime);
-        gain.gain.linearRampToValueAtTime(0.01, this.ctx.currentTime + 0.25);
-        osc.connect(gain);
-        gain.connect(this.ctx.destination);
-        osc.start();
-        osc.stop(this.ctx.currentTime + 0.25);
-      },
-      playHit() {
-        if (this.muted || !this.ctx) return;
-        const osc = this.ctx.createOscillator();
-        const gain = this.ctx.createGain();
-        osc.type = 'sawtooth';
-        osc.frequency.setValueAtTime(160, this.ctx.currentTime);
-        osc.frequency.linearRampToValueAtTime(40, this.ctx.currentTime + 0.12);
-        gain.gain.setValueAtTime(0.4, this.ctx.currentTime);
-        gain.gain.linearRampToValueAtTime(0.01, this.ctx.currentTime + 0.12);
-        osc.connect(gain);
-        gain.connect(this.ctx.destination);
-        osc.start();
-        osc.stop(this.ctx.currentTime + 0.12);
-      },
-      playSwoosh() {
-        if (this.muted || !this.ctx) return;
-        const osc = this.ctx.createOscillator();
-        const gain = this.ctx.createGain();
-        osc.type = 'triangle';
-        osc.frequency.setValueAtTime(400, this.ctx.currentTime);
-        osc.frequency.exponentialRampToValueAtTime(100, this.ctx.currentTime + 0.15);
-        gain.gain.setValueAtTime(0.2, this.ctx.currentTime);
-        gain.gain.linearRampToValueAtTime(0.01, this.ctx.currentTime + 0.15);
-        osc.connect(gain);
-        gain.connect(this.ctx.destination);
-        osc.start();
-        osc.stop(this.ctx.currentTime + 0.15);
-      },
-      playDefenderShoot() {
-        if (this.muted || !this.ctx) return;
-        const osc = this.ctx.createOscillator();
-        const gain = this.ctx.createGain();
-        osc.type = 'square';
-        osc.frequency.setValueAtTime(880, this.ctx.currentTime);
-        osc.frequency.exponentialRampToValueAtTime(110, this.ctx.currentTime + 0.15);
-        gain.gain.setValueAtTime(0.1, this.ctx.currentTime);
-        gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.15);
-        osc.connect(gain);
-        gain.connect(this.ctx.destination);
-        osc.start();
-        osc.stop(this.ctx.currentTime + 0.15);
-      },
-      playDefenderExplosion() {
-        if (this.muted || !this.ctx) return;
-        const osc = this.ctx.createOscillator();
-        const gain = this.ctx.createGain();
-        osc.type = 'sawtooth';
-        osc.frequency.setValueAtTime(100, this.ctx.currentTime);
-        osc.frequency.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.3);
-        gain.gain.setValueAtTime(0.2, this.ctx.currentTime);
-        gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.3);
-        osc.connect(gain);
-        gain.connect(this.ctx.destination);
-        osc.start();
-        osc.stop(this.ctx.currentTime + 0.3);
-      },
-      playDefenderStart() {
-        if (this.muted || !this.ctx) return;
-        const osc = this.ctx.createOscillator();
-        const gain = this.ctx.createGain();
-        osc.type = 'sine';
-        osc.frequency.setValueAtTime(440, this.ctx.currentTime);
-        osc.frequency.linearRampToValueAtTime(880, this.ctx.currentTime + 0.2);
-        gain.gain.setValueAtTime(0.1, this.ctx.currentTime);
-        gain.gain.linearRampToValueAtTime(0.01, this.ctx.currentTime + 0.4);
-        osc.connect(gain);
-        gain.connect(this.ctx.destination);
-        osc.start();
-        osc.stop(this.ctx.currentTime + 0.4);
-      }
-    };
-
-    function toggleMute() {
-      AudioEngine.muted = !AudioEngine.muted;
-      const label = AudioEngine.muted ? 'SFX: OFF' : 'SFX: ON';
-      document.getElementById('soundToggleFlappy').innerText = label;
-      document.getElementById('soundToggleDefender').innerText = label;
-    }
-
-    function routeTo(path, updateHistory = true) {
-      const homeView = document.getElementById('home-view');
-      const flappyView = document.getElementById('flappy-view');
-      const defenderView = document.getElementById('defender-view');
-      
-      const navHome = document.getElementById('nav-home');
-      const navFlappy = document.getElementById('nav-flappy');
-      const navDefender = document.getElementById('nav-defender');
-
-      // Reset active views
-      [homeView, flappyView, defenderView].forEach(v => v.classList.remove('active-view'));
-      [navHome, navFlappy, navDefender].forEach(n => n.classList.remove('active'));
-
-      let cleanPath = path.replace('#', '').replace(/^\//, '');
-
-      if (cleanPath.includes('flappybird')) {
-        flappyView.classList.add('active-view');
-        navFlappy.classList.add('active');
-        if (updateHistory) {
-          try { history.pushState({ path: '/games/flappybird' }, 'Flappy Bird', '#flappybird'); } catch (e) {}
-        }
-      } else if (cleanPath.includes('space_defender')) {
-        defenderView.classList.add('active-view');
-        navDefender.classList.add('active');
-        if (updateHistory) {
-          try { history.pushState({ path: '/games/space_defender' }, 'Space Defender', '#space_defender'); } catch (e) {}
-        }
-      } else {
-        homeView.classList.add('active-view');
-        navHome.classList.add('active');
-        if (updateHistory) {
-          try { history.pushState({ path: '/' }, 'Home', '#'); } catch (e) {}
-        }
-      }
-    }
-
-    window.addEventListener('popstate', (e) => {
-      let hash = window.location.hash || '/';
-      routeTo(hash, false);
-    });
-
-    const canvas = document.getElementById('gameCanvas');
-    const ctx = canvas.getContext('2d');
-    const flashEl = document.getElementById('flash');
-
-    const WIDTH = 288;
-    const HEIGHT = 512;
-    const GROUND_HEIGHT = 112;
-
-    const GRAVITY = 0.26;
-    const JUMP_STRENGTH = -5.1;
-    const PIPE_SPEED = 1.75;
-    const PIPE_SPAWN_RATE = 95;
-    const PIPE_GAP = 100;
-
-    let frames = 0;
-    let score = 0;
-    let highScore = parseInt(localStorage.getItem('og_flappy_highscore')) || 0;
-    let gameState = 'START';
-
-    const bird = {
-      x: 68,
-      y: 230,
-      radius: 11,
-      velocity: 0,
-      rotation: 0,
-      wingFrame: 0,
-      animTimer: 0,
-
-      flap() {
-        this.velocity = JUMP_STRENGTH;
-        AudioEngine.playFlap();
-      },
-
-      update() {
-        this.animTimer++;
-        if (this.animTimer % 5 === 0) {
-          this.wingFrame = (this.wingFrame + 1) % 3;
-        }
-
-        if (gameState === 'START') {
-          this.y = 230 + Math.sin(frames * 0.08) * 5;
-          this.rotation = 0;
-        } else if (gameState === 'PLAY' || gameState === 'FALLING') {
-          this.velocity += GRAVITY;
-          this.y += this.velocity;
-
-          if (this.velocity < 0) {
-            this.rotation = -0.35;
-          } else {
-            this.rotation += 0.045;
-            if (this.rotation > Math.PI / 2) {
-              this.rotation = Math.PI / 2;
-            }
-          }
-
-          if (this.y < this.radius) {
-            this.y = this.radius;
-            this.velocity = 0;
-          }
-
-          if (this.y + this.radius >= HEIGHT - GROUND_HEIGHT) {
-            this.y = HEIGHT - GROUND_HEIGHT - this.radius;
-            if (gameState === 'PLAY' || gameState === 'FALLING') {
-              triggerHit();
-            }
-          }
-        }
-      },
-
-      draw() {
-        ctx.save();
-        ctx.translate(this.x, this.y);
-        ctx.rotate(this.rotation);
-
-        ctx.fillStyle = '#000000';
-        ctx.beginPath();
-        ctx.arc(0, 0, 13, 0, Math.PI * 2);
-        ctx.fill();
-
-        ctx.fillStyle = '#f8b800';
-        ctx.beginPath();
-        ctx.arc(-1, 0, 11, 0, Math.PI * 2);
-        ctx.fill();
-
-        ctx.fillStyle = '#f8f8f8';
-        ctx.beginPath();
-        ctx.arc(-4, 4, 6, 0, Math.PI * 2);
-        ctx.fill();
-
-        ctx.fillStyle = '#f8f8f8';
-        ctx.strokeStyle = '#000000';
-        ctx.lineWidth = 1.5;
-        ctx.beginPath();
-        if (this.wingFrame === 0) {
-          ctx.ellipse(-6, -2, 6, 4, -Math.PI / 6, 0, Math.PI * 2);
-        } else if (this.wingFrame === 1) {
-          ctx.ellipse(-6, 1, 6, 3, 0, 0, Math.PI * 2);
+    function filterCategory(category) {
+      const cards = document.querySelectorAll('.game-card');
+      cards.forEach(card => {
+        const cardCategory = card.getAttribute('data-category');
+        if (category === 'all' || cardCategory === category) {
+          card.classList.remove('hidden');
         } else {
-          ctx.ellipse(-6, 4, 6, 4, Math.PI / 6, 0, Math.PI * 2);
-        }
-        ctx.fill();
-        ctx.stroke();
-
-        ctx.fillStyle = '#ffffff';
-        ctx.fillRect(2, -8, 8, 10);
-        ctx.fillStyle = '#000000';
-        ctx.fillRect(6, -6, 3, 5);
-
-        ctx.fillStyle = '#f83800';
-        ctx.strokeStyle = '#000000';
-        ctx.lineWidth = 1.5;
-        ctx.beginPath();
-        ctx.fillRect(3, 2, 10, 6);
-        ctx.strokeRect(3, 2, 10, 6);
-        ctx.fillStyle = '#f8b800';
-        ctx.fillRect(3, 5, 9, 1);
-
-        ctx.restore();
-      },
-
-      reset() {
-        this.y = 230;
-        this.velocity = 0;
-        this.rotation = 0;
-      }
-    };
-
-    const pipes = {
-      items: [],
-
-      update() {
-        if (gameState !== 'PLAY') return;
-
-        if (frames % PIPE_SPAWN_RATE === 0) {
-          const minPos = 50;
-          const maxPos = HEIGHT - GROUND_HEIGHT - PIPE_GAP - 50;
-          const randomTopY = Math.floor(Math.random() * (maxPos - minPos + 1) + minPos);
-
-          this.items.push({
-            x: WIDTH,
-            topY: randomTopY,
-            passed: false
-          });
-        }
-
-        for (let i = 0; i < this.items.length; i++) {
-          let p = this.items[i];
-          p.x -= PIPE_SPEED;
-
-          if (!p.passed && p.x + 52 < bird.x) {
-            p.passed = true;
-            score++;
-            AudioEngine.playScore();
-            if (score > highScore) {
-              highScore = score;
-              localStorage.setItem('og_flappy_highscore', highScore);
-            }
-          }
-
-          const birdBox = {
-            left: bird.x - bird.radius + 2,
-            right: bird.x + bird.radius - 2,
-            top: bird.y - bird.radius + 2,
-            bottom: bird.y + bird.radius - 2
-          };
-
-          const topPipeBox = { left: p.x, right: p.x + 52, top: 0, bottom: p.topY };
-          const bottomPipeBox = { left: p.x, right: p.x + 52, top: p.topY + PIPE_GAP, bottom: HEIGHT - GROUND_HEIGHT };
-
-          if (checkOverlap(birdBox, topPipeBox) || checkOverlap(birdBox, bottomPipeBox)) {
-            triggerHit();
-          }
-
-          if (p.x + 52 < 0) {
-            this.items.splice(i, 1);
-            i--;
-          }
-        }
-      },
-
-      draw() {
-        for (let i = 0; i < this.items.length; i++) {
-          let p = this.items[i];
-          drawRetroPipe(p.x, 0, 52, p.topY, true);
-          drawRetroPipe(p.x, p.topY + PIPE_GAP, 52, HEIGHT - GROUND_HEIGHT - (p.topY + PIPE_GAP), false);
-        }
-      },
-
-      reset() {
-        this.items = [];
-      }
-    };
-
-    function checkOverlap(r1, r2) {
-      return !(r1.right < r2.left || r1.left > r2.right || r1.bottom < r2.top || r1.top > r2.bottom);
-    }
-
-    function drawRetroPipe(x, y, width, height, isTop) {
-      ctx.save();
-      ctx.fillStyle = '#73bf2e';
-      ctx.fillRect(x, y, width, height);
-
-      ctx.fillStyle = '#9ce659';
-      ctx.fillRect(x + 4, y, 6, height);
-      ctx.fillStyle = '#558022';
-      ctx.fillRect(x + width - 10, y, 6, height);
-
-      ctx.strokeStyle = '#000000';
-      ctx.lineWidth = 2.5;
-      ctx.strokeRect(x, y, width, height);
-
-      const capHeight = 24;
-      const capWidth = width + 6;
-      const capX = x - 3;
-      const capY = isTop ? y + height - capHeight : y;
-
-      ctx.fillStyle = '#73bf2e';
-      ctx.fillRect(capX, capY, capWidth, capHeight);
-
-      ctx.fillStyle = '#9ce659';
-      ctx.fillRect(capX + 4, capY, 6, capHeight);
-
-      ctx.fillStyle = '#558022';
-      ctx.fillRect(capX + capWidth - 10, capY, 6, capHeight);
-
-      ctx.strokeRect(capX, capY, capWidth, capHeight);
-      ctx.restore();
-    }
-
-    const environment = {
-      groundOffset: 0,
-
-      update() {
-        if (gameState === 'PLAY' || gameState === 'START') {
-          this.groundOffset = (this.groundOffset + PIPE_SPEED) % 14;
-        }
-      },
-
-      draw() {
-        ctx.fillStyle = '#70c5ce';
-        ctx.fillRect(0, 0, WIDTH, HEIGHT);
-
-        const bgBaseY = HEIGHT - GROUND_HEIGHT;
-
-        ctx.fillStyle = '#4cb0af';
-        ctx.fillRect(10, bgBaseY - 60, 30, 60);
-        ctx.fillRect(25, bgBaseY - 80, 24, 80);
-        ctx.fillRect(60, bgBaseY - 50, 35, 50);
-        ctx.fillRect(110, bgBaseY - 90, 28, 90);
-        ctx.fillRect(150, bgBaseY - 65, 32, 65);
-        ctx.fillRect(200, bgBaseY - 75, 26, 75);
-        ctx.fillRect(235, bgBaseY - 55, 40, 55);
-
-        ctx.fillStyle = '#70c5ce';
-        for (let bx = 15; bx < WIDTH; bx += 32) {
-          ctx.fillRect(bx, bgBaseY - 45, 4, 6);
-          ctx.fillRect(bx, bgBaseY - 30, 4, 6);
-        }
-
-        ctx.fillStyle = '#52c073';
-        for (let tx = -10; tx < WIDTH + 30; tx += 40) {
-          ctx.beginPath();
-          ctx.arc(tx, bgBaseY - 12, 18, 0, Math.PI * 2);
-          ctx.fill();
-        }
-        ctx.fillStyle = '#3ca15c';
-        for (let tx = 10; tx < WIDTH + 30; tx += 40) {
-          ctx.beginPath();
-          ctx.arc(tx, bgBaseY - 8, 14, 0, Math.PI * 2);
-          ctx.fill();
-        }
-
-        ctx.fillStyle = '#ded895';
-        ctx.fillRect(0, bgBaseY, WIDTH, GROUND_HEIGHT);
-
-        ctx.fillStyle = '#73bf2e';
-        ctx.fillRect(0, bgBaseY, WIDTH, 15);
-        ctx.fillStyle = '#558022';
-        ctx.fillRect(0, bgBaseY + 12, WIDTH, 3);
-
-        ctx.fillStyle = '#9ce659';
-        for (let x = -this.groundOffset; x < WIDTH + 14; x += 14) {
-          ctx.beginPath();
-          ctx.moveTo(x, bgBaseY);
-          ctx.lineTo(x + 7, bgBaseY);
-          ctx.lineTo(x, bgBaseY + 12);
-          ctx.closePath();
-          ctx.fill();
-        }
-
-        ctx.strokeStyle = '#000000';
-        ctx.lineWidth = 2.5;
-        ctx.beginPath();
-        ctx.moveTo(0, bgBaseY);
-        ctx.lineTo(WIDTH, bgBaseY);
-        ctx.stroke();
-      }
-    };
-
-    function triggerHit() {
-      if (gameState === 'OVER') return;
-      
-      AudioEngine.playHit();
-      
-      flashEl.style.opacity = '0.85';
-      setTimeout(() => { flashEl.style.opacity = '0'; }, 80);
-
-      if (gameState === 'PLAY') {
-        gameState = 'FALLING';
-        setTimeout(() => {
-          AudioEngine.playSwoosh();
-        }, 120);
-      } else {
-        gameState = 'OVER';
-      }
-    }
-
-    function drawScoreUI() {
-      ctx.save();
-      if (gameState === 'PLAY') {
-        ctx.font = '28px "Press Start 2P"';
-        ctx.textAlign = 'center';
-        ctx.fillStyle = '#ffffff';
-        ctx.strokeStyle = '#000000';
-        ctx.lineWidth = 5;
-        ctx.strokeText(score, WIDTH / 2, 70);
-        ctx.fillText(score, WIDTH / 2, 70);
-      } else if (gameState === 'START') {
-        ctx.font = '16px "Press Start 2P"';
-        ctx.textAlign = 'center';
-        ctx.fillStyle = '#f85800';
-        ctx.strokeStyle = '#ffffff';
-        ctx.lineWidth = 4;
-        ctx.strokeText('GET READY!', WIDTH / 2, 170);
-        ctx.fillText('GET READY!', WIDTH / 2, 170);
-
-        ctx.fillStyle = '#ffffff';
-        ctx.strokeStyle = '#000000';
-        ctx.lineWidth = 3;
-        ctx.font = '10px "Press Start 2P"';
-        ctx.strokeText('TAP OR SPACE', WIDTH / 2, 300);
-        ctx.fillText('TAP OR SPACE', WIDTH / 2, 300);
-      } else if (gameState === 'OVER') {
-        const boardX = 24;
-        const boardY = 170;
-        const boardW = 240;
-        const boardH = 150;
-
-        ctx.fillStyle = '#ded895';
-        ctx.fillRect(boardX, boardY, boardW, boardH);
-        ctx.strokeStyle = '#000000';
-        ctx.lineWidth = 3;
-        ctx.strokeRect(boardX, boardY, boardW, boardH);
-
-        ctx.font = '16px "Press Start 2P"';
-        ctx.textAlign = 'center';
-        ctx.fillStyle = '#f85800';
-        ctx.strokeStyle = '#ffffff';
-        ctx.lineWidth = 4;
-        ctx.strokeText('GAME OVER', WIDTH / 2, 135);
-        ctx.fillText('GAME OVER', WIDTH / 2, 135);
-
-        ctx.font = '9px "Press Start 2P"';
-        ctx.textAlign = 'left';
-        ctx.fillStyle = '#e86800';
-        ctx.fillText('SCORE', boardX + 130, boardY + 42);
-        ctx.fillText('BEST', boardX + 130, boardY + 92);
-
-        ctx.font = '14px "Press Start 2P"';
-        ctx.textAlign = 'right';
-        ctx.fillStyle = '#000000';
-        ctx.fillText(score, boardX + 215, boardY + 65);
-        ctx.fillText(highScore, boardX + 215, boardY + 115);
-
-        ctx.textAlign = 'center';
-        ctx.fillText('MEDAL', boardX + 55, boardY + 42);
-
-        let medalColor = null;
-        if (score >= 40) medalColor = '#e5e4e2';
-        else if (score >= 30) medalColor = '#ffd700';
-        else if (score >= 20) medalColor = '#c0c0c0';
-        else if (score >= 10) medalColor = '#cd7f32';
-
-        if (medalColor) {
-          ctx.beginPath();
-          ctx.arc(boardX + 55, boardY + 85, 20, 0, Math.PI * 2);
-          ctx.fillStyle = medalColor;
-          ctx.fill();
-          ctx.strokeStyle = '#000000';
-          ctx.lineWidth = 2;
-          ctx.stroke();
-
-          ctx.fillStyle = '#ffffff';
-          ctx.beginPath();
-          ctx.arc(boardX + 50, boardY + 78, 4, 0, Math.PI * 2);
-          ctx.fill();
-        } else {
-          ctx.beginPath();
-          ctx.arc(boardX + 55, boardY + 85, 20, 0, Math.PI * 2);
-          ctx.strokeStyle = '#b5b078';
-          ctx.lineWidth = 2;
-          ctx.stroke();
-        }
-
-        const btnX = WIDTH / 2 - 50;
-        const btnY = 345;
-        ctx.fillStyle = '#f85800';
-        ctx.fillRect(btnX, btnY, 100, 36);
-        ctx.strokeStyle = '#ffffff';
-        ctx.lineWidth = 2.5;
-        ctx.strokeRect(btnX, btnY, 100, 36);
-
-        ctx.font = '11px "Press Start 2P"';
-        ctx.textAlign = 'center';
-        ctx.fillStyle = '#ffffff';
-        ctx.fillText('PLAY', WIDTH / 2, btnY + 23);
-      }
-      ctx.restore();
-    }
-
-    function handleFlappyAction(e) {
-      if (!document.getElementById('flappy-view').classList.contains('active-view')) return;
-
-      if (e) {
-        if (e.type === 'keydown' && e.code !== 'Space') return;
-        if (e.type === 'keydown') e.preventDefault();
-      }
-
-      AudioEngine.init();
-
-      if (gameState === 'START') {
-        gameState = 'PLAY';
-        bird.flap();
-      } else if (gameState === 'PLAY') {
-        bird.flap();
-      } else if (gameState === 'OVER') {
-        bird.reset();
-        pipes.reset();
-        score = 0;
-        gameState = 'START';
-      }
-    }
-
-    const defCanvas = document.getElementById('defenderCanvas');
-    const defCtx = defCanvas.getContext('2d');
-
-    const DEF_WIDTH = 600;
-    const DEF_HEIGHT = 800;
-
-    let defState = 'START'; 
-    let defScore = 0;
-    let defHighScore = localStorage.getItem('space_defender_highscore') || 0;
-    let defLevel = 1;
-    let defLives = 3;
-
-    const defKeys = { ArrowLeft: false, ArrowRight: false, Space: false, a: false, d: false };
-
-    const defPlayer = {
-      x: DEF_WIDTH / 2,
-      y: DEF_HEIGHT - 60,
-      width: 40,
-      height: 30,
-      speed: 6,
-      cooldown: 0,
-      draw() {
-        defCtx.save();
-        defCtx.translate(this.x, this.y);
-        
-        defCtx.shadowBlur = 15;
-        defCtx.shadowColor = '#0ff';
-        
-        defCtx.strokeStyle = '#0ff';
-        defCtx.lineWidth = 3;
-        defCtx.beginPath();
-        defCtx.moveTo(0, -this.height/2);
-        defCtx.lineTo(this.width/2, this.height/2);
-        defCtx.lineTo(-this.width/2, this.height/2);
-        defCtx.closePath();
-        defCtx.stroke();
-
-        defCtx.fillStyle = '#fff';
-        defCtx.fillRect(-3, -2, 6, 10);
-        
-        defCtx.restore();
-      },
-      update() {
-        if (defKeys.ArrowLeft || defKeys.a) this.x -= this.speed;
-        if (defKeys.ArrowRight || defKeys.d) this.x += this.speed;
-        
-        if (this.x < this.width/2) this.x = this.width/2;
-        if (this.x > DEF_WIDTH - this.width/2) this.x = DEF_WIDTH - this.width/2;
-
-        if (this.cooldown > 0) this.cooldown--;
-        
-        if (defKeys.Space && this.cooldown <= 0 && defState === 'PLAYING') {
-          defPlayerBullets.push(new DefBullet(this.x, this.y - this.height/2, -12, '#0ff'));
-          this.cooldown = 14;
-          AudioEngine.playDefenderShoot();
-        }
-      }
-    };
-
-    class DefBullet {
-      constructor(x, y, dy, color) {
-        this.x = x;
-        this.y = y;
-        this.dy = dy;
-        this.color = color;
-        this.width = 4;
-        this.height = 16;
-        this.active = true;
-      }
-      draw() {
-        defCtx.shadowBlur = 10;
-        defCtx.shadowColor = this.color;
-        defCtx.fillStyle = this.color;
-        defCtx.fillRect(this.x - this.width/2, this.y - this.height/2, this.width, this.height);
-        defCtx.shadowBlur = 0;
-      }
-      update() {
-        this.y += this.dy;
-        if (this.y < -20 || this.y > DEF_HEIGHT + 20) this.active = false;
-      }
-    }
-
-    let defPlayerBullets = [];
-    let defEnemyBullets = [];
-
-    class DefParticle {
-      constructor(x, y, color) {
-        this.x = x;
-        this.y = y;
-        this.vx = (Math.random() - 0.5) * 8;
-        this.vy = (Math.random() - 0.5) * 8;
-        this.life = 1.0;
-        this.color = color;
-      }
-      draw() {
-        defCtx.globalAlpha = this.life;
-        defCtx.fillStyle = this.color;
-        defCtx.shadowBlur = 10;
-        defCtx.shadowColor = this.color;
-        defCtx.fillRect(this.x, this.y, 4, 4);
-        defCtx.globalAlpha = 1.0;
-        defCtx.shadowBlur = 0;
-      }
-      update() {
-        this.x += this.vx;
-        this.y += this.vy;
-        this.life -= 0.05;
-      }
-    }
-    let defParticles = [];
-
-    class Alien {
-      constructor(x, y, type) {
-        this.x = x;
-        this.y = y;
-        this.width = 30;
-        this.height = 24;
-        this.type = type;
-        this.active = true;
-      }
-      draw() {
-        defCtx.save();
-        defCtx.translate(this.x, this.y);
-        
-        let color = this.type === 0 ? '#f0f' : (this.type === 1 ? '#0f0' : '#ff0');
-        defCtx.strokeStyle = color;
-        defCtx.shadowBlur = 10;
-        defCtx.shadowColor = color;
-        defCtx.lineWidth = 2;
-
-        defCtx.beginPath();
-        if (this.type === 0) {
-          defCtx.moveTo(-15, -5); defCtx.lineTo(-10, -10); defCtx.lineTo(10, -10); defCtx.lineTo(15, -5);
-          defCtx.lineTo(15, 5); defCtx.lineTo(10, 10); defCtx.lineTo(5, 10); defCtx.lineTo(5, 15);
-          defCtx.moveTo(-5, 15); defCtx.lineTo(-5, 10); defCtx.lineTo(-10, 10); defCtx.lineTo(-15, 5);
-          defCtx.closePath();
-        } else if (this.type === 1) {
-          defCtx.moveTo(0, -12); defCtx.lineTo(15, 0); defCtx.lineTo(0, 12); defCtx.lineTo(-15, 0);
-          defCtx.closePath();
-        } else {
-          defCtx.moveTo(-8, -12); defCtx.lineTo(8, -12); defCtx.lineTo(15, 0);
-          defCtx.lineTo(8, 12); defCtx.lineTo(-8, 12); defCtx.lineTo(-15, 0);
-          defCtx.closePath();
-        }
-        defCtx.stroke();
-
-        defCtx.fillStyle = '#fff';
-        defCtx.fillRect(-6, -2, 3, 3);
-        defCtx.fillRect(3, -2, 3, 3);
-
-        defCtx.restore();
-      }
-    }
-
-    let aliens = [];
-    let alienDirection = 1;
-    let alienSpeed = 1;
-
-    function initDefenderLevel() {
-      aliens = [];
-      defPlayerBullets = [];
-      defEnemyBullets = [];
-      alienDirection = 1;
-      alienSpeed = 1 + (defLevel * 0.3);
-      
-      const rows = Math.min(4 + Math.floor(defLevel/2), 7);
-      const cols = 8;
-      const startX = DEF_WIDTH/2 - ((cols-1)*50)/2;
-
-      for (let row = 0; row < rows; row++) {
-        let type = row % 3; 
-        for (let col = 0; col < cols; col++) {
-          aliens.push(new Alien(startX + col * 50, 80 + row * 40, type));
-        }
-      }
-    }
-
-    function checkDefenderCollisions() {
-      defPlayerBullets.forEach(pb => {
-        if (!pb.active) return;
-        aliens.forEach(alien => {
-          if (!alien.active) return;
-          if (pb.x > alien.x - alien.width/2 && pb.x < alien.x + alien.width/2 &&
-              pb.y > alien.y - alien.height/2 && pb.y < alien.y + alien.height/2) {
-            
-            pb.active = false;
-            alien.active = false;
-            defScore += (alien.type + 1) * 10;
-            AudioEngine.playDefenderExplosion();
-            
-            let color = alien.type === 0 ? '#f0f' : (alien.type === 1 ? '#0f0' : '#ff0');
-            for(let i=0; i<10; i++) defParticles.push(new DefParticle(alien.x, alien.y, color));
-          }
-        });
-      });
-
-      defEnemyBullets.forEach(eb => {
-        if (!eb.active) return;
-        if (eb.x > defPlayer.x - defPlayer.width/2 && eb.x < defPlayer.x + defPlayer.width/2 &&
-            eb.y > defPlayer.y - defPlayer.height/2 && eb.y < defPlayer.y + defPlayer.height/2) {
-          
-          eb.active = false;
-          defLives--;
-          AudioEngine.playDefenderExplosion();
-          for(let i=0; i<20; i++) defParticles.push(new DefParticle(defPlayer.x, defPlayer.y, '#0ff'));
-
-          if (defLives <= 0) {
-            defState = 'GAMEOVER';
-            if (defScore > defHighScore) {
-              defHighScore = defScore;
-              localStorage.setItem('space_defender_highscore', defHighScore);
-            }
-          }
+          card.classList.add('hidden');
         }
       });
     }
-
-    function updateAliens() {
-      let hitEdge = false;
-      let bottomMost = 0;
-      let activeCount = 0;
-
-      aliens.forEach(alien => {
-        if (!alien.active) return;
-        activeCount++;
-        alien.x += alienSpeed * alienDirection;
-        if (alien.x > DEF_WIDTH - 20 || alien.x < 20) hitEdge = true;
-        if (alien.y > bottomMost) bottomMost = alien.y;
-
-        if (Math.random() < 0.001 * (1 + defLevel*0.2)) {
-          defEnemyBullets.push(new DefBullet(alien.x, alien.y + 10, 6, '#f00'));
-        }
-      });
-
-      if (hitEdge) {
-        alienDirection *= -1;
-        aliens.forEach(alien => {
-          if(alien.active) alien.y += 20;
-        });
-      }
-
-      if (bottomMost > defPlayer.y - defPlayer.height) {
-        defLives = 0;
-        defState = 'GAMEOVER';
-      }
-
-      if (activeCount === 0) {
-        defState = 'LEVEL_TRANSITION';
-        setTimeout(() => {
-          defLevel++;
-          initDefenderLevel();
-          defState = 'PLAYING';
-        }, 2000);
-      }
-    }
-
-    const defStars = Array.from({length: 80}, () => ({
-      x: Math.random() * DEF_WIDTH,
-      y: Math.random() * DEF_HEIGHT,
-      size: Math.random() * 2 + 1,
-      speed: Math.random() * 2 + 0.5
-    }));
-
-    function drawDefenderUI() {
-      defCtx.fillStyle = '#fff';
-      defCtx.font = '16px "Press Start 2P"';
-      defCtx.shadowBlur = 0;
-      
-      defCtx.textAlign = 'left';
-      defCtx.fillText(`SCORE:${defScore}`, 20, 30);
-      
-      defCtx.textAlign = 'right';
-      defCtx.fillText(`HI:${defHighScore}`, DEF_WIDTH - 20, 30);
-
-      defCtx.textAlign = 'left';
-      defCtx.fillText(`LIVES:`, 20, DEF_HEIGHT - 20);
-      for (let i = 0; i < defLives; i++) {
-        defCtx.strokeStyle = '#0ff';
-        defCtx.lineWidth = 2;
-        defCtx.beginPath();
-        defCtx.moveTo(110 + i * 25, DEF_HEIGHT - 18);
-        defCtx.lineTo(120 + i * 25, DEF_HEIGHT - 30);
-        defCtx.lineTo(100 + i * 25, DEF_HEIGHT - 30);
-        defCtx.closePath();
-        defCtx.stroke();
-      }
-
-      defCtx.textAlign = 'center';
-      if (defState === 'START') {
-        defCtx.font = '26px "Press Start 2P"';
-        defCtx.fillStyle = '#0ff';
-        defCtx.shadowBlur = 10;
-        defCtx.shadowColor = '#0ff';
-        defCtx.fillText('SPACE DEFENDER', DEF_WIDTH/2, DEF_HEIGHT/3);
-        
-        defCtx.font = '11px "Press Start 2P"';
-        defCtx.fillStyle = '#fff';
-        defCtx.shadowBlur = 0;
-        let t = Date.now() / 500;
-        if (t % 2 > 1) defCtx.fillText('PRESS SPACE OR TAP TO START', DEF_WIDTH/2, DEF_HEIGHT/2);
-      } 
-      else if (defState === 'GAMEOVER') {
-        defCtx.font = '30px "Press Start 2P"';
-        defCtx.fillStyle = '#f00';
-        defCtx.shadowBlur = 10;
-        defCtx.shadowColor = '#f00';
-        defCtx.fillText('GAME OVER', DEF_WIDTH/2, DEF_HEIGHT/3);
-        
-        defCtx.font = '11px "Press Start 2P"';
-        defCtx.fillStyle = '#fff';
-        defCtx.shadowBlur = 0;
-        defCtx.fillText('PRESS SPACE OR TAP TO RESTART', DEF_WIDTH/2, DEF_HEIGHT/2);
-      }
-      else if (defState === 'LEVEL_TRANSITION') {
-        defCtx.font = '22px "Press Start 2P"';
-        defCtx.fillStyle = '#0f0';
-        defCtx.shadowBlur = 10;
-        defCtx.shadowColor = '#0f0';
-        defCtx.fillText(`WAVE ${defLevel} CLEARED!`, DEF_WIDTH/2, DEF_HEIGHT/2);
-      }
-    }
-
-    function startDefenderGame() {
-      AudioEngine.init();
-      AudioEngine.playDefenderStart();
-      defState = 'PLAYING';
-      defScore = 0;
-      defLevel = 1;
-      defLives = 3;
-      defPlayer.x = DEF_WIDTH / 2;
-      defParticles = [];
-      initDefenderLevel();
-    }
-
-    window.addEventListener('keydown', (e) => {
-      if (defKeys.hasOwnProperty(e.key) || e.code === 'Space') {
-        if (e.code === 'Space') defKeys.Space = true;
-        else defKeys[e.key] = true;
-      }
-      if (e.code === 'Space' && document.getElementById('defender-view').classList.contains('active-view')) {
-        if (defState === 'START' || defState === 'GAMEOVER') {
-          startDefenderGame();
-        }
-      }
-    });
-
-    window.addEventListener('keyup', (e) => {
-      if (defKeys.hasOwnProperty(e.key) || e.code === 'Space') {
-        if (e.code === 'Space') defKeys.Space = false;
-        else defKeys[e.key] = false;
-      }
-    });
-
-    const btnLeft = document.getElementById('btn-left');
-    const btnRight = document.getElementById('btn-right');
-    const btnShoot = document.getElementById('btn-shoot');
-
-    const addTouchControl = (elem, keyName) => {
-      elem.addEventListener('touchstart', (e) => { e.preventDefault(); defKeys[keyName] = true; });
-      elem.addEventListener('touchend', (e) => { e.preventDefault(); defKeys[keyName] = false; });
-    };
-    addTouchControl(btnLeft, 'ArrowLeft');
-    addTouchControl(btnRight, 'ArrowRight');
-    addTouchControl(btnShoot, 'Space');
-
-    defCanvas.addEventListener('touchstart', (e) => {
-      if (document.getElementById('defender-view').classList.contains('active-view')) {
-        if (defState === 'START' || defState === 'GAMEOVER') startDefenderGame();
-      }
-    });
-    defCanvas.addEventListener('mousedown', () => {
-      if (document.getElementById('defender-view').classList.contains('active-view')) {
-        if (defState === 'START' || defState === 'GAMEOVER') startDefenderGame();
-      }
-    });
-
-    window.addEventListener('keydown', handleFlappyAction);
-    canvas.addEventListener('mousedown', handleFlappyAction);
-    canvas.addEventListener('touchstart', (e) => {
-      if (document.getElementById('flappy-view').classList.contains('active-view')) {
-        e.preventDefault();
-        handleFlappyAction();
-      }
-    }, { passive: false });
-
-    function gameLoop() {
-      // 1. Render Flappy Bird Loop
-      ctx.clearRect(0, 0, WIDTH, HEIGHT);
-      environment.update();
-      bird.update();
-      pipes.update();
-
-      environment.draw();
-      pipes.draw();
-      bird.draw();
-      drawScoreUI();
-      frames++;
-
-      // 2. Render Space Defender Loop
-      defCtx.fillStyle = 'rgba(11, 29, 40, 0.4)';
-      defCtx.fillRect(0, 0, DEF_WIDTH, DEF_HEIGHT);
-
-      defCtx.fillStyle = '#fff';
-      defStars.forEach(star => {
-        defCtx.fillRect(star.x, star.y, star.size, star.size);
-        if (defState === 'PLAYING') {
-          star.y += star.speed + (defLevel * 0.1);
-          if (star.y > DEF_HEIGHT) {
-            star.y = 0;
-            star.x = Math.random() * DEF_WIDTH;
-          }
-        }
-      });
-
-      if (defState === 'PLAYING' || defState === 'LEVEL_TRANSITION') {
-        defPlayer.update();
-        defPlayer.draw();
-
-        if (defState === 'PLAYING') updateAliens();
-        aliens.forEach(alien => { if(alien.active) alien.draw(); });
-
-        defPlayerBullets.forEach(b => { b.update(); b.draw(); });
-        defEnemyBullets.forEach(b => { b.update(); b.draw(); });
-        defPlayerBullets = defPlayerBullets.filter(b => b.active);
-        defEnemyBullets = defEnemyBullets.filter(b => b.active);
-
-        checkDefenderCollisions();
-      }
-
-      defParticles.forEach(p => { p.update(); p.draw(); });
-      defParticles = defParticles.filter(p => p.life > 0);
-
-      drawDefenderUI();
-
-      requestAnimationFrame(gameLoop);
-    }
-
-    window.onload = () => {
-      let hash = window.location.hash || '/';
-      routeTo(hash, false);
-      gameLoop();
-    };
   </script>
 </body>
 </html>

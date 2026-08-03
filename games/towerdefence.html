@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tower Defense | SuperNebula Games</title>
+  <style>
+    :root {
+      --bg-color: #0b0d19;
+      --card-bg: #161b33;
+      --accent-color: #7b2cbf;
+      --accent-hover: #9d4edd;
+      --text-color: #f8f9fa;
+      --muted-text: #a0aab8;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
+
+    body {
+      background-color: var(--bg-color);
+      color: var(--text-color);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-height: 100vh;
+      padding-bottom: 2rem;
+    }
+
+    /* Navigation Bar */
+    nav {
+      width: 100%;
+      background-color: rgba(22, 27, 51, 0.8);
+      backdrop-filter: blur(10px);
+      padding: 1rem 2rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+      margin-bottom: 2rem;
+    }
+
+    .brand {
+      font-size: 1.5rem;
+      font-weight: bold;
+      background: linear-gradient(45deg, #7b2cbf, #3a0ca3, #4cc9f0);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .home-btn {
+      text-decoration: none;
+      color: var(--text-color);
+      background-color: var(--accent-color);
+      padding: 0.6rem 1.2rem;
+      border-radius: 8px;
+      font-weight: 600;
+      transition: background-color 0.2s ease, transform 0.1s ease;
+    }
+
+    .home-btn:hover {
+      background-color: var(--accent-hover);
+      transform: translateY(-2px);
+    }
+
+    /* Main Container */
+    main {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      width: 100%;
+      max-width: 900px;
+      padding: 0 1rem;
+    }
+
+    .game-card {
+      background-color: var(--card-bg);
+      border-radius: 12px;
+      padding: 1.5rem;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      border: 1px solid rgba(255, 255, 255, 0.05);
+      width: 100%;
+    }
+
+    h1 {
+      margin-bottom: 1rem;
+      font-size: 2rem;
+    }
+
+    .game-wrapper {
+      position: relative;
+      background: #000;
+      border-radius: 8px;
+      overflow: hidden;
+      margin-bottom: 1.5rem;
+      border: 2px solid var(--accent-color);
+    }
+
+    iframe {
+      display: block;
+      border: none;
+    }
+
+    /* Credits Section */
+    .credits {
+      color: var(--muted-text);
+      font-size: 0.95rem;
+      text-align: center;
+    }
+
+    .credits a {
+      color: #4cc9f0;
+      text-decoration: none;
+      font-weight: 600;
+    }
+
+    .credits a:hover {
+      text-decoration: underline;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Navigation -->
+  <nav>
+    <div class="brand">SuperNebula Games</div>
+    <a href="https://supernebula23.github.io/games" class="home-btn">🏠 Home</a>
+  </nav>
+
+  <!-- Game Container -->
+  <main>
+    <div class="game-card">
+      <h1>Paper Minecraft / Tower Defense</h1>
+      
+      <!-- Embedded Game -->
+      <div class="game-wrapper">
+        <iframe src="https://scratch.mit.edu/projects/15200040/embed" 
+                allowtransparency="true" 
+                width="485" 
+                height="402" 
+                frameborder="0" 
+                scrolling="no" 
+                allowfullscreen>
+        </iframe>
+      </div>
+
+      <!-- Attribution / Credits -->
+      <p class="credits">
+        This game was originally created by 
+        <a href="https://scratch.mit.edu/users/griffpatch/" target="_blank" rel="noopener noreferrer">griffpatch</a> 
+        on Scratch.
+      </p>
+    </div>
+  </main>
+
+</body>
+</html>

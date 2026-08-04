@@ -60,7 +60,7 @@
     h1 { margin: 0; color: #ff0055; text-transform: uppercase; letter-spacing: 1.5px; font-size: 22px; }
     
     /* Room Setup */
-    .room-setup { display: flex; gap: 8px; margin-bottom: 15px; }
+    .room-setup { display: flex; gap: 8px; margin-bottom: 10px; }
     input[type="text"] {
       padding: 12px; background: #232332; border: 1px solid #3d3d52; color: #fff; border-radius: 8px; flex: 1; font-size: 14px;
     }
@@ -70,6 +70,9 @@
     button:hover { background: #e0004c; transform: translateY(-1px); }
     button:disabled { background: #444; color: #888; cursor: not-allowed; transform: none; }
     
+    .btn-secondary { background: #232332; border: 1px solid #3d3d52; }
+    .btn-secondary:hover { background: #333348; }
+
     /* Scores & Header */
     .scoreboard {
       display: flex; justify-content: space-between; align-items: center;
@@ -106,18 +109,22 @@
 
     /* Status Bar */
     #status { color: #aaa; font-size: 13px; margin-bottom: 12px; min-height: 18px; }
+
+    .host-tools {
+      display: flex; gap: 8px; margin-bottom: 15px;
+    }
+    .host-tools button { flex: 1; padding: 8px 12px; font-size: 13px; }
   </style>
 </head>
 <body>
 
   <div class="card">
     <div class="top-bar">
-      <!-- Home Button linking to your games portal -->
       <a href="https://supernebula23.github.io/games" class="home-btn">
         <span>🏠</span> Home
       </a>
       <h1>Color Match</h1>
-      <div style="width: 75px;"></div> <!-- Spacer for visual balance -->
+      <div style="width: 75px;"></div>
     </div>
     
     <div class="scoreboard">
@@ -126,10 +133,17 @@
       <span class="p2-color">P2: <span id="p2-score">0</span>%</span>
     </div>
 
+    <!-- Quick Actions for Hosting -->
+    <div class="host-tools">
+      <button class="btn-secondary" onclick="copyInviteLink()">🔗 Copy Invite Link</button>
+      <button class="btn-secondary" onclick="copyRoomCode()">📋 Copy Room ID</button>
+    </div>
+
     <div class="room-setup">
-      <input type="text" id="join-id" placeholder="Paste Host Room ID">
+      <input type="text" id="join-id" placeholder="Paste Room ID here...">
       <button onclick="joinRoom()">Join Game</button>
     </div>
+
     <div id="status">Room ID: <b id="my-id" style="color:#00d2d3">Generating...</b></div>
     
     <button id="start-btn" style="width:100%; margin-bottom: 15px;" onclick="startRound()" disabled>Start Game</button>
@@ -179,6 +193,7 @@
     let peer = new Peer();
     let conn = null;
     let isHost = false;
+    let myPeerId = "";
 
     let round = 1;
     let p1Score = 0;
@@ -191,15 +206,28 @@
     let timeLeft = 15;
 
     peer.on('open', (id) => {
+      myPeerId = id;
       document.getElementById('my-id').innerText = id;
+
+      // Auto-join if room param exists in URL
+      const urlParams = new URLSearchParams(window.location.search);
+      const roomIdParam = urlParams.get('room');
+      if (roomIdParam) {
+        document.getElementById('join-id').value = roomIdParam;
+        joinRoom();
+      }
     });
 
     peer.on('connection', (connection) => {
       conn = connection;
       isHost = true;
       setupEvents();
-      document.getElementById('status').innerText = "Status: Player 2 Connected!";
-      document.getElementById('start-btn').disabled = false;
+      document.getElementById('status').innerText = "Player 2 Connected! Starting in 2s...";
+      
+      // Auto-start game 2 seconds after Player 2 connects
+      setTimeout(() => {
+        if (isHost && round === 1) startRound();
+      }, 2000);
     });
 
     function joinRoom() {
@@ -208,10 +236,16 @@
       conn = peer.connect(hostId);
       isHost = false;
       setupEvents();
-      document.getElementById('status').innerText = "Status: Connected to Host!";
+      document.getElementById('status').innerText = "Status: Connecting to Host...";
     }
 
     function setupEvents() {
+      conn.on('open', () => {
+        if (!isHost) {
+          document.getElementById('status').innerText = "Status: Connected to Host! Waiting for start...";
+        }
+      });
+
       conn.on('data', (data) => {
         if (data.type === 'START_ROUND') {
           handleRoundStart(data.color, data.round);
@@ -225,6 +259,19 @@
       });
     }
 
+    function copyInviteLink() {
+      if (!myPeerId) return;
+      const shareUrl = `${window.location.origin}${window.location.pathname}?room=${myPeerId}`;
+      navigator.clipboard.writeText(shareUrl);
+      document.getElementById('status').innerText = "✅ Invite link copied to clipboard!";
+    }
+
+    function copyRoomCode() {
+      if (!myPeerId) return;
+      navigator.clipboard.writeText(myPeerId);
+      document.getElementById('status').innerText = "✅ Room Code copied to clipboard!";
+    }
+
     function updateMixColor() {
       if (!isGuessingPhase) return;
       const r = document.getElementById('r-slider').value;
@@ -235,6 +282,16 @@
 
     function startRound() {
       if (!isHost) return;
+      
+      // Reset full game scores if starting fresh from match end
+      if (round > 3) {
+        round = 1;
+        p1Score = 0;
+        p2Score = 0;
+        document.getElementById('p1-score').innerText = "0";
+        document.getElementById('p2-score').innerText = "0";
+      }
+
       targetColor = {
         r: Math.floor(Math.random() * 256),
         g: Math.floor(Math.random() * 256),
@@ -380,9 +437,10 @@
 
       if (round < 3) {
         round++;
-        document.getElementById('status').innerText = "Next round starting shortly...";
+        document.getElementById('status').innerText = "Next round starting in 5s...";
         if (isHost) setTimeout(startRound, 5000);
       } else {
+        round = 4; // Mark match completed
         setTimeout(() => {
           let winnerText = "";
           if (data.p1Total > data.p2Total) winnerText = isHost ? "🎉 YOU WIN!" : "OPPONENT WINS!";
@@ -391,7 +449,11 @@
           
           document.getElementById('timer-badge').innerText = winnerText;
           document.getElementById('status').innerText = "Game Over!";
-          if (isHost) document.getElementById('start-btn').disabled = false;
+          if (isHost) {
+            const startBtn = document.getElementById('start-btn');
+            startBtn.innerText = "Play Again";
+            startBtn.disabled = false;
+          }
         }, 2000);
       }
     }

@@ -3,57 +3,80 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Color Match Showdown</title>
+  <title>Color Match Showdown - Deluxe</title>
   <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
   <style>
-    * { box-sizing: border-box; font-family: 'Segoe UI', Tahoma, sans-serif; }
+    * { box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
     body {
       margin: 0;
-      background: #121218;
+      background: #0f0f15;
       color: #fff;
       display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: center;
       min-height: 100vh;
-      padding: 20px;
+      padding: 15px;
     }
     .card {
-      background: #1e1e28;
-      border: 2px solid #2d2d3d;
-      border-radius: 12px;
-      padding: 20px;
+      background: #181822;
+      border: 2px solid #2a2a3a;
+      border-radius: 16px;
+      padding: 24px;
       width: 100%;
-      max-width: 500px;
-      box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+      max-width: 520px;
+      box-shadow: 0 12px 32px rgba(0,0,0,0.6);
       text-align: center;
     }
-    h1 { margin-top: 0; color: #ff0055; text-transform: uppercase; letter-spacing: 1px; }
-    .room-setup { display: flex; gap: 10px; margin-bottom: 15px; justify-content: center; }
+    h1 { margin: 0 0 15px 0; color: #ff0055; text-transform: uppercase; letter-spacing: 1.5px; font-size: 26px; }
+    
+    /* Room Setup */
+    .room-setup { display: flex; gap: 8px; margin-bottom: 15px; }
     input[type="text"] {
-      padding: 10px; background: #2a2a38; border: 1px solid #3d3d52; color: #fff; border-radius: 6px; flex: 1;
+      padding: 12px; background: #232332; border: 1px solid #3d3d52; color: #fff; border-radius: 8px; flex: 1; font-size: 14px;
     }
     button {
-      padding: 10px 20px; background: #ff0055; border: none; color: #fff; font-weight: bold; border-radius: 6px; cursor: pointer;
+      padding: 12px 20px; background: #ff0055; border: none; color: #fff; font-weight: bold; border-radius: 8px; cursor: pointer; transition: 0.2s;
     }
-    button:hover { background: #e0004c; }
-    button:disabled { background: #555; cursor: not-allowed; }
+    button:hover { background: #e0004c; transform: translateY(-1px); }
+    button:disabled { background: #444; color: #888; cursor: not-allowed; transform: none; }
     
-    #color-display {
-      width: 100%; height: 120px; border-radius: 8px; border: 3px solid #3d3d52;
-      margin: 15px 0; display: flex; align-items: center; justify-content: center;
-      font-size: 24px; font-weight: bold; text-shadow: 0 2px 4px rgba(0,0,0,0.8);
+    /* Scores & Header */
+    .scoreboard {
+      display: flex; justify-content: space-between; align-items: center;
+      background: #232332; padding: 10px 16px; border-radius: 10px; margin-bottom: 15px; font-weight: bold;
     }
-    
-    .sliders { display: flex; flex-direction: column; gap: 10px; margin: 15px 0; }
-    .slider-group { display: flex; align-items: center; gap: 10px; }
-    .slider-group label { width: 20px; font-weight: bold; }
-    input[type="range"] { flex: 1; accent-color: #ff0055; }
+    .p1-color { color: #00d2d3; } 
+    .p2-color { color: #ff9f43; }
+    #round-info { color: #ffd700; font-size: 16px; }
 
-    .scores { display: flex; justify-content: space-between; font-weight: bold; margin-bottom: 10px; }
-    .p1-color { color: #00d2d3; } .p2-color { color: #ff9f43; }
-    
-    #round-info { font-size: 18px; font-weight: bold; color: #ffd700; }
+    /* Timer Badge */
+    #timer-badge {
+      font-size: 22px; font-weight: 800; color: #ff4757; margin-bottom: 10px; height: 28px;
+    }
+
+    /* Main Display & Side-by-Side Comparisons */
+    #display-container {
+      width: 100%; height: 130px; border-radius: 12px; border: 3px solid #3d3d52;
+      margin-bottom: 15px; position: relative; overflow: hidden; display: flex;
+    }
+    #color-display {
+      width: 100%; height: 100%; display: flex; align-items: center; justify-content: center;
+      font-size: 22px; font-weight: 800; text-shadow: 0 2px 6px rgba(0,0,0,0.8); transition: background-color 0.2s;
+    }
+    .comparison-panel {
+      flex: 1; height: 100%; display: flex; flex-direction: column; justify-content: flex-end;
+      padding: 8px; font-size: 12px; font-weight: bold; text-shadow: 0 1px 3px rgba(0,0,0,0.9);
+    }
+
+    /* Sliders */
+    .sliders { display: flex; flex-direction: column; gap: 12px; margin-bottom: 20px; }
+    .slider-group { display: flex; align-items: center; gap: 12px; }
+    .slider-group label { width: 20px; font-weight: 800; font-size: 18px; }
+    input[type="range"] { flex: 1; height: 8px; border-radius: 4px; accent-color: #ff0055; cursor: pointer; }
+
+    /* Status Bar */
+    #status { color: #aaa; font-size: 13px; margin-bottom: 12px; min-height: 18px; }
   </style>
 </head>
 <body>
@@ -61,46 +84,66 @@
   <div class="card">
     <h1>Color Match</h1>
     
-    <div class="scores">
-      <span class="p1-color">P1 Score: <span id="p1-score">0</span></span>
+    <div class="scoreboard">
+      <span class="p1-color">P1: <span id="p1-score">0</span>%</span>
       <span id="round-info">Round 1/3</span>
-      <span class="p2-color">P2 Score: <span id="p2-score">0</span></span>
+      <span class="p2-color">P2: <span id="p2-score">0</span>%</span>
     </div>
 
     <div class="room-setup">
       <input type="text" id="join-id" placeholder="Paste Host Room ID">
       <button onclick="joinRoom()">Join Game</button>
     </div>
-    <p id="status">Room ID: <b id="my-id" style="color:#00d2d3">Generating...</b></p>
-    <button id="start-btn" onclick="startRound()" disabled>Start Game</button>
+    <div id="status">Room ID: <b id="my-id" style="color:#00d2d3">Generating...</b></div>
+    
+    <button id="start-btn" style="width:100%; margin-bottom: 15px;" onclick="startRound()" disabled>Start Game</button>
 
-    <div id="color-display" style="background-color: #2a2a38;">Waiting for Game...</div>
+    <div id="timer-badge"></div>
+
+    <div id="display-container">
+      <div id="color-display" style="background-color: #232332;">Waiting to Start...</div>
+    </div>
 
     <!-- Color Mixing Controls -->
     <div class="sliders">
       <div class="slider-group">
         <label style="color:#ff4757">R</label>
-        <input type="range" id="r-slider" min="0" max="255" value="128" oninput="updateMixColor()">
+        <input type="range" id="r-slider" min="0" max="255" value="128" oninput="updateMixColor()" disabled>
       </div>
       <div class="slider-group">
         <label style="color:#2ed573">G</label>
-        <input type="range" id="g-slider" min="0" max="255" value="128" oninput="updateMixColor()">
+        <input type="range" id="g-slider" min="0" max="255" value="128" oninput="updateMixColor()" disabled>
       </div>
       <div class="slider-group">
         <label style="color:#1e90ff">B</label>
-        <input type="range" id="b-slider" min="0" max="255" value="128" oninput="updateMixColor()">
+        <input type="range" id="b-slider" min="0" max="255" value="128" oninput="updateMixColor()" disabled>
       </div>
     </div>
 
-    <button id="lock-btn" onclick="lockInGuess()" disabled>Lock In Guess!</button>
+    <button id="lock-btn" style="width:100%;" onclick="lockInGuess()" disabled>Lock In Guess!</button>
   </div>
 
   <script>
+    // Audio Synth for Sound FX
+    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    function playBeep(freq, type = 'sine', duration = 0.1) {
+      if (audioCtx.state === 'suspended') audioCtx.resume();
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.type = type;
+      osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+      gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + duration);
+      osc.connect(gain);
+      gain.connect(audioCtx.destination);
+      osc.start();
+      osc.stop(audioCtx.currentTime + duration);
+    }
+
     let peer = new Peer();
     let conn = null;
     let isHost = false;
 
-    // Game state
     let round = 1;
     let p1Score = 0;
     let p2Score = 0;
@@ -108,8 +151,9 @@
     let myGuess = null;
     let peerGuess = null;
     let isGuessingPhase = false;
+    let timerInterval = null;
+    let timeLeft = 15;
 
-    // 1. PeerJS Connection Setup
     peer.on('open', (id) => {
       document.getElementById('my-id').innerText = id;
     });
@@ -137,6 +181,7 @@
           handleRoundStart(data.color, data.round);
         } else if (data.type === 'SUBMIT_GUESS') {
           peerGuess = data.guess;
+          document.getElementById('status').innerText = "Opponent locked in their guess!";
           checkRoundEnd();
         } else if (data.type === 'ROUND_RESULTS') {
           showResults(data);
@@ -144,7 +189,6 @@
       });
     }
 
-    // 2. Mix Preview Logic
     function updateMixColor() {
       if (!isGuessingPhase) return;
       const r = document.getElementById('r-slider').value;
@@ -153,7 +197,6 @@
       document.getElementById('color-display').style.backgroundColor = `rgb(${r},${g},${b})`;
     }
 
-    // 3. Round Logic
     function startRound() {
       if (!isHost) return;
       targetColor = {
@@ -161,7 +204,6 @@
         g: Math.floor(Math.random() * 256),
         b: Math.floor(Math.random() * 256)
       };
-      
       conn.send({ type: 'START_ROUND', color: targetColor, round: round });
       handleRoundStart(targetColor, round);
     }
@@ -172,41 +214,75 @@
       myGuess = null;
       peerGuess = null;
       isGuessingPhase = false;
+      clearInterval(timerInterval);
 
       document.getElementById('round-info').innerText = `Round ${round}/3`;
       document.getElementById('lock-btn').disabled = true;
       document.getElementById('start-btn').disabled = true;
+      document.getElementById('status').innerText = "Memorize the color!";
+      
+      // Reset Display Container
+      const container = document.getElementById('display-container');
+      container.innerHTML = `<div id="color-display" style="background-color: rgb(${color.r}, ${color.g}, ${color.b});">MEMORIZE!</div>`;
 
-      // Show target color for 2 seconds
-      const display = document.getElementById('color-display');
-      display.style.backgroundColor = `rgb(${color.r}, ${color.g}, ${color.b})`;
-      display.innerText = "MEMORIZE!";
+      setSlidersDisabled(true);
+      playBeep(600, 'triangle', 0.2);
 
+      // Hide target color after 2 seconds and start timer
       setTimeout(() => {
-        // Hide color
-        display.style.backgroundColor = "rgb(128,128,128)";
-        display.innerText = "Match the Color!";
+        document.getElementById('color-display').style.backgroundColor = "rgb(128,128,128)";
+        document.getElementById('color-display').innerText = "Recreate Color!";
         
-        // Reset Sliders
-        document.getElementById('r-slider').value = 128;
-        document.getElementById('g-slider').value = 128;
-        document.getElementById('b-slider').value = 128;
+        // Reset Sliders to mid-point
+        ['r', 'g', 'b'].forEach(c => document.getElementById(`${c}-slider`).value = 128);
         
         isGuessingPhase = true;
+        setSlidersDisabled(false);
         updateMixColor();
         document.getElementById('lock-btn').disabled = false;
+
+        startTimer();
       }, 2000);
     }
 
+    function startTimer() {
+      timeLeft = 15;
+      updateTimerBadge();
+      timerInterval = setInterval(() => {
+        timeLeft--;
+        updateTimerBadge();
+        if (timeLeft <= 3 && timeLeft > 0) playBeep(800, 'sine', 0.08);
+
+        if (timeLeft <= 0) {
+          clearInterval(timerInterval);
+          playBeep(300, 'sawtooth', 0.3);
+          lockInGuess(); // Auto-lock when time runs out
+        }
+      }, 1000);
+    }
+
+    function updateTimerBadge() {
+      document.getElementById('timer-badge').innerText = `⏱️ ${timeLeft}s`;
+    }
+
+    function setSlidersDisabled(state) {
+      ['r', 'g', 'b'].forEach(c => document.getElementById(`${c}-slider`).disabled = state);
+    }
+
     function lockInGuess() {
+      if (myGuess) return; // Prevent double submission
+      clearInterval(timerInterval);
+      
       const r = parseInt(document.getElementById('r-slider').value);
       const g = parseInt(document.getElementById('g-slider').value);
       const b = parseInt(document.getElementById('b-slider').value);
       
       myGuess = { r, g, b };
       isGuessingPhase = false;
+      setSlidersDisabled(true);
       document.getElementById('lock-btn').disabled = true;
-      document.getElementById('color-display').innerText = "Locked In! Waiting for other player...";
+      document.getElementById('timer-badge').innerText = "LOCKED IN!";
+      document.getElementById('color-display').innerText = "Waiting for Opponent...";
 
       conn.send({ type: 'SUBMIT_GUESS', guess: myGuess });
       checkRoundEnd();
@@ -214,14 +290,12 @@
 
     function checkRoundEnd() {
       if (myGuess && peerGuess && isHost) {
-        // Calculate points based on distance from target RGB
         let hostGuess = myGuess;
         let clientGuess = peerGuess;
 
         let hostDiff = Math.hypot(targetColor.r - hostGuess.r, targetColor.g - hostGuess.g, targetColor.b - hostGuess.b);
         let clientDiff = Math.hypot(targetColor.r - clientGuess.r, targetColor.g - clientGuess.g, targetColor.b - clientGuess.b);
 
-        // Convert difference into accuracy percentage
         let maxDiff = Math.hypot(255, 255, 255);
         let hostAcc = Math.max(0, Math.round((1 - hostDiff / maxDiff) * 100));
         let clientAcc = Math.max(0, Math.round((1 - clientDiff / maxDiff) * 100));
@@ -246,33 +320,47 @@
     }
 
     function showResults(data) {
+      clearInterval(timerInterval);
+      document.getElementById('timer-badge').innerText = "ROUND OVER";
+      playBeep(523.25, 'triangle', 0.3); // High pitch reveal sound
+
       document.getElementById('p1-score').innerText = data.p1Total;
       document.getElementById('p2-score').innerText = data.p2Total;
 
-      const display = document.getElementById('color-display');
-      display.style.backgroundColor = `rgb(${data.target.r}, ${data.target.g}, ${data.target.b})`;
+      let myAcc = isHost ? data.p1Acc : data.p2Acc;
+      let oppAcc = isHost ? data.p2Acc : data.p1Acc;
+      let myColor = isHost ? data.p1Guess : data.p2Guess;
+      let oppColor = isHost ? data.p2Guess : data.p1Guess;
 
-      let p1Acc = isHost ? data.p1Acc : data.p2Acc;
-      let p2Acc = isHost ? data.p2Acc : data.p1Acc;
-
-      display.innerText = `You: ${p1Acc}% | Opponent: ${p2Acc}%`;
+      // Render Side-by-Side Comparison Panels
+      const container = document.getElementById('display-container');
+      container.innerHTML = `
+        <div class="comparison-panel" style="background-color: rgb(${data.target.r},${data.target.g},${data.target.b}); border-right:2px solid #000;">
+          TARGET COLOR
+        </div>
+        <div class="comparison-panel" style="background-color: rgb(${myColor.r},${myColor.g},${myColor.b});">
+          YOU (${myAcc}%)
+        </div>
+        <div class="comparison-panel" style="background-color: rgb(${oppColor.r},${oppColor.g},${oppColor.b});">
+          OPPONENT (${oppAcc}%)
+        </div>
+      `;
 
       if (round < 3) {
         round++;
-        if (isHost) {
-          setTimeout(startRound, 4000); // 4 sec pause before next round
-        }
+        document.getElementById('status').innerText = "Next round starting shortly...";
+        if (isHost) setTimeout(startRound, 5000);
       } else {
-        // Final Winner Announcement
         setTimeout(() => {
           let winnerText = "";
-          if (data.p1Total > data.p2Total) winnerText = isHost ? "YOU WIN THE GAME! 🎉" : "OPPONENT WINS!";
-          else if (data.p2Total > data.p1Total) winnerText = isHost ? "OPPONENT WINS!" : "YOU WIN THE GAME! 🎉";
+          if (data.p1Total > data.p2Total) winnerText = isHost ? "🎉 YOU WIN!" : "OPPONENT WINS!";
+          else if (data.p2Total > data.p1Total) winnerText = isHost ? "OPPONENT WINS!" : "🎉 YOU WIN!";
           else winnerText = "IT'S A TIE!";
           
-          display.innerText = winnerText;
+          document.getElementById('timer-badge').innerText = winnerText;
+          document.getElementById('status').innerText = "Game Over!";
           if (isHost) document.getElementById('start-btn').disabled = false;
-        }, 3000);
+        }, 2000);
       }
     }
   </script>

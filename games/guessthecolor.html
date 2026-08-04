@@ -27,8 +27,37 @@
       max-width: 520px;
       box-shadow: 0 12px 32px rgba(0,0,0,0.6);
       text-align: center;
+      position: relative;
     }
-    h1 { margin: 0 0 15px 0; color: #ff0055; text-transform: uppercase; letter-spacing: 1.5px; font-size: 26px; }
+
+    /* Top Navigation Header & Home Button */
+    .top-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 15px;
+    }
+    .home-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 8px 14px;
+      background: #232332;
+      border: 1px solid #3d3d52;
+      color: #fff;
+      text-decoration: none;
+      font-size: 13px;
+      font-weight: bold;
+      border-radius: 8px;
+      transition: all 0.2s;
+    }
+    .home-btn:hover {
+      background: #333348;
+      border-color: #ff0055;
+      transform: translateY(-1px);
+    }
+
+    h1 { margin: 0; color: #ff0055; text-transform: uppercase; letter-spacing: 1.5px; font-size: 22px; }
     
     /* Room Setup */
     .room-setup { display: flex; gap: 8px; margin-bottom: 15px; }
@@ -82,7 +111,14 @@
 <body>
 
   <div class="card">
-    <h1>Color Match</h1>
+    <div class="top-bar">
+      <!-- Home Button linking to your games portal -->
+      <a href="https://supernebula23.github.io/games" class="home-btn">
+        <span>🏠</span> Home
+      </a>
+      <h1>Color Match</h1>
+      <div style="width: 75px;"></div> <!-- Spacer for visual balance -->
+    </div>
     
     <div class="scoreboard">
       <span class="p1-color">P1: <span id="p1-score">0</span>%</span>
@@ -221,19 +257,16 @@
       document.getElementById('start-btn').disabled = true;
       document.getElementById('status').innerText = "Memorize the color!";
       
-      // Reset Display Container
       const container = document.getElementById('display-container');
       container.innerHTML = `<div id="color-display" style="background-color: rgb(${color.r}, ${color.g}, ${color.b});">MEMORIZE!</div>`;
 
       setSlidersDisabled(true);
       playBeep(600, 'triangle', 0.2);
 
-      // Hide target color after 2 seconds and start timer
       setTimeout(() => {
         document.getElementById('color-display').style.backgroundColor = "rgb(128,128,128)";
         document.getElementById('color-display').innerText = "Recreate Color!";
         
-        // Reset Sliders to mid-point
         ['r', 'g', 'b'].forEach(c => document.getElementById(`${c}-slider`).value = 128);
         
         isGuessingPhase = true;
@@ -256,7 +289,7 @@
         if (timeLeft <= 0) {
           clearInterval(timerInterval);
           playBeep(300, 'sawtooth', 0.3);
-          lockInGuess(); // Auto-lock when time runs out
+          lockInGuess();
         }
       }, 1000);
     }
@@ -270,7 +303,7 @@
     }
 
     function lockInGuess() {
-      if (myGuess) return; // Prevent double submission
+      if (myGuess) return;
       clearInterval(timerInterval);
       
       const r = parseInt(document.getElementById('r-slider').value);
@@ -322,7 +355,7 @@
     function showResults(data) {
       clearInterval(timerInterval);
       document.getElementById('timer-badge').innerText = "ROUND OVER";
-      playBeep(523.25, 'triangle', 0.3); // High pitch reveal sound
+      playBeep(523.25, 'triangle', 0.3);
 
       document.getElementById('p1-score').innerText = data.p1Total;
       document.getElementById('p2-score').innerText = data.p2Total;
@@ -332,7 +365,6 @@
       let myColor = isHost ? data.p1Guess : data.p2Guess;
       let oppColor = isHost ? data.p2Guess : data.p1Guess;
 
-      // Render Side-by-Side Comparison Panels
       const container = document.getElementById('display-container');
       container.innerHTML = `
         <div class="comparison-panel" style="background-color: rgb(${data.target.r},${data.target.g},${data.target.b}); border-right:2px solid #000;">

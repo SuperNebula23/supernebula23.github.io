@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Mode 7 Mountain Racer - SuperNebula Games</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+  
+  <style>
+    :root {
+      --bg-dark: #0b1d28;
+      --border-accent: #f85800;
+      --text-gold: #f8b800;
+      --neon-cyan: #00ffff;
+      --neon-magenta: #ff00ff;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+
+    body {
+      background-color: var(--bg-dark);
+      font-family: 'Press Start 2P', cursive;
+      color: #fff;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+    }
+
+    /* Top HUD Navigation */
+    .hud-header {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      padding: 12px 20px;
+      background: rgba(6, 18, 26, 0.9);
+      border-bottom: 4px solid #000;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      z-index: 10;
+    }
+
+    .back-btn {
+      color: #fff;
+      text-decoration: none;
+      font-size: 10px;
+      background: var(--border-accent);
+      padding: 8px 12px;
+      border: 2px solid #000;
+      border-radius: 6px;
+      box-shadow: 0 3px 0 #000;
+    }
+
+    .back-btn:hover {
+      background: #e04e00;
+    }
+
+    .player-stats {
+      font-size: 10px;
+      color: var(--text-gold);
+      display: flex;
+      gap: 15px;
+    }
+
+    /* Game Canvas Container */
+    #game-container {
+      position: relative;
+      width: 800px;
+      height: 480px;
+      border: 4px solid #000;
+      box-shadow: 0 10px 0 #000;
+      border-radius: 8px;
+      overflow: hidden;
+      background: #112838;
+    }
+
+    canvas {
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+
+    /* On-Screen Overlay Controls for Mobile/Tactile */
+    .controls-overlay {
+      position: absolute;
+      bottom: 12px;
+      left: 0;
+      width: 100%;
+      display: flex;
+      justify-content: space-between;
+      padding: 0 20px;
+      pointer-events: none;
+      z-index: 5;
+    }
+
+    .controls-hint {
+      background: rgba(0, 0, 0, 0.7);
+      border: 2px solid #000;
+      padding: 8px 12px;
+      border-radius: 6px;
+      font-size: 8px;
+      color: #8faec4;
+    }
+
+    /* Lap Notification */
+    .notification {
+      position: absolute;
+      top: 70px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(248, 184, 0, 0.95);
+      color: #000;
+      border: 3px solid #000;
+      padding: 10px 20px;
+      border-radius: 8px;
+      font-size: 12px;
+      display: none;
+      z-index: 20;
+      box-shadow: 0 4px 0 #000;
+      animation: pop 0.3s ease-out;
+    }
+
+    @keyframes pop {
+      0% { transform: translate(-50%, -10px) scale(0.9); }
+      100% { transform: translate(-50%, 0) scale(1); }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- HUD Bar synced with account -->
+  <header class="hud-header">
+    <a href="games.html" class="back-btn">◄ BACK TO GAMES</a>
+    <div class="player-stats">
+      <span id="hudName">PLAYER</span>
+      <span id="hudLevel" style="color: var(--neon-cyan);">LVL 1</span>
+      <span id="hudXP" style="color: var(--green-pipe);">0 XP</span>
+      <span id="hudZone" style="color: #fff;">ZONE: NEBULA PEAK</span>
+    </div>
+  </header>
+
+  <!-- Notification Banner -->
+  <div id="notification" class="notification">+10 XP LAP COMPLETED!</div>
+
+  <!-- Mode 7 Viewport -->
+  <div id="game-container">
+    <canvas id="mode7Canvas" width="600" height="400"></canvas>
+    
+    <div class="controls-overlay">
+      <div class="controls-hint">STEER: [A / D] or [◄ / ►]</div>
+      <div class="controls-hint">ACCEL: [W] or [▲] | BRAKE: [S] or [▼]</div>
+    </div>
+  </div>
+
+  <script>
+    // --- 1. ACCOUNT SYNC WITH /games.html LOCALSTORAGE ---
+    const STORAGE_KEY = 'sn_user_account';
+    const XP_PER_LEVEL = 100;
+    const VIP_USERS = ['scaryghost14', 'scaryenderman45', 'imtiny'];
+
+    function isVipName(name) {
+      if (!name) return false;
+      return VIP_USERS.includes(name.trim().toLowerCase());
+    }
+
+    function getAccount() {
+      const saved = localStorage.getItem(STORAGE_KEY);
+      if (saved) {
+        return JSON.parse(saved);
+      }
+      return { 
+        username: 'PLAYER 1', 
+        xp: 0, 
+        mountainZone: 'Nebula Peak', 
+        mode7Laps: 0, 
+        mmoRank: 'Novice' 
+      };
+    }
+
+    function saveAccount(acc) {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(acc));
+      updateHUD();
+    }
+
+    function addXPAndLap(amount) {
+      const acc = getAccount();
+      const isVip = isVipName(acc.username);
+      const earnedXP = isVip ? amount * 2 : amount;
+      
+      acc.xp += earnedXP;
+      acc.mode7Laps = (acc.mode7Laps || 0) + 1;
+
+      // Update MMO Rank Level
+      const level = Math.floor(acc.xp / XP_PER_LEVEL) + 1;
+      if (level >= 10) acc.mmoRank = 'Mountain Master';
+      else if (level >= 5) acc.mmoRank = 'Alpine Racer';
+      else acc.mmoRank = 'Novice';
+
+      saveAccount(acc);
+      showNotification(`+${earnedXP} XP! LAP ${acc.mode7Laps} COMPLETE!`);
+    }
+
+    function updateHUD() {
+      const acc = getAccount();
+      const level = Math.floor(acc.xp / XP_PER_LEVEL) + 1;
+      const isVip = isVipName(acc.username);
+
+      document.getElementById('hudName').textContent = (isVip ? '👑 ' : '') + acc.username;
+      document.getElementById('hudLevel').textContent = `LVL ${level}`;
+      document.getElementById('hudXP').textContent = `${acc.xp} XP`;
+      document.getElementById('hudZone').textContent = `ZONE: ${(acc.mountainZone || 'NEBULA PEAK').toUpperCase()}`;
+    }
+
+    function showNotification(msg) {
+      const el = document.getElementById('notification');
+      el.textContent = msg;
+      el.style.display = 'block';
+      setTimeout(() => {
+        el.style.display = 'none';
+      }, 2000);
+    }
+
+    // --- 2. MODE 7 PSEUDO-3D ENGINE ---
+    const canvas = document.getElementById('mode7Canvas');
+    const ctx = canvas.getContext('2d');
+
+    // Player Kart Parameters
+    let x = 0;       // World X position
+    let y = 0;       // World Y position
+    let angle = 0;   // Facing angle
+    let speed = 0;   // Current speed
+    const maxSpeed = 4.5;
+    const accel = 0.1;
+    const friction = 0.96;
+    const turnSpeed = 0.04;
+
+    // Lap Detection State
+    let distanceTraveled = 0;
+    const lapDistance = 1800; // Distance required for 1 full circuit
+
+    // Controls tracking
+    const keys = {};
+    window.addEventListener('keydown', e => keys[e.code] = true);
+    window.addEventListener('keyup', e => keys[e.code] = false);
+
+    // Dynamic Mountain Palette based on Account Mountain Zone Selection
+    function getZoneColors() {
+      const acc = getAccount();
+      const zone = (acc.mountainZone || '').toLowerCase();
+
+      if (zone.includes('volcano')) {
+        return { sky: '#1a0505', skyBottom: '#5e1709', mountain: '#3a110a', track: '#242020', grid: '#ff4400' };
+      } else if (zone.includes('pine')) {
+        return { sky: '#08170d', skyBottom: '#183b25', mountain: '#0f2918', track: '#1d2e20', grid: '#73bf2e' };
+      } else {
+        // Default: Snow / Nebula Peak
+        return { sky: '#091526', skyBottom: '#1e3d59', mountain: '#13283b', track: '#122333', grid: '#00ffff' };
+      }
+    }
+
+    // Main Mode 7 Render Loop
+    function gameLoop() {
+      const colors = getZoneColors();
+
+      // Handle Inputs
+      if (keys['ArrowUp'] || keys['KeyW']) speed = Math.min(maxSpeed, speed + accel);
+      if (keys['ArrowDown'] || keys['KeyS']) speed = Math.max(-maxSpeed * 0.4, speed - accel);
+      if (keys['ArrowLeft'] || keys['KeyA']) angle -= turnSpeed * (speed / maxSpeed);
+      if (keys['ArrowRight'] || keys['KeyD']) angle += turnSpeed * (speed / maxSpeed);
+
+      // Apply Physics
+      speed *= friction;
+      x += Math.sin(angle) * speed;
+      y -= Math.cos(angle) * speed;
+
+      // Track distance to count MMO laps
+      if (Math.abs(speed) > 0.5) {
+        distanceTraveled += Math.abs(speed);
+        if (distanceTraveled >= lapDistance) {
+          distanceTraveled = 0;
+          addXPAndLap(10); // Syncs back to /games.html!
+        }
+      }
+
+      // Clear Canvas
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      // 1. Draw Sky Gradient
+      const skyGrad = ctx.createLinearGradient(0, 0, 0, 180);
+      skyGrad.addColorStop(0, colors.sky);
+      skyGrad.addColorStop(1, colors.skyBottom);
+      ctx.fillStyle = skyGrad;
+      ctx.fillRect(0, 0, canvas.width, 180);
+
+      // 2. Draw Distant Parallax Mountain Range
+      ctx.fillStyle = colors.mountain;
+      ctx.beginPath();
+      const horizonY = 180;
+      const panOffset = (angle * 80) % canvas.width;
+      
+      for (let i = -canvas.width; i < canvas.width * 2; i += 60) {
+        const peakX = i - panOffset;
+        ctx.lineTo(peakX, horizonY);
+        ctx.lineTo(peakX + 30, horizonY - 45);
+        ctx.lineTo(peakX + 60, horizonY);
+      }
+      ctx.lineTo(canvas.width, canvas.height);
+      ctx.lineTo(0, canvas.height);
+      ctx.fill();
+
+      // 3. Render Mode 7 Ground Plane (Perspective Transform)
+      const fov = 200;
+      ctx.strokeStyle = colors.grid;
+      ctx.lineWidth = 1;
+
+      for (let scanY = horizonY; scanY < canvas.height; scanY += 3) {
+        // Calculate perspective depth scale
+        const z = scanY - horizonY;
+        if (z <= 0) continue;
+
+        const perspectiveScale = fov / z;
+        const worldY = y + perspectiveScale;
+
+        // Render horizontal track lines
+        if (Math.floor((worldY + scanY) / 16) % 2 === 0) {
+          ctx.beginPath();
+          ctx.moveTo(0, scanY);
+          ctx.lineTo(canvas.width, scanY);
+          ctx.strokeStyle = colors.grid;
+          ctx.globalAlpha = Math.min(1, z / 100); // Distance fade
+          ctx.stroke();
+        }
+      }
+      ctx.globalAlpha = 1.0;
+
+      // 4. Draw Player's Kart Sprite in Center
+      const kartX = canvas.width / 2;
+      const kartY = canvas.height - 60;
+
+      // Kart Shadow
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
+      ctx.beginPath();
+      ctx.ellipse(kartX, kartY + 12, 18, 6, 0, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Kart Body
+      ctx.fillStyle = '#f85800'; // Orange chassis
+      ctx.fillRect(kartX - 12, kartY - 8, 24, 16);
+      
+      // Wheels
+      ctx.fillStyle = '#000';
+      ctx.fillRect(kartX - 16, kartY - 10, 5, 8);
+      ctx.fillRect(kartX + 11, kartY - 10, 5, 8);
+      ctx.fillRect(kartX - 16, kartY + 4, 5, 8);
+      ctx.fillRect(kartX + 11, kartY + 4, 5, 8);
+
+      // Driver Helmet (VIP gets Gold Helmet)
+      const acc = getAccount();
+      ctx.fillStyle = isVipName(acc.username) ? '#f8b800' : '#00ffff';
+      ctx.beginPath();
+      ctx.arc(kartX, kartY - 2, 6, 0, Math.PI * 2);
+      ctx.fill();
+
+      requestAnimationFrame(gameLoop);
+    }
+
+    // Boot Up
+    document.addEventListener('DOMContentLoaded', () => {
+      updateHUD();
+      gameLoop();
+    });
+  </script>
+</body>
+</html>

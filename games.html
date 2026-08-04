@@ -173,11 +173,52 @@
       border-radius: 12px;
       padding: 24px;
       width: 90%;
-      max-width: 400px;
+      max-width: 440px;
       display: flex;
       flex-direction: column;
-      gap: 16px;
+      gap: 14px;
       text-align: center;
+      position: relative;
+      overflow: hidden;
+    }
+
+    /* Mountain Backdrop in Profile */
+    .mountain-backdrop {
+      width: 100%;
+      height: 70px;
+      background: linear-gradient(to bottom, #112838 0%, #1e4d6b 100%);
+      border: 2px solid #000;
+      border-radius: 6px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .mountain-svg {
+      width: 100%;
+      height: 100%;
+      position: absolute;
+      bottom: 0;
+      left: 0;
+    }
+
+    .mmo-stats-box {
+      background: #0b1d28;
+      border: 2px solid #000;
+      border-radius: 6px;
+      padding: 8px;
+      font-size: 8px;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 6px;
+      text-align: left;
+    }
+
+    .mmo-stats-box div {
+      color: #8faec4;
+    }
+
+    .mmo-stats-box span {
+      color: var(--neon-cyan);
     }
 
     .modal-card h2 {
@@ -191,13 +232,13 @@
       text-align: left;
     }
 
-    .modal-card input[type="text"] {
+    .modal-card input[type="text"], .modal-card select {
       background: #0b1d28;
       border: 3px solid #000;
       color: #fff;
       padding: 10px;
       font-family: 'Press Start 2P', cursive;
-      font-size: 10px;
+      font-size: 9px;
       border-radius: 6px;
       outline: none;
     }
@@ -440,6 +481,7 @@
           <option value="puzzle">PUZZLE</option>
           <option value="strategy">STRATEGY</option>
           <option value="survival">SURVIVAL</option>
+          <option value="mmo">MMO & RACING</option>
         </select>
         <span class="select-arrow">▼</span>
       </div>
@@ -450,7 +492,7 @@
     <section id="home-view" class="view-section">
       <div class="hero-banner">
         <h1>✨ SuperNebula Games ✨</h1>
-        <p>Select A Game!</p>
+        <p>Select A Game & Build Your Cross-Game Account!</p>
       </div>
 
       <div class="games-grid">
@@ -545,15 +587,15 @@
           </div>
         </div>
 
-        <!-- Game Card 8: Guess The Color -->
-        <div class="game-card" data-category="puzzle">
-          <span class="card-badge neon">NEW</span>
-          <div class="card-icon">🎨</div>
-          <h3>GUESS THE COLOR</h3>
-          <p>Test your visual precision! Match hex codes and color shades before time runs out!</p>
+        <!-- Game Card 8: Mode 7 Mountain Racer -->
+        <div class="game-card" data-category="mmo">
+          <span class="card-badge gold">MODE 7 RACER</span>
+          <div class="card-icon">🏎️</div>
+          <h3>MODE 7 MOUNTAINS</h3>
+          <p>Race across pseudo-3D mountain passes using your unified account stats & custom kart!</p>
           <div class="card-actions">
-            <a class="play-btn" href="https://supernebula23.github.io/games/guessthecolor.html" onclick="triggerAddXP(10)">
-              <span class="play-btn-text">PLAY (+10 XP)</span>
+            <a class="play-btn" href="https://supernebula23.github.io/games/mode7mmo.html" onclick="triggerAddXP(15)">
+              <span class="play-btn-text">PLAY (+15 XP)</span>
             </a>
           </div>
         </div>
@@ -565,8 +607,35 @@
   <div class="modal-overlay" id="accountModal">
     <div class="modal-card">
       <h2>PLAYER PROFILE <span id="modalVipBadge" style="display:none; color: var(--text-gold);">👑 VIP</span></h2>
+      
+      <!-- Mountain Terrain Visualiser -->
+      <div class="mountain-backdrop">
+        <svg class="mountain-svg" viewBox="0 0 500 100" preserveAspectRatio="none">
+          <!-- Distant Mountains -->
+          <path d="M0,100 L40,50 L80,80 L140,30 L200,90 L260,40 L340,85 L420,20 L500,100 Z" fill="#0d2e42" />
+          <!-- Foreground Snowy Peaks -->
+          <path d="M-10,100 L60,35 L120,75 L220,25 L310,80 L400,15 L510,100 Z" fill="#1b4965" />
+          <path d="M60,35 L75,50 L50,50 Z M220,25 L235,42 L205,42 Z M400,15 L415,32 L388,32 Z" fill="#ffffff" opacity="0.8"/>
+        </svg>
+      </div>
+
       <label for="usernameInput">DISPLAY NAME:</label>
       <input type="text" id="usernameInput" maxlength="20" placeholder="ENTER NAME">
+
+      <label for="mountainZoneSelect">MOUNTAIN HOME BASE (MMO):</label>
+      <select id="mountainZoneSelect">
+        <option value="Nebula Peak">NEBULA PEAK (SNOW)</option>
+        <option value="Volcano Ridge">VOLCANO RIDGE (LAVA)</option>
+        <option value="Pine Crest">PINE CREST (FOREST)</option>
+      </select>
+
+      <!-- Mode 7 / MMO Account Sync -->
+      <div class="mmo-stats-box">
+        <div>MODE 7 RECORD: <span id="mmoRecord">0 Laps</span></div>
+        <div>CURRENT REGION: <span id="mmoRegion">Nebula Peak</span></div>
+        <div>MMO RANK: <span id="mmoRank">Novice</span></div>
+        <div>CROSS-SAVE: <span style="color: var(--green-pipe);">ACTIVE</span></div>
+      </div>
 
       <div style="text-align: left; font-size: 9px; color: var(--text-gold); margin-top: 5px; display: flex; justify-content: space-between;">
         <div><span id="modalLvl">LEVEL 1</span> - <span id="modalXp">0 XP</span></div>
@@ -582,7 +651,7 @@
   </div>
 
   <script>
-    // --- Account & LocalStorage Setup ---
+    // --- Shared Account & LocalStorage Schema ---
     const XP_PER_LEVEL = 100;
     const VIP_USERS = ['scaryghost14', 'scaryenderman45', 'imtiny'];
 
@@ -594,9 +663,23 @@
     function getAccount() {
       const saved = localStorage.getItem('sn_user_account');
       if (saved) {
-        return JSON.parse(saved);
+        const parsed = JSON.parse(saved);
+        // Ensure legacy accounts adapt to the new Mode 7/MMO mountain schema
+        return {
+          username: parsed.username || 'PLAYER 1',
+          xp: parsed.xp || 0,
+          mountainZone: parsed.mountainZone || 'Nebula Peak',
+          mode7Laps: parsed.mode7Laps || 0,
+          mmoRank: parsed.mmoRank || 'Novice'
+        };
       }
-      return { username: 'PLAYER 1', xp: 0 };
+      return { 
+        username: 'PLAYER 1', 
+        xp: 0, 
+        mountainZone: 'Nebula Peak',
+        mode7Laps: 0,
+        mmoRank: 'Novice'
+      };
     }
 
     function saveAccountData(data) {
@@ -614,6 +697,13 @@
     function addXP(amount) {
       const acc = getAccount();
       acc.xp += amount;
+      
+      // Auto-update MMO rank milestones
+      const level = Math.floor(acc.xp / XP_PER_LEVEL) + 1;
+      if (level >= 10) acc.mmoRank = 'Mountain Master';
+      else if (level >= 5) acc.mmoRank = 'Alpine Racer';
+      else acc.mmoRank = 'Novice';
+
       saveAccountData(acc);
     }
 
@@ -647,6 +737,11 @@
 
       // Update Modal
       document.getElementById('usernameInput').value = acc.username;
+      document.getElementById('mountainZoneSelect').value = acc.mountainZone;
+      document.getElementById('mmoRegion').textContent = acc.mountainZone;
+      document.getElementById('mmoRecord').textContent = `${acc.mode7Laps} Laps`;
+      document.getElementById('mmoRank').textContent = acc.mmoRank;
+
       document.getElementById('modalLvl').textContent = `LEVEL ${level}`;
       document.getElementById('modalXp').textContent = `${acc.xp} XP`;
       
@@ -656,7 +751,10 @@
       // Dynamic XP Labels on Buttons based on VIP status
       const btnTexts = document.querySelectorAll('.play-btn-text');
       btnTexts.forEach(btn => {
-        btn.textContent = isVip ? 'PLAY (+20 XP 👑)' : 'PLAY (+10 XP)';
+        const isMmo = btn.closest('.game-card').getAttribute('data-category') === 'mmo';
+        const baseXP = isMmo ? 15 : 10;
+        const totalXP = isVip ? baseXP * 2 : baseXP;
+        btn.textContent = isVip ? `PLAY (+${totalXP} XP 👑)` : `PLAY (+${baseXP} XP)`;
       });
     }
 
@@ -668,9 +766,13 @@
     function saveProfile() {
       const acc = getAccount();
       const inputVal = document.getElementById('usernameInput').value.trim();
+      const zoneVal = document.getElementById('mountainZoneSelect').value;
+      
       if (inputVal) {
         acc.username = inputVal;
       }
+      acc.mountainZone = zoneVal;
+
       saveAccountData(acc);
       document.getElementById('accountModal').classList.remove('active');
     }

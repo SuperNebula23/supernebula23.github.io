@@ -8,16 +8,15 @@
     <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
     <style>
         :root {
-            --bg-main: #0a0e17;
-            --panel-bg: #121824;
-            --border: #1e293b;
-            --accent: #3b82f6;
-            --accent-glow: rgba(59, 130, 246, 0.4);
+            --bg-main: #0b1120;
+            --panel-bg: #151d30;
+            --border: #23314d;
+            --accent: #38bdf8;
+            --accent-glow: rgba(56, 189, 248, 0.35);
             --danger: #ef4444;
             --success: #22c55e;
-            --water: #0f172a;
-            --water-cell: #1e293b;
-            --ship: #64748b;
+            --water-cell: #1a243b;
+            --ship: #475569;
             --text: #f8fafc;
             --text-muted: #94a3b8;
         }
@@ -34,10 +33,9 @@
             flex-direction: column;
             align-items: center;
             min-height: 100vh;
-            overflow-x: hidden;
+            user-select: none;
         }
 
-        /* Header */
         header {
             width: 100%;
             max-width: 950px;
@@ -53,12 +51,9 @@
             font-size: 1.6rem;
             font-weight: 800;
             letter-spacing: 1px;
-            background: linear-gradient(90deg, #60a5fa, #3b82f6);
+            background: linear-gradient(90deg, #38bdf8, #818cf8);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
-            display: flex;
-            align-items: center;
-            gap: 8px;
         }
 
         .home-btn {
@@ -72,9 +67,8 @@
             text-decoration: none;
             transition: all 0.2s;
         }
-        .home-btn:hover { background-color: #1e293b; border-color: var(--accent); }
+        .home-btn:hover { background-color: var(--border); border-color: var(--accent); }
 
-        /* Panels */
         .panel {
             background-color: var(--panel-bg);
             border: 1px solid var(--border);
@@ -106,7 +100,7 @@
         input[type="text"]:focus { border-color: var(--accent); }
 
         .btn {
-            background-color: var(--accent);
+            background-color: #2563eb;
             color: white;
             border: none;
             padding: 10px 18px;
@@ -119,20 +113,18 @@
             gap: 6px;
         }
         .btn:hover { transform: translateY(-1px); box-shadow: 0 4px 12px var(--accent-glow); }
+        .btn-success { background-color: var(--success); }
+        .btn-success:hover { background-color: #16a34a; }
         .btn-secondary { background-color: #334155; }
-        .btn-secondary:hover { background-color: #475569; box-shadow: none; }
+        .btn-secondary:hover { background-color: #475569; }
 
         .status-bar {
             margin-top: 10px;
             font-weight: 600;
             font-size: 1rem;
-            color: #60a5fa;
-            display: flex;
-            align-items: center;
-            gap: 8px;
+            color: var(--accent);
         }
 
-        /* Main Game Layout */
         .game-layout {
             display: flex;
             gap: 20px;
@@ -140,7 +132,6 @@
             justify-content: center;
             width: 100%;
             max-width: 950px;
-            position: relative;
         }
 
         .board-card {
@@ -163,7 +154,6 @@
             color: var(--text-muted);
         }
 
-        /* Grid */
         .grid {
             display: grid;
             grid-template-columns: repeat(10, 32px);
@@ -182,7 +172,6 @@
             align-items: center;
             justify-content: center;
             cursor: pointer;
-            user-select: none;
             font-size: 14px;
             transition: background 0.15s, transform 0.1s;
         }
@@ -192,7 +181,6 @@
             transform: scale(1.05);
         }
 
-        /* Cell States */
         .cell.ship { background-color: var(--ship); border: 1px solid #94a3b8; }
         .cell.hit {
             background-color: var(--danger) !important;
@@ -201,15 +189,14 @@
         .cell.hit::after { content: "💥"; font-size: 16px; }
         .cell.miss { background-color: #1e293b; }
         .cell.miss::after { content: "•"; color: #64748b; font-size: 24px; }
-        .cell.sunk { background-color: #7f1d1d !important; }
         .cell.disabled { cursor: not-allowed; }
 
-        /* Controls & Ship Tracker */
         .controls {
             margin-top: 12px;
             display: flex;
             gap: 8px;
             flex-wrap: wrap;
+            justify-content: center;
         }
 
         .ship-tracker {
@@ -227,7 +214,6 @@
         }
         .ship-badge.sunk { background: #450a0a; color: #fca5a5; border-color: #991b1b; text-decoration: line-through; }
 
-        /* Emoji Chat Overlay */
         .chat-bar {
             display: flex;
             gap: 6px;
@@ -248,11 +234,9 @@
             padding: 6px 12px;
             border-radius: 8px;
             cursor: pointer;
-            transition: transform 0.1s;
         }
-        .chat-btn:hover { transform: scale(1.2); background: #334155; }
+        .chat-btn:hover { transform: scale(1.15); background: #334155; }
 
-        /* Floating Emoji Animations */
         .floating-emoji {
             position: fixed;
             font-size: 3rem;
@@ -288,14 +272,13 @@
 <body>
 
     <header>
-        <div class="title">⚡ NAVAL WARFARE <span>P2P</span></div>
+        <div class="title">⚡ NAVAL WARFARE P2P</div>
         <a href="https://supernebula23.github.io/games" class="home-btn">🏠 Home</a>
     </header>
 
-    <!-- Lobby / Link Share -->
     <div class="panel">
         <div id="lobby" class="lobby-row">
-            <button id="host-btn" class="btn" onclick="hostGame()">🎮 Create Game Room</button>
+            <button id="host-btn" class="btn" onclick="hostGame()">🎮 Create Room</button>
             <span style="color: var(--text-muted)">or</span>
             <input type="text" id="join-id" placeholder="Paste Host ID or Invite Link here...">
             <button class="btn btn-secondary" onclick="joinGame()">Join Room</button>
@@ -309,56 +292,48 @@
             </div>
         </div>
 
-        <div id="status" class="status-bar">💡 Host a game or paste a link to begin!</div>
+        <div id="status" class="status-bar">💡 Create a room or join one to begin!</div>
     </div>
 
-    <!-- Main Game Area -->
     <div id="game-area" class="game-layout hidden">
-        
-        <!-- Player Board -->
         <div class="board-card">
             <div class="board-header">
                 <span>YOUR FLEET</span>
-                <span id="my-ships-left">5 Ships Alive</span>
+                <span id="placement-info">Place: Carrier (5)</span>
             </div>
             <div id="my-board" class="grid"></div>
             
-            <div id="placement-controls" class="controls">
-                <button class="btn btn-secondary" onclick="toggleOrientation()">🔄 Rotate: <span id="orient-label">Horiz</span></button>
-                <button class="btn btn-secondary" onclick="randomizeShips()">🎲 Randomize</button>
-                <button id="ready-btn" class="btn hidden" onclick="confirmReady()">🚀 Ready for Battle</button>
+            <div class="controls">
+                <button id="rotate-btn" class="btn btn-secondary" onclick="toggleOrientation()">🔄 Rotate: <span id="orient-label">Horiz</span></button>
+                <button id="rand-btn" class="btn btn-secondary" onclick="randomizeShips()">🎲 Randomize</button>
+                <button id="ready-btn" class="btn btn-success hidden" onclick="confirmReady()">🚀 Ready for Battle</button>
             </div>
 
             <div class="ship-tracker" id="my-ship-tracker"></div>
         </div>
 
-        <!-- Enemy Board -->
         <div class="board-card">
             <div class="board-header">
                 <span>ENEMY WATERS</span>
-                <span id="enemy-ships-left">5 Ships Remaining</span>
+                <span>Targets</span>
             </div>
             <div id="enemy-board" class="grid"></div>
             <div class="ship-tracker" id="enemy-ship-tracker"></div>
         </div>
 
-        <!-- Emoji Quick Chat -->
         <div class="chat-bar">
-            <span style="font-size:0.85rem; color:var(--text-muted); width:100%; text-align:center; margin-bottom:2px;">Quick Taunt / Reactions</span>
             <button class="chat-btn" onclick="sendEmoji('🎯')">🎯</button>
             <button class="chat-btn" onclick="sendEmoji('💥')">💥</button>
             <button class="chat-btn" onclick="sendEmoji('🔥')">🔥</button>
             <button class="chat-btn" onclick="sendEmoji('😂')">😂</button>
             <button class="chat-btn" onclick="sendEmoji('💀')">💀</button>
             <button class="chat-btn" onclick="sendEmoji('💩')">💩</button>
-            <button class="chat-btn" onclick="sendEmoji('👋')">👋</button>
             <button class="btn btn-secondary" style="padding:4px 10px; font-size:0.8rem;" onclick="sendEmoji('Nice shot!')">"Nice shot!"</button>
             <button class="btn btn-secondary" style="padding:4px 10px; font-size:0.8rem;" onclick="sendEmoji('GG!')">"GG!"</button>
         </div>
     </div>
 
     <script>
-        // Web Audio API Synthesizer for SFX
         const AudioFX = {
             ctx: null,
             init() { if (!this.ctx) this.ctx = new (window.AudioContext || window.webkitAudioContext)(); },
@@ -366,9 +341,9 @@
                 this.init();
                 const osc = this.ctx.createOscillator(), gain = this.ctx.createGain();
                 osc.type = 'sawtooth';
-                osc.frequency.setValueAtTime(600, this.ctx.currentTime);
+                osc.frequency.setValueAtTime(500, this.ctx.currentTime);
                 osc.frequency.exponentialRampToValueAtTime(80, this.ctx.currentTime + 0.15);
-                gain.gain.setValueAtTime(0.3, this.ctx.currentTime);
+                gain.gain.setValueAtTime(0.2, this.ctx.currentTime);
                 gain.gain.linearRampToValueAtTime(0.01, this.ctx.currentTime + 0.15);
                 osc.connect(gain); gain.connect(this.ctx.destination);
                 osc.start(); osc.stop(this.ctx.currentTime + 0.15);
@@ -379,7 +354,7 @@
                 osc.type = 'square';
                 osc.frequency.setValueAtTime(120, this.ctx.currentTime);
                 osc.frequency.exponentialRampToValueAtTime(30, this.ctx.currentTime + 0.3);
-                gain.gain.setValueAtTime(0.5, this.ctx.currentTime);
+                gain.gain.setValueAtTime(0.4, this.ctx.currentTime);
                 gain.gain.linearRampToValueAtTime(0.01, this.ctx.currentTime + 0.3);
                 osc.connect(gain); gain.connect(this.ctx.destination);
                 osc.start(); osc.stop(this.ctx.currentTime + 0.3);
@@ -390,22 +365,10 @@
                 osc.type = 'sine';
                 osc.frequency.setValueAtTime(300, this.ctx.currentTime);
                 osc.frequency.linearRampToValueAtTime(150, this.ctx.currentTime + 0.2);
-                gain.gain.setValueAtTime(0.2, this.ctx.currentTime);
+                gain.gain.setValueAtTime(0.15, this.ctx.currentTime);
                 gain.gain.linearRampToValueAtTime(0.01, this.ctx.currentTime + 0.2);
                 osc.connect(gain); gain.connect(this.ctx.destination);
                 osc.start(); osc.stop(this.ctx.currentTime + 0.2);
-            },
-            playWin() {
-                this.init();
-                [261, 329, 392, 523].forEach((freq, idx) => {
-                    const osc = this.ctx.createOscillator(), gain = this.ctx.createGain();
-                    osc.frequency.setValueAtTime(freq, this.ctx.currentTime + idx * 0.1);
-                    gain.gain.setValueAtTime(0.3, this.ctx.currentTime + idx * 0.1);
-                    gain.gain.linearRampToValueAtTime(0.01, this.ctx.currentTime + idx * 0.1 + 0.25);
-                    osc.connect(gain); gain.connect(this.ctx.destination);
-                    osc.start(this.ctx.currentTime + idx * 0.1);
-                    osc.stop(this.ctx.currentTime + idx * 0.1 + 0.25);
-                });
             }
         };
 
@@ -420,8 +383,8 @@
 
         let peer = null, conn = null;
         let myBoardState = Array(10).fill(null).map(() => Array(10).fill(null));
-        let enemyBoardState = Array(10).fill(null).map(() => Array(10).fill(0)); // 0: empty, 2: hit, 3: miss
-        let myPlacedShips = []; // { id, name, size, coordinates: [{r,c}], hits: 0 }
+        let enemyBoardState = Array(10).fill(null).map(() => Array(10).fill(0));
+        let myPlacedShips = [];
         let enemyShipsStatus = SHIPS_DEF.map(s => ({ ...s, sunk: false }));
 
         let currentShipIdx = 0;
@@ -456,19 +419,17 @@
         }
 
         function renderTrackers() {
-            const myTracker = document.getElementById('my-ship-tracker');
-            const enemyTracker = document.getElementById('enemy-ship-tracker');
-            
-            myTracker.innerHTML = myPlacedShips.map(s => 
-                `<div class="ship-badge ${s.hits === s.size ? 'sunk' : ''}">${s.name}</div>`
-            ).join('') || SHIPS_DEF.map(s => `<div class="ship-badge">${s.name}</div>`).join('');
+            document.getElementById('my-ship-tracker').innerHTML = SHIPS_DEF.map(s => {
+                const placed = myPlacedShips.find(p => p.id === s.id);
+                const isSunk = placed && placed.hits === s.size;
+                return `<div class="ship-badge ${isSunk ? 'sunk' : ''}">${s.name}</div>`;
+            }).join('');
 
-            enemyTracker.innerHTML = enemyShipsStatus.map(s => 
+            document.getElementById('enemy-ship-tracker').innerHTML = enemyShipsStatus.map(s => 
                 `<div class="ship-badge ${s.sunk ? 'sunk' : ''}">${s.name}</div>`
             ).join('');
         }
 
-        // --- Network / PeerJS ---
         function hostGame() {
             document.getElementById('lobby').classList.add('hidden');
             peer = new Peer();
@@ -509,10 +470,9 @@
         function copyLink() {
             const el = document.getElementById('share-url');
             el.select(); navigator.clipboard.writeText(el.value);
-            updateStatus('Link copied to clipboard! Send it to your friend.');
+            updateStatus('Link copied to clipboard!');
         }
 
-        // --- Placement Mechanics ---
         function toggleOrientation() {
             isHorizontal = !isHorizontal;
             document.getElementById('orient-label').innerText = isHorizontal ? 'Horiz' : 'Vert';
@@ -533,7 +493,7 @@
             if (canPlace(r, c, size, isHorizontal)) {
                 for (let i = 0; i < size; i++) {
                     const el = getCell(myBoardEl, isHorizontal ? r : r + i, isHorizontal ? c + i : c);
-                    if (el) el.style.backgroundColor = '#475569';
+                    if (el) el.style.backgroundColor = '#38bdf8';
                 }
             }
         }
@@ -542,7 +502,7 @@
             if (myReady) return;
             document.querySelectorAll('#my-board .cell').forEach(cell => {
                 const r = cell.dataset.r, c = cell.dataset.c;
-                cell.style.backgroundColor = myBoardState[r][c] ? '' : '';
+                if (!myBoardState[r][c]) cell.style.backgroundColor = '';
             });
         }
 
@@ -559,13 +519,14 @@
                 }
                 myPlacedShips.push({ ...def, coordinates: coords, hits: 0 });
                 currentShipIdx++;
-                renderTrackers();
-
-                if (currentShipIdx >= SHIPS_DEF.length) {
-                    document.getElementById('placement-controls').classList.add('hidden');
-                    document.getElementById('ready-btn').classList.remove('hidden');
-                    updateStatus('All ships placed! Click "Ready for Battle".');
+                
+                if (currentShipIdx < SHIPS_DEF.length) {
+                    document.getElementById('placement-info').innerText = `Place: ${SHIPS_DEF[currentShipIdx].name} (${SHIPS_DEF[currentShipIdx].size})`;
+                } else {
+                    document.getElementById('placement-info').innerText = 'Fleet Ready!';
+                    showReadyButton();
                 }
+                renderTrackers();
             }
         }
 
@@ -595,10 +556,16 @@
                 }
             });
             currentShipIdx = SHIPS_DEF.length;
+            document.getElementById('placement-info').innerText = 'Fleet Ready!';
             renderTrackers();
-            document.getElementById('placement-controls').classList.add('hidden');
+            showReadyButton();
+        }
+
+        function showReadyButton() {
+            document.getElementById('rotate-btn').classList.add('hidden');
+            document.getElementById('rand-btn').classList.add('hidden');
             document.getElementById('ready-btn').classList.remove('hidden');
-            updateStatus('Fleet randomized! Click "Ready for Battle".');
+            updateStatus('Fleet configured! Click "Ready for Battle".');
         }
 
         function confirmReady() {
@@ -609,17 +576,16 @@
             else updateStatus('Waiting for opponent to get ready...');
         }
 
-        // --- Battle Gameplay ---
         function startBattle() {
             gameStarted = true;
-            myTurn = peer.id < conn.peer; // Deterministic first turn
+            myTurn = peer.id < conn.peer;
             updateTurn();
         }
 
         function attackCell(r, c) {
             if (!myTurn || !gameStarted || enemyBoardState[r][c] !== 0) return;
             AudioFX.playShoot();
-            enemyBoardState[r][c] = 1; // Pending
+            enemyBoardState[r][c] = 1;
             conn.send({ type: 'ATTACK', r, c });
             myTurn = false;
             updateTurn();
@@ -682,7 +648,6 @@
                 renderTrackers();
 
                 if (data.gameOver) {
-                    AudioFX.playWin();
                     updateStatus('🏆 VICTORY! You destroyed the enemy fleet!');
                     gameStarted = false;
                 } else if (!data.sunkShipName) {
@@ -701,7 +666,7 @@
                 if (myTurn && enemyBoardState[r][c] === 0) cell.classList.remove('disabled');
                 else cell.classList.add('disabled');
             });
-            updateStatus(myTurn ? '🎯 YOUR TURN! Take your shot.' : '⏳ OPPONENT TURN! Stand by for incoming fire...');
+            updateStatus(myTurn ? '🎯 YOUR TURN! Take your shot.' : '⏳ OPPONENT TURN! Stand by...');
         }
 
         function sendEmoji(emoji) {
@@ -722,7 +687,6 @@
         function updateStatus(msg) { statusEl.innerHTML = '⚡ ' + msg; }
         function getCell(boardEl, r, c) { return boardEl.querySelector(`[data-r="${r}"][data-c="${c}"]`); }
 
-        // Handle Direct Link Join
         window.addEventListener('load', () => {
             const join = new URLSearchParams(window.location.search).get('join');
             if (join) {

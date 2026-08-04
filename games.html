@@ -90,6 +90,23 @@
       background: var(--border-accent);
     }
 
+    /* VIP Special Styling */
+    .account-badge.is-vip {
+      border-color: var(--text-gold);
+      box-shadow: 0 0 10px rgba(248, 184, 0, 0.5), 0 3px 0 #000;
+    }
+
+    .vip-tag {
+      background: var(--text-gold);
+      color: #000;
+      font-size: 8px;
+      padding: 2px 5px;
+      border-radius: 4px;
+      font-weight: bold;
+      display: none;
+      box-shadow: 0 1px 0 #000;
+    }
+
     /* Category Dropdown Styling */
     .category-select-wrapper {
       position: relative;
@@ -407,9 +424,10 @@
 
     <div class="header-right">
       <!-- Account Badge -->
-      <div class="account-badge" onclick="openAccountModal()">
+      <div class="account-badge" id="headerAccountBadge" onclick="openAccountModal()">
         <span>👤</span>
         <div id="badgeUsername">PLAYER</div>
+        <div class="vip-tag" id="headerVipTag">👑 VIP</div>
         <div style="color: var(--text-gold);" id="badgeLvl">LVL 1</div>
       </div>
 
@@ -443,8 +461,8 @@
           <h3>FLAPPY BIRD</h3>
           <p>The iconic arcade flapper. Tap or press space to flap through endless retro pipes and score big!</p>
           <div class="card-actions">
-            <a class="play-btn" href="https://supernebula23.github.io/games/flappybird/index.html" onclick="addXP(10)">
-              <span>PLAY (+10 XP)</span>
+            <a class="play-btn" href="https://supernebula23.github.io/games/flappybird/index.html" onclick="triggerAddXP(10)">
+              <span class="play-btn-text">PLAY (+10 XP)</span>
             </a>
           </div>
         </div>
@@ -456,8 +474,8 @@
           <h3>MARTIAN MIKE</h3>
           <p>Run, jump, and dodge hazards across challenging Martian landscapes in this retro platformer!</p>
           <div class="card-actions">
-            <a class="play-btn" href="https://supernebula23.github.io/games/MartianMike/Martian%20Mike.html" onclick="addXP(10)">
-              <span>PLAY (+10 XP)</span>
+            <a class="play-btn" href="https://supernebula23.github.io/games/MartianMike/Martian%20Mike.html" onclick="triggerAddXP(10)">
+              <span class="play-btn-text">PLAY (+10 XP)</span>
             </a>
           </div>
         </div>
@@ -469,8 +487,8 @@
           <h3>SPACE DEFENDER</h3>
           <p>Blast through invading alien armadas in this action-packed 8-bit galactic shooter!</p>
           <div class="card-actions">
-            <a class="play-btn" href="https://supernebula23.github.io/games/space_defender.html" onclick="addXP(10)">
-              <span>PLAY (+10 XP)</span>
+            <a class="play-btn" href="https://supernebula23.github.io/games/space_defender.html" onclick="triggerAddXP(10)">
+              <span class="play-btn-text">PLAY (+10 XP)</span>
             </a>
           </div>
         </div>
@@ -482,8 +500,8 @@
           <h3>STACK</h3>
           <p>Stack blocks as high as you can in this skill-based precision timing game!</p>
           <div class="card-actions">
-            <a class="play-btn" href="https://supernebula23.github.io/games/stack.html" onclick="addXP(10)">
-              <span>PLAY (+10 XP)</span>
+            <a class="play-btn" href="https://supernebula23.github.io/games/stack.html" onclick="triggerAddXP(10)">
+              <span class="play-btn-text">PLAY (+10 XP)</span>
             </a>
           </div>
         </div>
@@ -495,21 +513,21 @@
           <h3>2048</h3>
           <p>Join the numbers and reach the 2048 tile in this highly addictive sliding block puzzle!</p>
           <div class="card-actions">
-            <a class="play-btn" href="https://supernebula23.github.io/games/2048.html" onclick="addXP(10)">
-              <span>PLAY (+10 XP)</span>
+            <a class="play-btn" href="https://supernebula23.github.io/games/2048.html" onclick="triggerAddXP(10)">
+              <span class="play-btn-text">PLAY (+10 XP)</span>
             </a>
           </div>
         </div>
 
-        <!-- Game Card 6: Tower Defense (NEW) -->
+        <!-- Game Card 6: Tower Defense -->
         <div class="game-card" data-category="strategy">
           <span class="card-badge neon">STRATEGY</span>
           <div class="card-icon">🏰</div>
           <h3>TOWER DEFENSE</h3>
           <p>Build and upgrade defense towers to defend your realm against waves of incoming enemies!</p>
           <div class="card-actions">
-            <a class="play-btn" href="https://supernebula23.github.io/games/towerdefense.html" onclick="addXP(10)">
-              <span>PLAY (+10 XP)</span>
+            <a class="play-btn" href="https://supernebula23.github.io/games/towerdefense.html" onclick="triggerAddXP(10)">
+              <span class="play-btn-text">PLAY (+10 XP)</span>
             </a>
           </div>
         </div>
@@ -521,8 +539,8 @@
           <h3>AMONG US</h3>
           <p>Uncover the imposter or sabotage the spaceship crew in this mini web edition!</p>
           <div class="card-actions">
-            <a class="play-btn" href="https://supernebula23.github.io/games/amongus.html" onclick="addXP(10)">
-              <span>PLAY (+10 XP)</span>
+            <a class="play-btn" href="https://supernebula23.github.io/games/amongus.html" onclick="triggerAddXP(10)">
+              <span class="play-btn-text">PLAY (+10 XP)</span>
             </a>
           </div>
         </div>
@@ -533,12 +551,13 @@
   <!-- Account Modal -->
   <div class="modal-overlay" id="accountModal">
     <div class="modal-card">
-      <h2>PLAYER PROFILE</h2>
+      <h2>PLAYER PROFILE <span id="modalVipBadge" style="display:none; color: var(--text-gold);">👑 VIP</span></h2>
       <label for="usernameInput">DISPLAY NAME:</label>
-      <input type="text" id="usernameInput" maxlength="12" placeholder="ENTER NAME">
+      <input type="text" id="usernameInput" maxlength="16" placeholder="ENTER NAME">
 
-      <div style="text-align: left; font-size: 9px; color: var(--text-gold); margin-top: 5px;">
-        <span id="modalLvl">LEVEL 1</span> - <span id="modalXp">0 XP</span>
+      <div style="text-align: left; font-size: 9px; color: var(--text-gold); margin-top: 5px; display: flex; justify-content: space-between;">
+        <div><span id="modalLvl">LEVEL 1</span> - <span id="modalXp">0 XP</span></div>
+        <div id="vipStatusText" style="color: var(--neon-cyan); display: none;">2X XP BOOST ACTIVE!</div>
       </div>
 
       <div class="xp-progress-bar">
@@ -552,6 +571,12 @@
   <script>
     // --- Account & LocalStorage Setup ---
     const XP_PER_LEVEL = 100;
+    const VIP_USERS = ['scaryghost14', 'scaryenderman45', 'imtiny'];
+
+    function isVipName(name) {
+      if (!name) return false;
+      return VIP_USERS.includes(name.trim().toLowerCase());
+    }
 
     function getAccount() {
       const saved = localStorage.getItem('sn_user_account');
@@ -566,6 +591,13 @@
       updateUI();
     }
 
+    function triggerAddXP(amount) {
+      const acc = getAccount();
+      // VIP players get 2x XP boost!
+      const finalAmount = isVipName(acc.username) ? amount * 2 : amount;
+      addXP(finalAmount);
+    }
+
     function addXP(amount) {
       const acc = getAccount();
       acc.xp += amount;
@@ -576,10 +608,29 @@
       const acc = getAccount();
       const level = Math.floor(acc.xp / XP_PER_LEVEL) + 1;
       const currentLevelXP = acc.xp % XP_PER_LEVEL;
+      const isVip = isVipName(acc.username);
 
       // Update Header
       document.getElementById('badgeUsername').textContent = acc.username;
       document.getElementById('badgeLvl').textContent = `LVL ${level}`;
+
+      // Update VIP elements
+      const headerTag = document.getElementById('headerVipTag');
+      const badge = document.getElementById('headerAccountBadge');
+      const modalVipBadge = document.getElementById('modalVipBadge');
+      const vipStatusText = document.getElementById('vipStatusText');
+
+      if (isVip) {
+        headerTag.style.display = 'inline-block';
+        badge.classList.add('is-vip');
+        modalVipBadge.style.display = 'inline';
+        vipStatusText.style.display = 'block';
+      } else {
+        headerTag.style.display = 'none';
+        badge.classList.remove('is-vip');
+        modalVipBadge.style.display = 'none';
+        vipStatusText.style.display = 'none';
+      }
 
       // Update Modal
       document.getElementById('usernameInput').value = acc.username;
@@ -588,6 +639,12 @@
       
       const fillPercent = (currentLevelXP / XP_PER_LEVEL) * 100;
       document.getElementById('xpFill').style.width = `${fillPercent}%`;
+
+      // Dynamic XP Labels on Buttons based on VIP status
+      const btnTexts = document.querySelectorAll('.play-btn-text');
+      btnTexts.forEach(btn => {
+        btn.textContent = isVip ? 'PLAY (+20 XP 👑)' : 'PLAY (+10 XP)';
+      });
     }
 
     function openAccountModal() {
@@ -599,7 +656,7 @@
       const acc = getAccount();
       const inputVal = document.getElementById('usernameInput').value.trim();
       if (inputVal) {
-        acc.username = inputVal.toUpperCase();
+        acc.username = inputVal;
       }
       saveAccountData(acc);
       document.getElementById('accountModal').classList.remove('active');

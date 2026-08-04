@@ -1,1314 +1,708 @@
 <!DOCTYPE html>
-
 <html lang="en">
-
 <head>
-
   <meta charset="UTF-8" />
-
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-
   <title>SuperNebula Games</title>
-
   <link id="favicon" rel="icon" type="image/x-icon" href="https://fav.farm/🌌">
-
   <link rel="preconnect" href="https://fonts.googleapis.com">
-
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-
   <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
 
- 
-
   <style>
-
     :root {
-
       --bg-dark: #0b1d28;
-
       --bg-card: #152d3e;
-
       --border-accent: #f85800;
-
       --text-gold: #f8b800;
-
       --green-pipe: #73bf2e;
-
       --neon-cyan: #00ffff;
-
       --neon-magenta: #ff00ff;
-
     }
-
 
     * {
-
       box-sizing: border-box;
-
       margin: 0;
-
       padding: 0;
-
       user-select: none;
-
       -webkit-user-select: none;
-
       -webkit-touch-callout: none;
-
     }
-
 
     body {
-
       background-color: var(--bg-dark);
-
       font-family: 'Press Start 2P', cursive, monospace;
-
       color: #fff;
-
       min-height: 100vh;
-
       display: flex;
-
       flex-direction: column;
-
       overflow-x: hidden;
-
     }
-
 
     header.site-header {
-
       background: #06121a;
-
       border-bottom: 4px solid #000;
-
       padding: 14px 24px;
-
       display: flex;
-
       justify-content: space-between;
-
       align-items: center;
-
       position: sticky;
-
       top: 0;
-
       z-index: 100;
-
       box-shadow: 0 4px 20px rgba(0,0,0,0.6);
-
       gap: 12px;
-
     }
-
 
     .header-right {
-
       display: flex;
-
       align-items: center;
-
       gap: 12px;
-
     }
-
 
     .brand-title {
-
       font-size: 14px;
-
       color: var(--text-gold);
-
       text-shadow: 2px 2px 0 #000;
-
       display: flex;
-
       align-items: center;
-
       gap: 10px;
-
       text-decoration: none;
-
       cursor: pointer;
-
     }
-
 
     /* Account Widget */
-
     .account-badge {
-
       background: #152d3e;
-
       border: 3px solid #000;
-
       border-radius: 6px;
-
       padding: 6px 10px;
-
       font-size: 9px;
-
       color: #fff;
-
       cursor: pointer;
-
       display: flex;
-
       align-items: center;
-
       gap: 8px;
-
       box-shadow: 0 3px 0 #000;
-
       transition: background 0.1s ease;
-
     }
-
 
     .account-badge:hover {
-
       background: var(--border-accent);
-
     }
-
 
     /* VIP Special Styling */
-
     .account-badge.is-vip {
-
       border-color: var(--text-gold);
-
       box-shadow: 0 0 10px rgba(248, 184, 0, 0.5), 0 3px 0 #000;
-
     }
-
 
     .vip-tag {
-
       background: var(--text-gold);
-
       color: #000;
-
       font-size: 8px;
-
       padding: 2px 5px;
-
       border-radius: 4px;
-
       font-weight: bold;
-
       display: none;
-
       box-shadow: 0 1px 0 #000;
-
     }
-
 
     /* Category Dropdown Styling */
-
     .category-select-wrapper {
-
       position: relative;
-
       display: flex;
-
       align-items: center;
-
     }
-
 
     .category-select {
-
       background: #1a3a4f;
-
       color: #fff;
-
       border: 3px solid #000;
-
       border-radius: 6px;
-
       padding: 8px 12px;
-
       font-family: 'Press Start 2P', cursive;
-
       font-size: 10px;
-
       cursor: pointer;
-
       box-shadow: 0 3px 0 #000;
-
       outline: none;
-
       appearance: none;
-
       -webkit-appearance: none;
-
       -moz-appearance: none;
-
       padding-right: 30px;
-
       transition: all 0.1s ease;
-
     }
-
 
     .category-select:hover {
-
       background: var(--border-accent);
-
     }
-
 
     .select-arrow {
-
       position: absolute;
-
       right: 10px;
-
       pointer-events: none;
-
       font-size: 8px;
-
       color: #fff;
-
     }
-
 
     /* Account Modal */
-
     .modal-overlay {
-
       position: fixed;
-
       top: 0;
-
       left: 0;
-
       width: 100vw;
-
       height: 100vh;
-
       background: rgba(0, 0, 0, 0.85);
-
       display: flex;
-
       align-items: center;
-
       justify-content: center;
-
       z-index: 1000;
-
       opacity: 0;
-
       pointer-events: none;
-
       transition: opacity 0.2s ease;
-
     }
-
 
     .modal-overlay.active {
-
       opacity: 1;
-
       pointer-events: all;
-
     }
-
 
     .modal-card {
-
       background: var(--bg-card);
-
       border: 4px solid #000;
-
       box-shadow: 0 10px 0 #000;
-
       border-radius: 12px;
-
       padding: 24px;
-
       width: 90%;
-
       max-width: 400px;
-
       display: flex;
-
       flex-direction: column;
-
       gap: 16px;
-
       text-align: center;
-
     }
-
 
     .modal-card h2 {
-
       font-size: 14px;
-
       color: var(--text-gold);
-
     }
-
 
     .modal-card label {
-
       font-size: 9px;
-
       color: #b0cadb;
-
       text-align: left;
-
     }
-
 
     .modal-card input[type="text"] {
-
       background: #0b1d28;
-
       border: 3px solid #000;
-
       color: #fff;
-
       padding: 10px;
-
       font-family: 'Press Start 2P', cursive;
-
       font-size: 10px;
-
       border-radius: 6px;
-
       outline: none;
-
     }
-
 
     .xp-progress-bar {
-
       width: 100%;
-
       background: #0b1d28;
-
       border: 2px solid #000;
-
       border-radius: 6px;
-
       height: 16px;
-
       overflow: hidden;
-
       position: relative;
-
     }
-
 
     .xp-progress-fill {
-
       background: var(--green-pipe);
-
       height: 100%;
-
       width: 0%;
-
       transition: width 0.3s ease;
-
     }
-
 
     .modal-btn {
-
       padding: 10px;
-
       background: var(--border-accent);
-
       color: #fff;
-
       font-family: 'Press Start 2P', cursive;
-
       font-size: 10px;
-
       border: 3px solid #000;
-
       border-radius: 6px;
-
       box-shadow: 0 4px 0 #000;
-
       cursor: pointer;
-
     }
-
 
     .modal-btn:hover {
-
       background: #e04e00;
-
     }
-
 
     main.content-area {
-
       flex: 1;
-
       display: flex;
-
       flex-direction: column;
-
       align-items: center;
-
       justify-content: center;
-
       padding: 20px 15px;
-
     }
-
 
     .view-section {
-
       width: 100%;
-
       max-width: 960px;
-
       display: flex;
-
       flex-direction: column;
-
       align-items: center;
-
       animation: fadeIn 0.25s ease-out;
-
     }
-
 
     @keyframes fadeIn {
-
       from { opacity: 0; transform: translateY(6px); }
-
       to { opacity: 1; transform: translateY(0); }
-
     }
-
 
     .hero-banner {
-
       text-align: center;
-
       margin-bottom: 32px;
-
     }
-
 
     .hero-banner h1 {
-
       font-size: clamp(18px, 4vw, 28px);
-
       color: #fff;
-
       text-shadow: 3px 3px 0 var(--border-accent), 6px 6px 0 #000;
-
       line-height: 1.4;
-
       margin-bottom: 12px;
-
     }
-
 
     .hero-banner p {
-
       font-size: 11px;
-
       color: #8faec4;
-
       letter-spacing: 1px;
-
       line-height: 1.8;
-
     }
-
 
     .games-grid {
-
       display: grid;
-
       grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-
       gap: 24px;
-
       width: 100%;
-
       margin-bottom: 30px;
-
     }
-
 
     .game-card {
-
       background: var(--bg-card);
-
       border: 4px solid #000;
-
       border-radius: 12px;
-
       padding: 20px;
-
       display: flex;
-
       flex-direction: column;
-
       align-items: center;
-
       text-align: center;
-
       box-shadow: 0 8px 0 #000;
-
       transition: transform 0.15s ease, box-shadow 0.15s ease;
-
       position: relative;
-
       overflow: hidden;
-
     }
-
 
     .game-card.hidden {
-
       display: none !important;
-
     }
-
 
     .game-card:hover {
-
       transform: translateY(-4px);
-
       box-shadow: 0 12px 0 #000;
-
       border-color: var(--border-accent);
-
     }
-
 
     .card-badge {
-
       position: absolute;
-
       top: 12px;
-
       right: 12px;
-
       background: #73bf2e;
-
       color: #000;
-
       font-size: 8px;
-
       padding: 4px 8px;
-
       border-radius: 4px;
-
       border: 2px solid #000;
-
       font-weight: bold;
-
     }
-
 
     .card-badge.neon { background: var(--neon-cyan); }
-
     .card-badge.gold { background: var(--text-gold); }
-
     .card-badge.red { background: #ff4757; color: #fff; }
-
     .card-badge.purple { background: var(--neon-magenta); color: #fff; }
-
     .card-badge.orange { background: #ff7700; color: #fff; }
 
-
     .card-icon {
-
       width: 72px;
-
       height: 72px;
-
       background: #0b1d28;
-
       border: 3px solid #000;
-
       border-radius: 10px;
-
       display: flex;
-
       align-items: center;
-
       justify-content: center;
-
       margin-bottom: 16px;
-
       font-size: 32px;
-
     }
-
 
     .game-card h3 {
-
       font-size: 14px;
-
       color: var(--text-gold);
-
       margin-bottom: 10px;
-
       text-shadow: 1px 1px 0 #000;
-
     }
-
 
     .game-card p {
-
       font-size: 9px;
-
       color: #b0cadb;
-
       line-height: 1.6;
-
       margin-bottom: 20px;
-
       flex: 1;
-
     }
-
 
     .card-actions {
-
       display: flex;
-
       flex-direction: column;
-
       gap: 8px;
-
       width: 100%;
-
     }
-
 
     .play-btn {
-
       width: 100%;
-
       padding: 12px;
-
       background: var(--border-accent);
-
       color: #fff;
-
       font-family: 'Press Start 2P', cursive;
-
       font-size: 11px;
-
       border: 3px solid #000;
-
       border-radius: 8px;
-
       box-shadow: 0 4px 0 #000;
-
       cursor: pointer;
-
       text-decoration: none;
-
       transition: all 0.1s ease;
-
       display: flex;
-
       align-items: center;
-
       justify-content: center;
-
       gap: 8px;
-
     }
-
 
     .play-btn:hover {
-
       background: #e04e00;
-
       transform: translateY(-2px);
-
       box-shadow: 0 6px 0 #000;
-
     }
-
 
     .play-btn:active {
-
       transform: translateY(2px);
-
       box-shadow: 0 2px 0 #000;
-
     }
-
 
     @media (max-width: 600px) {
-
       header.site-header {
-
         padding: 10px 14px;
-
       }
-
       .brand-title span {
-
         display: none;
-
       }
-
       .category-select {
-
         font-size: 8px;
-
         padding: 6px 24px 6px 8px;
-
       }
-
       .account-badge span {
-
         display: none;
-
       }
-
     }
-
   </style>
-
 </head>
-
 <body>
 
-
   <header class="site-header">
-
     <a class="brand-title" href="#">
-
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-
         <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
-
       </svg>
-
       <span>SUPERNEBULA GAMES</span>
-
     </a>
 
-
     <div class="header-right">
-
       <!-- Account Badge -->
-
       <div class="account-badge" id="headerAccountBadge" onclick="openAccountModal()">
-
         <span>👤</span>
-
         <div id="badgeUsername">PLAYER</div>
-
         <div class="vip-tag" id="headerVipTag">👑 VIP</div>
-
         <div style="color: var(--text-gold);" id="badgeLvl">LVL 1</div>
-
       </div>
-
 
       <!-- Category Dropdown Filter -->
-
       <div class="category-select-wrapper">
-
         <select class="category-select" id="categoryFilter" onchange="filterCategory(this.value)">
-
           <option value="all">ALL CATEGORIES</option>
-
           <option value="arcade">ARCADE</option>
-
           <option value="platformer">PLATFORMER</option>
-
           <option value="puzzle">PUZZLE</option>
-
           <option value="strategy">STRATEGY</option>
-
           <option value="survival">SURVIVAL</option>
-
         </select>
-
         <span class="select-arrow">▼</span>
-
       </div>
-
     </div>
-
   </header>
 
-
   <main class="content-area">
-
     <section id="home-view" class="view-section">
-
       <div class="hero-banner">
-
         <h1>✨ SuperNebula Games ✨</h1>
-
         <p>Select A Game!</p>
-
       </div>
-
 
       <div class="games-grid">
-
         <!-- Game Card 1: Flappy Bird -->
-
         <div class="game-card" data-category="arcade">
-
           <span class="card-badge">OG CLASSIC</span>
-
           <div class="card-icon">🐤</div>
-
           <h3>FLAPPY BIRD</h3>
-
           <p>The iconic arcade flapper. Tap or press space to flap through endless retro pipes and score big!</p>
-
           <div class="card-actions">
-
             <a class="play-btn" href="https://supernebula23.github.io/games/flappybird/index.html" onclick="triggerAddXP(10)">
-
               <span class="play-btn-text">PLAY (+10 XP)</span>
-
             </a>
-
           </div>
-
         </div>
-
 
         <!-- Game Card 2: Martian Mike -->
-
         <div class="game-card" data-category="platformer">
-
           <span class="card-badge orange">PLATFORMER</span>
-
           <div class="card-icon">👨‍🚀</div>
-
           <h3>MARTIAN MIKE</h3>
-
           <p>Run, jump, and dodge hazards across challenging Martian landscapes in this retro platformer!</p>
-
           <div class="card-actions">
-
             <a class="play-btn" href="https://supernebula23.github.io/games/MartianMike/Martian%20Mike.html" onclick="triggerAddXP(10)">
-
               <span class="play-btn-text">PLAY (+10 XP)</span>
-
             </a>
-
           </div>
-
         </div>
-
 
         <!-- Game Card 3: Space Defender -->
-
         <div class="game-card" data-category="arcade">
-
           <span class="card-badge neon">RETRO SHOOTER</span>
-
           <div class="card-icon">👾</div>
-
           <h3>SPACE DEFENDER</h3>
-
           <p>Blast through invading alien armadas in this action-packed 8-bit galactic shooter!</p>
-
           <div class="card-actions">
-
             <a class="play-btn" href="https://supernebula23.github.io/games/space_defender.html" onclick="triggerAddXP(10)">
-
               <span class="play-btn-text">PLAY (+10 XP)</span>
-
             </a>
-
           </div>
-
         </div>
-
 
         <!-- Game Card 4: Stack -->
-
         <div class="game-card" data-category="arcade">
-
           <span class="card-badge purple">ARCADE</span>
-
           <div class="card-icon">🥞</div>
-
           <h3>STACK</h3>
-
           <p>Stack blocks as high as you can in this skill-based precision timing game!</p>
-
           <div class="card-actions">
-
             <a class="play-btn" href="https://supernebula23.github.io/games/stack.html" onclick="triggerAddXP(10)">
-
               <span class="play-btn-text">PLAY (+10 XP)</span>
-
             </a>
-
           </div>
-
         </div>
-
 
         <!-- Game Card 5: 2048 -->
-
         <div class="game-card" data-category="puzzle">
-
           <span class="card-badge gold">PUZZLE</span>
-
           <div class="card-icon">🔢</div>
-
           <h3>2048</h3>
-
           <p>Join the numbers and reach the 2048 tile in this highly addictive sliding block puzzle!</p>
-
           <div class="card-actions">
-
             <a class="play-btn" href="https://supernebula23.github.io/games/2048.html" onclick="triggerAddXP(10)">
-
               <span class="play-btn-text">PLAY (+10 XP)</span>
-
             </a>
-
           </div>
-
         </div>
-
 
         <!-- Game Card 6: Tower Defense -->
-
         <div class="game-card" data-category="strategy">
-
           <span class="card-badge neon">STRATEGY</span>
-
           <div class="card-icon">🏰</div>
-
           <h3>TOWER DEFENSE</h3>
-
           <p>Build and upgrade defense towers to defend your realm against waves of incoming enemies!</p>
-
           <div class="card-actions">
-
             <a class="play-btn" href="https://supernebula23.github.io/games/towerdefense.html" onclick="triggerAddXP(10)">
-
               <span class="play-btn-text">PLAY (+10 XP)</span>
-
             </a>
-
           </div>
-
         </div>
-
 
         <!-- Game Card 7: Among Us -->
-
         <div class="game-card" data-category="survival">
-
           <span class="card-badge red">SURVIVAL</span>
-
           <div class="card-icon">🚀</div>
-
           <h3>AMONG US</h3>
-
           <p>Uncover the imposter or sabotage the spaceship crew in this mini web edition!</p>
-
           <div class="card-actions">
-
             <a class="play-btn" href="https://supernebula23.github.io/games/amongus.html" onclick="triggerAddXP(10)">
-
               <span class="play-btn-text">PLAY (+10 XP)</span>
-
             </a>
-
           </div>
-
         </div>
-
 
         <!-- Game Card 8: Guess The Color -->
-
         <div class="game-card" data-category="puzzle">
-
-          <span class="card-badge neon">NEW</span>
-
+          <span class="card-badge neon">MULTIPLAYER</span>
           <div class="card-icon">🎨</div>
-
           <h3>GUESS THE COLOR</h3>
-
           <p>Test your visual precision! Match hex codes and color shades before time runs out!</p>
-
           <div class="card-actions">
-
             <a class="play-btn" href="https://supernebula23.github.io/games/guessthecolor.html" onclick="triggerAddXP(10)">
-
               <span class="play-btn-text">PLAY (+10 XP)</span>
-
             </a>
-
           </div>
-
         </div>
 
+        <!-- Game Card 9: Battleship -->
+        <div class="game-card" data-category="strategy">
+          <span class="card-badge neon">MULTIPLAYER</span>
+          <div class="card-icon">🚢</div>
+          <h3>BATTLESHIP</h3>
+          <p>Position your fleet and sink your opponent's ships in intense naval grid warfare!</p>
+          <div class="card-actions">
+            <a class="play-btn" href="https://supernebula23.github.io/games/battleship.html" onclick="triggerAddXP(10)">
+              <span class="play-btn-text">PLAY (+10 XP)</span>
+            </a>
+          </div>
+        </div>
       </div>
-
     </section>
-
   </main>
 
-
   <!-- Account Modal -->
-
   <div class="modal-overlay" id="accountModal">
-
     <div class="modal-card">
-
       <h2>PLAYER PROFILE <span id="modalVipBadge" style="display:none; color: var(--text-gold);">👑 VIP</span></h2>
-
       <label for="usernameInput">DISPLAY NAME:</label>
-
       <input type="text" id="usernameInput" maxlength="20" placeholder="ENTER NAME">
 
-
       <div style="text-align: left; font-size: 9px; color: var(--text-gold); margin-top: 5px; display: flex; justify-content: space-between;">
-
         <div><span id="modalLvl">LEVEL 1</span> - <span id="modalXp">0 XP</span></div>
-
         <div id="vipStatusText" style="color: var(--neon-cyan); display: none;">2X XP BOOST ACTIVE!</div>
-
       </div>
-
 
       <div class="xp-progress-bar">
-
         <div class="xp-progress-fill" id="xpFill"></div>
-
       </div>
 
-
       <button class="modal-btn" onclick="saveProfile()">SAVE & CLOSE</button>
-
     </div>
-
   </div>
 
-
   <script>
-
     // --- Account & LocalStorage Setup ---
-
     const XP_PER_LEVEL = 100;
-
     const VIP_USERS = ['scaryghost14', 'scaryenderman45', 'imtiny'];
 
-
     function isVipName(name) {
-
       if (!name) return false;
-
       return VIP_USERS.includes(name.trim().toLowerCase());
-
     }
-
 
     function getAccount() {
-
       const saved = localStorage.getItem('sn_user_account');
-
       if (saved) {
-
         return JSON.parse(saved);
-
       }
-
       return { username: 'PLAYER 1', xp: 0 };
-
     }
-
 
     function saveAccountData(data) {
-
       localStorage.setItem('sn_user_account', JSON.stringify(data));
-
       updateUI();
-
     }
-
 
     function triggerAddXP(amount) {
-
       const acc = getAccount();
-
       // VIP players get 2x XP boost!
-
       const finalAmount = isVipName(acc.username) ? amount * 2 : amount;
-
       addXP(finalAmount);
-
     }
-
 
     function addXP(amount) {
-
       const acc = getAccount();
-
       acc.xp += amount;
-
       saveAccountData(acc);
-
     }
-
 
     function updateUI() {
-
       const acc = getAccount();
-
       const level = Math.floor(acc.xp / XP_PER_LEVEL) + 1;
-
       const currentLevelXP = acc.xp % XP_PER_LEVEL;
-
       const isVip = isVipName(acc.username);
 
-
       // Update Header
-
       document.getElementById('badgeUsername').textContent = acc.username;
-
       document.getElementById('badgeLvl').textContent = `LVL ${level}`;
 
-
       // Update VIP elements
-
       const headerTag = document.getElementById('headerVipTag');
-
       const badge = document.getElementById('headerAccountBadge');
-
       const modalVipBadge = document.getElementById('modalVipBadge');
-
       const vipStatusText = document.getElementById('vipStatusText');
 
-
       if (isVip) {
-
         headerTag.style.display = 'inline-block';
-
         badge.classList.add('is-vip');
-
         modalVipBadge.style.display = 'inline';
-
         vipStatusText.style.display = 'block';
-
       } else {
-
         headerTag.style.display = 'none';
-
         badge.classList.remove('is-vip');
-
         modalVipBadge.style.display = 'none';
-
         vipStatusText.style.display = 'none';
-
       }
-
 
       // Update Modal
-
       document.getElementById('usernameInput').value = acc.username;
-
       document.getElementById('modalLvl').textContent = `LEVEL ${level}`;
-
       document.getElementById('modalXp').textContent = `${acc.xp} XP`;
-
-     
-
+      
       const fillPercent = (currentLevelXP / XP_PER_LEVEL) * 100;
-
       document.getElementById('xpFill').style.width = `${fillPercent}%`;
 
-
       // Dynamic XP Labels on Buttons based on VIP status
-
       const btnTexts = document.querySelectorAll('.play-btn-text');
-
       btnTexts.forEach(btn => {
-
         btn.textContent = isVip ? 'PLAY (+20 XP 👑)' : 'PLAY (+10 XP)';
-
       });
-
     }
-
 
     function openAccountModal() {
-
       updateUI();
-
       document.getElementById('accountModal').classList.add('active');
-
     }
-
 
     function saveProfile() {
-
       const acc = getAccount();
-
       const inputVal = document.getElementById('usernameInput').value.trim();
-
       if (inputVal) {
-
         acc.username = inputVal;
-
       }
-
       saveAccountData(acc);
-
       document.getElementById('accountModal').classList.remove('active');
-
     }
-
 
     // --- Category Filter ---
-
     function filterCategory(category) {
-
       const cards = document.querySelectorAll('.game-card');
-
       cards.forEach(card => {
-
         const cardCategory = card.getAttribute('data-category');
-
         if (category === 'all' || cardCategory === category) {
-
           card.classList.remove('hidden');
-
         } else {
-
           card.classList.add('hidden');
-
         }
-
       });
-
     }
 
-
     // Initial Load
-
     document.addEventListener('DOMContentLoaded', updateUI);
-
   </script>
-
 </body>
-
 </html>

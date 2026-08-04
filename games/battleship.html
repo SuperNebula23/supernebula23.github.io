@@ -1,0 +1,506 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>P2P Battleship</title>
+    <!-- PeerJS for WebRTC P2P networking -->
+    <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
+    <style>
+        :root {
+            --bg-color: #0d1117;
+            --panel-bg: #161b22;
+            --border-color: #30363d;
+            --accent-color: #238636;
+            --accent-hover: #2ea043;
+            --text-main: #c9d1d9;
+            --grid-water: #0e2a47;
+            --grid-hover: #1b4b7a;
+            --ship-color: #8b949e;
+            --hit-color: #da3633;
+            --miss-color: #8b949e;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        header {
+            width: 100%;
+            max-width: 900px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        h1 { margin: 0; font-size: 1.8rem; }
+
+        .btn {
+            background-color: var(--accent-color);
+            color: white;
+            border: none;
+            padding: 10px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: bold;
+            text-decoration: none;
+            display: inline-block;
+            font-size: 0.9rem;
+        }
+
+        .btn:hover { background-color: var(--accent-hover); }
+        .btn-secondary { background-color: var(--panel-bg); border: 1px solid var(--border-color); }
+        .btn-secondary:hover { background-color: #21262d; }
+
+        .panel {
+            background-color: var(--panel-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            padding: 20px;
+            width: 100%;
+            max-width: 900px;
+            box-sizing: border-box;
+            margin-bottom: 20px;
+        }
+
+        .lobby-controls {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        input[type="text"] {
+            background-color: var(--bg-color);
+            border: 1px solid var(--border-color);
+            color: var(--text-main);
+            padding: 10px;
+            border-radius: 6px;
+            flex: 1;
+            min-width: 200px;
+        }
+
+        #status {
+            margin-top: 10px;
+            font-weight: bold;
+            color: #58a6ff;
+        }
+
+        .game-area {
+            display: flex;
+            gap: 30px;
+            flex-wrap: wrap;
+            justify-content: center;
+            width: 100%;
+            max-width: 900px;
+        }
+
+        .board-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .board-title {
+            margin-bottom: 10px;
+            font-weight: bold;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(10, 36px);
+            grid-template-rows: repeat(10, 36px);
+            gap: 2px;
+            background-color: var(--border-color);
+            border: 2px solid var(--border-color);
+            border-radius: 4px;
+        }
+
+        .cell {
+            background-color: var(--grid-water);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            user-select: none;
+            font-weight: bold;
+        }
+
+        .cell:hover { background-color: var(--grid-hover); }
+        .cell.ship { background-color: var(--ship-color); }
+        .cell.hit { background-color: var(--hit-color); cursor: not-allowed; }
+        .cell.miss { background-color: var(--grid-water); cursor: not-allowed; }
+        .cell.miss::after { content: "•"; color: var(--miss-color); font-size: 24px; }
+        .cell.hit::after { content: "✕"; color: white; font-size: 18px; }
+        .cell.disabled { cursor: not-allowed; }
+
+        .setup-controls {
+            margin-top: 15px;
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .hidden { display: none !important; }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>P2P Battleship</h1>
+        <a href="https://supernebula23.github.io/games" class="btn btn-secondary">🏠 Home</a>
+    </header>
+
+    <div class="panel">
+        <div id="lobby" class="lobby-controls">
+            <button id="host-btn" class="btn" onclick="hostGame()">Host Game</button>
+            <span>or</span>
+            <input type="text" id="join-id" placeholder="Enter Host ID or paste link">
+            <button class="btn btn-secondary" onclick="joinGame()">Join Game</button>
+        </div>
+        
+        <div id="share-link-area" class="hidden" style="margin-top: 15px;">
+            <p style="margin: 0 0 5px 0;">Share this link with a friend to play:</p>
+            <div style="display: flex; gap: 10px;">
+                <input type="text" id="share-url" readonly>
+                <button class="btn" onclick="copyLink()">Copy Link</button>
+            </div>
+        </div>
+
+        <div id="status">Status: Waiting to host or join...</div>
+    </div>
+
+    <div id="game-container" class="game-area hidden">
+        <div class="board-container">
+            <div class="board-title">Your Fleet (Placement Phase)</div>
+            <div id="my-board" class="grid"></div>
+            <div id="setup-tools" class="setup-controls">
+                <button class="btn btn-secondary" onclick="toggleOrientation()">Rotate (Current: <span id="orient-label">Horizontal</span>)</button>
+                <button id="ready-btn" class="btn hidden" onclick="confirmReady()">Ready to Play</button>
+            </div>
+        </div>
+
+        <div class="board-container">
+            <div class="board-title">Target Grid (Enemy Waters)</div>
+            <div id="enemy-board" class="grid"></div>
+        </div>
+    </div>
+
+    <script>
+        // Game State Variables
+        const BOARD_SIZE = 10;
+        const SHIPS = [
+            { name: 'Carrier', size: 5 },
+            { name: 'Battleship', size: 4 },
+            { name: 'Cruiser', size: 3 },
+            { name: 'Submarine', size: 3 },
+            { name: 'Destroyer', size: 2 }
+        ];
+
+        let peer = null;
+        let conn = null;
+        let myBoardState = Array(BOARD_SIZE).fill(null).map(() => Array(BOARD_SIZE).fill(0)); // 0: empty, 1: ship, 2: hit, 3: miss
+        let enemyBoardState = Array(BOARD_SIZE).fill(null).map(() => Array(BOARD_SIZE).fill(0));
+        
+        let currentShipIdx = 0;
+        let isHorizontal = true;
+        let myShipsPlaced = false;
+        let enemyReady = false;
+        let myTurn = false;
+        let gameStarted = false;
+
+        // UI Elements
+        const statusEl = document.getElementById('status');
+        const myBoardEl = document.getElementById('my-board');
+        const enemyBoardEl = document.getElementById('enemy-board');
+
+        // Initialize empty grids
+        function initGrids() {
+            myBoardEl.innerHTML = '';
+            enemyBoardEl.innerHTML = '';
+            for (let r = 0; r < BOARD_SIZE; r++) {
+                for (let c = 0; c < BOARD_SIZE; c++) {
+                    const myCell = document.createElement('div');
+                    myCell.className = 'cell';
+                    myCell.dataset.r = r;
+                    myCell.dataset.c = c;
+                    myCell.addEventListener('mouseenter', handleShipHover);
+                    myCell.addEventListener('mouseleave', clearShipHover);
+                    myCell.addEventListener('click', handleShipPlace);
+                    myBoardEl.appendChild(myCell);
+
+                    const enemyCell = document.createElement('div');
+                    enemyCell.className = 'cell disabled';
+                    enemyCell.dataset.r = r;
+                    enemyCell.dataset.c = c;
+                    enemyCell.addEventListener('click', () => makeAttack(r, c));
+                    enemyBoardEl.appendChild(enemyCell);
+                }
+            }
+        }
+
+        // --- P2P Networking Setup ---
+        function initPeer(id = null) {
+            peer = id ? new Peer(id) : new Peer();
+
+            peer.on('open', (peerId) => {
+                if (!conn) {
+                    const url = new URL(window.location.href);
+                    url.searchParams.set('join', peerId);
+                    document.getElementById('share-url').value = url.href;
+                    document.getElementById('share-link-area').classList.remove('hidden');
+                    updateStatus('Waiting for opponent to join...');
+                }
+            });
+
+            peer.on('connection', (connection) => {
+                conn = connection;
+                setupConnection();
+            });
+
+            peer.on('error', (err) => {
+                updateStatus('Network Error: ' + err.type);
+            });
+        }
+
+        function hostGame() {
+            document.getElementById('lobby').classList.add('hidden');
+            initPeer();
+        }
+
+        function joinGame() {
+            let inputVal = document.getElementById('join-id').value.trim();
+            if (!inputVal) return;
+
+            // Extract ID if full URL pasted
+            if (inputVal.includes('join=')) {
+                const urlParams = new URLSearchParams(inputVal.split('?')[1]);
+                inputVal = urlParams.get('join');
+            }
+
+            document.getElementById('lobby').classList.add('hidden');
+            updateStatus('Connecting to host...');
+
+            peer = new Peer();
+            peer.on('open', () => {
+                conn = peer.connect(inputVal);
+                setupConnection();
+            });
+        }
+
+        function setupConnection() {
+            document.getElementById('share-link-area').classList.add('hidden');
+            document.getElementById('game-container').classList.remove('hidden');
+            initGrids();
+            updateStatus('Connected! Place your ships.');
+
+            conn.on('data', handlePeerData);
+            conn.on('close', () => {
+                updateStatus('Opponent disconnected.');
+                alert('Opponent disconnected.');
+            });
+        }
+
+        function copyLink() {
+            const copyText = document.getElementById('share-url');
+            copyText.select();
+            navigator.clipboard.writeText(copyText.value);
+            alert("Game link copied to clipboard!");
+        }
+
+        // --- Ship Placement Logic ---
+        function toggleOrientation() {
+            isHorizontal = !isHorizontal;
+            document.getElementById('orient-label').innerText = isHorizontal ? 'Horizontal' : 'Vertical';
+        }
+
+        function handleShipHover(e) {
+            if (myShipsPlaced) return;
+            const r = parseInt(e.target.dataset.r);
+            const c = parseInt(e.target.dataset.c);
+            const size = SHIPS[currentShipIdx].size;
+
+            if (canPlaceShip(r, c, size, isHorizontal)) {
+                for (let i = 0; i < size; i++) {
+                    const cell = getCell(myBoardEl, isHorizontal ? r : r + i, isHorizontal ? c + i : c);
+                    if (cell) cell.style.backgroundColor = 'var(--grid-hover)';
+                }
+            }
+        }
+
+        function clearShipHover() {
+            if (myShipsPlaced) return;
+            document.querySelectorAll('#my-board .cell').forEach(cell => {
+                const r = cell.dataset.r;
+                const c = cell.dataset.c;
+                if (myBoardState[r][c] === 1) {
+                    cell.className = 'cell ship';
+                } else {
+                    cell.style.backgroundColor = '';
+                }
+            });
+        }
+
+        function canPlaceShip(r, c, size, horizontal) {
+            if (horizontal && c + size > BOARD_SIZE) return false;
+            if (!horizontal && r + size > BOARD_SIZE) return false;
+            for (let i = 0; i < size; i++) {
+                const checkR = horizontal ? r : r + i;
+                const checkC = horizontal ? c + i : c;
+                if (myBoardState[checkR][checkC] !== 0) return false;
+            }
+            return true;
+        }
+
+        function handleShipPlace(e) {
+            if (myShipsPlaced) return;
+            const r = parseInt(e.target.dataset.r);
+            const c = parseInt(e.target.dataset.c);
+            const ship = SHIPS[currentShipIdx];
+
+            if (canPlaceShip(r, c, ship.size, isHorizontal)) {
+                for (let i = 0; i < ship.size; i++) {
+                    const placeR = isHorizontal ? r : r + i;
+                    const placeC = isHorizontal ? c + i : c;
+                    myBoardState[placeR][placeC] = 1;
+                    getCell(myBoardEl, placeR, placeC).classList.add('ship');
+                }
+
+                currentShipIdx++;
+                if (currentShipIdx >= SHIPS.length) {
+                    myShipsPlaced = true;
+                    document.getElementById('setup-tools').classList.add('hidden');
+                    document.getElementById('ready-btn').classList.remove('hidden');
+                    updateStatus('Ships placed! Click "Ready to Play".');
+                } else {
+                    updateStatus(`Place your ${SHIPS[currentShipIdx].name} (${SHIPS[currentShipIdx].size} cells)`);
+                }
+            }
+        }
+
+        function confirmReady() {
+            document.getElementById('ready-btn').classList.add('hidden');
+            conn.send({ type: 'READY' });
+            if (enemyReady) {
+                startGame();
+            } else {
+                updateStatus('Waiting for opponent to finish placement...');
+            }
+        }
+
+        // --- Game Mechanics & Turns ---
+        function startGame() {
+            gameStarted = true;
+            // Host goes first by convention
+            myTurn = peer.id < conn.peer; 
+            updateTurnStatus();
+            toggleEnemyGridInteractivity();
+        }
+
+        function toggleEnemyGridInteractivity() {
+            document.querySelectorAll('#enemy-board .cell').forEach(cell => {
+                const r = cell.dataset.r;
+                const c = cell.dataset.c;
+                if (myTurn && enemyBoardState[r][c] === 0) {
+                    cell.classList.remove('disabled');
+                } else {
+                    cell.classList.add('disabled');
+                }
+            });
+        }
+
+        function makeAttack(r, c) {
+            if (!myTurn || !gameStarted || enemyBoardState[r][c] !== 0) return;
+
+            conn.send({ type: 'ATTACK', r, c });
+            myTurn = false;
+            updateTurnStatus();
+            toggleEnemyGridInteractivity();
+        }
+
+        function handlePeerData(data) {
+            switch (data.type) {
+                case 'READY':
+                    enemyReady = true;
+                    if (myShipsPlaced && !gameStarted) {
+                        startGame();
+                    } else if (!myShipsPlaced) {
+                        updateStatus('Opponent is ready! Finish placing your ships.');
+                    }
+                    break;
+
+                case 'ATTACK':
+                    const hit = myBoardState[data.r][data.c] === 1;
+                    myBoardState[data.r][data.c] = hit ? 2 : 3;
+                    
+                    // Update visual cell on host/client my board
+                    const cell = getCell(myBoardEl, data.r, data.c);
+                    cell.classList.add(hit ? 'hit' : 'miss');
+
+                    // Check for defeat
+                    const hasShipsLeft = myBoardState.some(row => row.includes(1));
+                    conn.send({ type: 'ATTACK_RESULT', r: data.r, c: data.c, hit, gameOver: !hasShipsLeft });
+
+                    if (!hasShipsLeft) {
+                        updateStatus('Game Over - You Lost!');
+                        gameStarted = false;
+                    } else {
+                        myTurn = true;
+                        updateTurnStatus();
+                        toggleEnemyGridInteractivity();
+                    }
+                    break;
+
+                case 'ATTACK_RESULT':
+                    enemyBoardState[data.r][data.c] = data.hit ? 2 : 3;
+                    const enemyCell = getCell(enemyBoardEl, data.r, data.c);
+                    enemyCell.classList.add(data.hit ? 'hit' : 'miss');
+
+                    if (data.gameOver) {
+                        updateStatus('Game Over - You Won!');
+                        gameStarted = false;
+                    } else {
+                        updateTurnStatus();
+                    }
+                    break;
+            }
+        }
+
+        function updateTurnStatus() {
+            if (!gameStarted) return;
+            if (myTurn) {
+                updateStatus('Your turn! Pick a spot on the enemy board.');
+            } else {
+                updateStatus("Opponent's turn. Waiting for incoming fire...");
+            }
+        }
+
+        function updateStatus(msg) {
+            statusEl.innerText = 'Status: ' + msg;
+        }
+
+        function getCell(boardEl, r, c) {
+            return boardEl.querySelector(`[data-r="${r}"][data-c="${c}"]`);
+        }
+
+        // Auto-join if URL contains join parameter
+        window.addEventListener('load', () => {
+            const urlParams = new URLSearchParams(window.location.search);
+            const joinId = urlParams.get('join');
+            if (joinId) {
+                document.getElementById('join-id').value = joinId;
+                joinGame();
+            }
+        });
+    </script>
+</body>
+</html>

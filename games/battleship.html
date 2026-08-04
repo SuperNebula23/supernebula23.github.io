@@ -3,76 +3,90 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>P2P Battleship</title>
-    <!-- PeerJS for WebRTC P2P networking -->
+    <title>Naval Warfare P2P</title>
+    <!-- PeerJS for WebRTC -->
     <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
     <style>
         :root {
-            --bg-color: #0d1117;
-            --panel-bg: #161b22;
-            --border-color: #30363d;
-            --accent-color: #238636;
-            --accent-hover: #2ea043;
-            --text-main: #c9d1d9;
-            --grid-water: #0e2a47;
-            --grid-hover: #1b4b7a;
-            --ship-color: #8b949e;
-            --hit-color: #da3633;
-            --miss-color: #8b949e;
+            --bg-main: #0a0e17;
+            --panel-bg: #121824;
+            --border: #1e293b;
+            --accent: #3b82f6;
+            --accent-glow: rgba(59, 130, 246, 0.4);
+            --danger: #ef4444;
+            --success: #22c55e;
+            --water: #0f172a;
+            --water-cell: #1e293b;
+            --ship: #64748b;
+            --text: #f8fafc;
+            --text-muted: #94a3b8;
         }
 
+        * { box-sizing: border-box; }
+
         body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-            background-color: var(--bg-color);
-            color: var(--text-main);
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-main);
+            color: var(--text);
             margin: 0;
-            padding: 20px;
+            padding: 15px;
             display: flex;
             flex-direction: column;
             align-items: center;
             min-height: 100vh;
+            overflow-x: hidden;
         }
 
+        /* Header */
         header {
             width: 100%;
-            max-width: 900px;
+            max-width: 950px;
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 20px;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid var(--border);
         }
 
-        h1 { margin: 0; font-size: 1.8rem; }
+        .title {
+            font-size: 1.6rem;
+            font-weight: 800;
+            letter-spacing: 1px;
+            background: linear-gradient(90deg, #60a5fa, #3b82f6);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
 
-        .btn {
-            background-color: var(--accent-color);
-            color: white;
-            border: none;
-            padding: 10px 16px;
-            border-radius: 6px;
+        .home-btn {
+            background-color: var(--panel-bg);
+            color: var(--text);
+            border: 1px solid var(--border);
+            padding: 8px 16px;
+            border-radius: 8px;
             cursor: pointer;
-            font-weight: bold;
+            font-weight: 600;
             text-decoration: none;
-            display: inline-block;
-            font-size: 0.9rem;
+            transition: all 0.2s;
         }
+        .home-btn:hover { background-color: #1e293b; border-color: var(--accent); }
 
-        .btn:hover { background-color: var(--accent-hover); }
-        .btn-secondary { background-color: var(--panel-bg); border: 1px solid var(--border-color); }
-        .btn-secondary:hover { background-color: #21262d; }
-
+        /* Panels */
         .panel {
             background-color: var(--panel-bg);
-            border: 1px solid var(--border-color);
-            border-radius: 6px;
-            padding: 20px;
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 15px 20px;
             width: 100%;
-            max-width: 900px;
-            box-sizing: border-box;
-            margin-bottom: 20px;
+            max-width: 950px;
+            margin-bottom: 15px;
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5);
         }
 
-        .lobby-controls {
+        .lobby-row {
             display: flex;
             gap: 10px;
             align-items: center;
@@ -80,74 +94,192 @@
         }
 
         input[type="text"] {
-            background-color: var(--bg-color);
-            border: 1px solid var(--border-color);
-            color: var(--text-main);
-            padding: 10px;
-            border-radius: 6px;
+            background-color: var(--bg-main);
+            border: 1px solid var(--border);
+            color: var(--text);
+            padding: 10px 14px;
+            border-radius: 8px;
             flex: 1;
-            min-width: 200px;
+            min-width: 220px;
+            outline: none;
         }
+        input[type="text"]:focus { border-color: var(--accent); }
 
-        #status {
+        .btn {
+            background-color: var(--accent);
+            color: white;
+            border: none;
+            padding: 10px 18px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 700;
+            transition: all 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .btn:hover { transform: translateY(-1px); box-shadow: 0 4px 12px var(--accent-glow); }
+        .btn-secondary { background-color: #334155; }
+        .btn-secondary:hover { background-color: #475569; box-shadow: none; }
+
+        .status-bar {
             margin-top: 10px;
-            font-weight: bold;
-            color: #58a6ff;
+            font-weight: 600;
+            font-size: 1rem;
+            color: #60a5fa;
+            display: flex;
+            align-items: center;
+            gap: 8px;
         }
 
-        .game-area {
+        /* Main Game Layout */
+        .game-layout {
             display: flex;
-            gap: 30px;
+            gap: 20px;
             flex-wrap: wrap;
             justify-content: center;
             width: 100%;
-            max-width: 900px;
+            max-width: 950px;
+            position: relative;
         }
 
-        .board-container {
+        .board-card {
+            background: var(--panel-bg);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 15px;
             display: flex;
             flex-direction: column;
             align-items: center;
         }
 
-        .board-title {
-            margin-bottom: 10px;
-            font-weight: bold;
+        .board-header {
+            font-weight: 700;
+            font-size: 1.1rem;
+            margin-bottom: 12px;
+            display: flex;
+            justify-content: space-between;
+            width: 100%;
+            color: var(--text-muted);
         }
 
+        /* Grid */
         .grid {
             display: grid;
-            grid-template-columns: repeat(10, 36px);
-            grid-template-rows: repeat(10, 36px);
-            gap: 2px;
-            background-color: var(--border-color);
-            border: 2px solid var(--border-color);
-            border-radius: 4px;
+            grid-template-columns: repeat(10, 32px);
+            grid-template-rows: repeat(10, 32px);
+            gap: 3px;
+            background-color: var(--border);
+            padding: 4px;
+            border-radius: 8px;
+            position: relative;
         }
 
         .cell {
-            background-color: var(--grid-water);
+            background-color: var(--water-cell);
+            border-radius: 4px;
             display: flex;
             align-items: center;
             justify-content: center;
             cursor: pointer;
             user-select: none;
-            font-weight: bold;
+            font-size: 14px;
+            transition: background 0.15s, transform 0.1s;
         }
 
-        .cell:hover { background-color: var(--grid-hover); }
-        .cell.ship { background-color: var(--ship-color); }
-        .cell.hit { background-color: var(--hit-color); cursor: not-allowed; }
-        .cell.miss { background-color: var(--grid-water); cursor: not-allowed; }
-        .cell.miss::after { content: "•"; color: var(--miss-color); font-size: 24px; }
-        .cell.hit::after { content: "✕"; color: white; font-size: 18px; }
+        .cell:hover:not(.disabled) {
+            background-color: #334155;
+            transform: scale(1.05);
+        }
+
+        /* Cell States */
+        .cell.ship { background-color: var(--ship); border: 1px solid #94a3b8; }
+        .cell.hit {
+            background-color: var(--danger) !important;
+            animation: pop 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        .cell.hit::after { content: "💥"; font-size: 16px; }
+        .cell.miss { background-color: #1e293b; }
+        .cell.miss::after { content: "•"; color: #64748b; font-size: 24px; }
+        .cell.sunk { background-color: #7f1d1d !important; }
         .cell.disabled { cursor: not-allowed; }
 
-        .setup-controls {
-            margin-top: 15px;
+        /* Controls & Ship Tracker */
+        .controls {
+            margin-top: 12px;
             display: flex;
-            gap: 10px;
-            align-items: center;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .ship-tracker {
+            display: flex;
+            gap: 6px;
+            margin-top: 8px;
+        }
+        .ship-badge {
+            background: #1e293b;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            border: 1px solid var(--border);
+        }
+        .ship-badge.sunk { background: #450a0a; color: #fca5a5; border-color: #991b1b; text-decoration: line-through; }
+
+        /* Emoji Chat Overlay */
+        .chat-bar {
+            display: flex;
+            gap: 6px;
+            justify-content: center;
+            width: 100%;
+            margin-top: 10px;
+            background: var(--panel-bg);
+            padding: 10px;
+            border-radius: 12px;
+            border: 1px solid var(--border);
+            flex-wrap: wrap;
+        }
+
+        .chat-btn {
+            background: #1e293b;
+            border: 1px solid var(--border);
+            font-size: 1.2rem;
+            padding: 6px 12px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: transform 0.1s;
+        }
+        .chat-btn:hover { transform: scale(1.2); background: #334155; }
+
+        /* Floating Emoji Animations */
+        .floating-emoji {
+            position: fixed;
+            font-size: 3rem;
+            pointer-events: none;
+            animation: floatUp 2s ease-out forwards;
+            z-index: 999;
+        }
+
+        @keyframes floatUp {
+            0% { opacity: 1; transform: translateY(0) scale(0.8); }
+            50% { transform: translateY(-80px) scale(1.3); }
+            100% { opacity: 0; transform: translateY(-150px) scale(1); }
+        }
+
+        @keyframes pop {
+            0% { transform: scale(0.5); }
+            80% { transform: scale(1.2); }
+            100% { transform: scale(1); }
+        }
+
+        .shake { animation: shakeAnim 0.4s ease-in-out; }
+        @keyframes shakeAnim {
+            0%, 100% { transform: translate(0, 0); }
+            20% { transform: translate(-6px, 4px); }
+            40% { transform: translate(6px, -4px); }
+            60% { transform: translate(-4px, -2px); }
+            80% { transform: translate(4px, 2px); }
         }
 
         .hidden { display: none !important; }
@@ -156,348 +288,445 @@
 <body>
 
     <header>
-        <h1>P2P Battleship</h1>
-        <a href="https://supernebula23.github.io/games" class="btn btn-secondary">🏠 Home</a>
+        <div class="title">⚡ NAVAL WARFARE <span>P2P</span></div>
+        <a href="https://supernebula23.github.io/games" class="home-btn">🏠 Home</a>
     </header>
 
+    <!-- Lobby / Link Share -->
     <div class="panel">
-        <div id="lobby" class="lobby-controls">
-            <button id="host-btn" class="btn" onclick="hostGame()">Host Game</button>
-            <span>or</span>
-            <input type="text" id="join-id" placeholder="Enter Host ID or paste link">
-            <button class="btn btn-secondary" onclick="joinGame()">Join Game</button>
+        <div id="lobby" class="lobby-row">
+            <button id="host-btn" class="btn" onclick="hostGame()">🎮 Create Game Room</button>
+            <span style="color: var(--text-muted)">or</span>
+            <input type="text" id="join-id" placeholder="Paste Host ID or Invite Link here...">
+            <button class="btn btn-secondary" onclick="joinGame()">Join Room</button>
         </div>
         
-        <div id="share-link-area" class="hidden" style="margin-top: 15px;">
-            <p style="margin: 0 0 5px 0;">Share this link with a friend to play:</p>
-            <div style="display: flex; gap: 10px;">
+        <div id="share-area" class="hidden" style="margin-top: 10px;">
+            <p style="margin: 0 0 6px 0; font-size: 0.9rem; color: var(--text-muted);">Send this invite link to your opponent:</p>
+            <div class="lobby-row">
                 <input type="text" id="share-url" readonly>
-                <button class="btn" onclick="copyLink()">Copy Link</button>
+                <button class="btn" onclick="copyLink()">📋 Copy Link</button>
             </div>
         </div>
 
-        <div id="status">Status: Waiting to host or join...</div>
+        <div id="status" class="status-bar">💡 Host a game or paste a link to begin!</div>
     </div>
 
-    <div id="game-container" class="game-area hidden">
-        <div class="board-container">
-            <div class="board-title">Your Fleet (Placement Phase)</div>
-            <div id="my-board" class="grid"></div>
-            <div id="setup-tools" class="setup-controls">
-                <button class="btn btn-secondary" onclick="toggleOrientation()">Rotate (Current: <span id="orient-label">Horizontal</span>)</button>
-                <button id="ready-btn" class="btn hidden" onclick="confirmReady()">Ready to Play</button>
+    <!-- Main Game Area -->
+    <div id="game-area" class="game-layout hidden">
+        
+        <!-- Player Board -->
+        <div class="board-card">
+            <div class="board-header">
+                <span>YOUR FLEET</span>
+                <span id="my-ships-left">5 Ships Alive</span>
             </div>
+            <div id="my-board" class="grid"></div>
+            
+            <div id="placement-controls" class="controls">
+                <button class="btn btn-secondary" onclick="toggleOrientation()">🔄 Rotate: <span id="orient-label">Horiz</span></button>
+                <button class="btn btn-secondary" onclick="randomizeShips()">🎲 Randomize</button>
+                <button id="ready-btn" class="btn hidden" onclick="confirmReady()">🚀 Ready for Battle</button>
+            </div>
+
+            <div class="ship-tracker" id="my-ship-tracker"></div>
         </div>
 
-        <div class="board-container">
-            <div class="board-title">Target Grid (Enemy Waters)</div>
+        <!-- Enemy Board -->
+        <div class="board-card">
+            <div class="board-header">
+                <span>ENEMY WATERS</span>
+                <span id="enemy-ships-left">5 Ships Remaining</span>
+            </div>
             <div id="enemy-board" class="grid"></div>
+            <div class="ship-tracker" id="enemy-ship-tracker"></div>
+        </div>
+
+        <!-- Emoji Quick Chat -->
+        <div class="chat-bar">
+            <span style="font-size:0.85rem; color:var(--text-muted); width:100%; text-align:center; margin-bottom:2px;">Quick Taunt / Reactions</span>
+            <button class="chat-btn" onclick="sendEmoji('🎯')">🎯</button>
+            <button class="chat-btn" onclick="sendEmoji('💥')">💥</button>
+            <button class="chat-btn" onclick="sendEmoji('🔥')">🔥</button>
+            <button class="chat-btn" onclick="sendEmoji('😂')">😂</button>
+            <button class="chat-btn" onclick="sendEmoji('💀')">💀</button>
+            <button class="chat-btn" onclick="sendEmoji('💩')">💩</button>
+            <button class="chat-btn" onclick="sendEmoji('👋')">👋</button>
+            <button class="btn btn-secondary" style="padding:4px 10px; font-size:0.8rem;" onclick="sendEmoji('Nice shot!')">"Nice shot!"</button>
+            <button class="btn btn-secondary" style="padding:4px 10px; font-size:0.8rem;" onclick="sendEmoji('GG!')">"GG!"</button>
         </div>
     </div>
 
     <script>
-        // Game State Variables
+        // Web Audio API Synthesizer for SFX
+        const AudioFX = {
+            ctx: null,
+            init() { if (!this.ctx) this.ctx = new (window.AudioContext || window.webkitAudioContext)(); },
+            playShoot() {
+                this.init();
+                const osc = this.ctx.createOscillator(), gain = this.ctx.createGain();
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(600, this.ctx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(80, this.ctx.currentTime + 0.15);
+                gain.gain.setValueAtTime(0.3, this.ctx.currentTime);
+                gain.gain.linearRampToValueAtTime(0.01, this.ctx.currentTime + 0.15);
+                osc.connect(gain); gain.connect(this.ctx.destination);
+                osc.start(); osc.stop(this.ctx.currentTime + 0.15);
+            },
+            playHit() {
+                this.init();
+                const osc = this.ctx.createOscillator(), gain = this.ctx.createGain();
+                osc.type = 'square';
+                osc.frequency.setValueAtTime(120, this.ctx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(30, this.ctx.currentTime + 0.3);
+                gain.gain.setValueAtTime(0.5, this.ctx.currentTime);
+                gain.gain.linearRampToValueAtTime(0.01, this.ctx.currentTime + 0.3);
+                osc.connect(gain); gain.connect(this.ctx.destination);
+                osc.start(); osc.stop(this.ctx.currentTime + 0.3);
+            },
+            playMiss() {
+                this.init();
+                const osc = this.ctx.createOscillator(), gain = this.ctx.createGain();
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(300, this.ctx.currentTime);
+                osc.frequency.linearRampToValueAtTime(150, this.ctx.currentTime + 0.2);
+                gain.gain.setValueAtTime(0.2, this.ctx.currentTime);
+                gain.gain.linearRampToValueAtTime(0.01, this.ctx.currentTime + 0.2);
+                osc.connect(gain); gain.connect(this.ctx.destination);
+                osc.start(); osc.stop(this.ctx.currentTime + 0.2);
+            },
+            playWin() {
+                this.init();
+                [261, 329, 392, 523].forEach((freq, idx) => {
+                    const osc = this.ctx.createOscillator(), gain = this.ctx.createGain();
+                    osc.frequency.setValueAtTime(freq, this.ctx.currentTime + idx * 0.1);
+                    gain.gain.setValueAtTime(0.3, this.ctx.currentTime + idx * 0.1);
+                    gain.gain.linearRampToValueAtTime(0.01, this.ctx.currentTime + idx * 0.1 + 0.25);
+                    osc.connect(gain); gain.connect(this.ctx.destination);
+                    osc.start(this.ctx.currentTime + idx * 0.1);
+                    osc.stop(this.ctx.currentTime + idx * 0.1 + 0.25);
+                });
+            }
+        };
+
         const BOARD_SIZE = 10;
-        const SHIPS = [
-            { name: 'Carrier', size: 5 },
-            { name: 'Battleship', size: 4 },
-            { name: 'Cruiser', size: 3 },
-            { name: 'Submarine', size: 3 },
-            { name: 'Destroyer', size: 2 }
+        const SHIPS_DEF = [
+            { id: 'carrier', name: 'Carrier', size: 5 },
+            { id: 'battleship', name: 'Battleship', size: 4 },
+            { id: 'cruiser', name: 'Cruiser', size: 3 },
+            { id: 'submarine', name: 'Submarine', size: 3 },
+            { id: 'destroyer', name: 'Destroyer', size: 2 }
         ];
 
-        let peer = null;
-        let conn = null;
-        let myBoardState = Array(BOARD_SIZE).fill(null).map(() => Array(BOARD_SIZE).fill(0)); // 0: empty, 1: ship, 2: hit, 3: miss
-        let enemyBoardState = Array(BOARD_SIZE).fill(null).map(() => Array(BOARD_SIZE).fill(0));
-        
+        let peer = null, conn = null;
+        let myBoardState = Array(10).fill(null).map(() => Array(10).fill(null));
+        let enemyBoardState = Array(10).fill(null).map(() => Array(10).fill(0)); // 0: empty, 2: hit, 3: miss
+        let myPlacedShips = []; // { id, name, size, coordinates: [{r,c}], hits: 0 }
+        let enemyShipsStatus = SHIPS_DEF.map(s => ({ ...s, sunk: false }));
+
         let currentShipIdx = 0;
         let isHorizontal = true;
-        let myShipsPlaced = false;
-        let enemyReady = false;
-        let myTurn = false;
-        let gameStarted = false;
+        let myReady = false, enemyReady = false;
+        let myTurn = false, gameStarted = false;
 
-        // UI Elements
-        const statusEl = document.getElementById('status');
         const myBoardEl = document.getElementById('my-board');
         const enemyBoardEl = document.getElementById('enemy-board');
+        const statusEl = document.getElementById('status');
 
-        // Initialize empty grids
         function initGrids() {
-            myBoardEl.innerHTML = '';
-            enemyBoardEl.innerHTML = '';
+            myBoardEl.innerHTML = ''; enemyBoardEl.innerHTML = '';
             for (let r = 0; r < BOARD_SIZE; r++) {
                 for (let c = 0; c < BOARD_SIZE; c++) {
-                    const myCell = document.createElement('div');
-                    myCell.className = 'cell';
-                    myCell.dataset.r = r;
-                    myCell.dataset.c = c;
-                    myCell.addEventListener('mouseenter', handleShipHover);
-                    myCell.addEventListener('mouseleave', clearShipHover);
-                    myCell.addEventListener('click', handleShipPlace);
-                    myBoardEl.appendChild(myCell);
+                    const cellM = document.createElement('div');
+                    cellM.className = 'cell';
+                    cellM.dataset.r = r; cellM.dataset.c = c;
+                    cellM.addEventListener('mouseenter', handleHover);
+                    cellM.addEventListener('mouseleave', clearHover);
+                    cellM.addEventListener('click', handlePlace);
+                    myBoardEl.appendChild(cellM);
 
-                    const enemyCell = document.createElement('div');
-                    enemyCell.className = 'cell disabled';
-                    enemyCell.dataset.r = r;
-                    enemyCell.dataset.c = c;
-                    enemyCell.addEventListener('click', () => makeAttack(r, c));
-                    enemyBoardEl.appendChild(enemyCell);
+                    const cellE = document.createElement('div');
+                    cellE.className = 'cell disabled';
+                    cellE.dataset.r = r; cellE.dataset.c = c;
+                    cellE.addEventListener('click', () => attackCell(r, c));
+                    enemyBoardEl.appendChild(cellE);
                 }
             }
+            renderTrackers();
         }
 
-        // --- P2P Networking Setup ---
-        function initPeer(id = null) {
-            peer = id ? new Peer(id) : new Peer();
+        function renderTrackers() {
+            const myTracker = document.getElementById('my-ship-tracker');
+            const enemyTracker = document.getElementById('enemy-ship-tracker');
+            
+            myTracker.innerHTML = myPlacedShips.map(s => 
+                `<div class="ship-badge ${s.hits === s.size ? 'sunk' : ''}">${s.name}</div>`
+            ).join('') || SHIPS_DEF.map(s => `<div class="ship-badge">${s.name}</div>`).join('');
 
-            peer.on('open', (peerId) => {
-                if (!conn) {
-                    const url = new URL(window.location.href);
-                    url.searchParams.set('join', peerId);
-                    document.getElementById('share-url').value = url.href;
-                    document.getElementById('share-link-area').classList.remove('hidden');
-                    updateStatus('Waiting for opponent to join...');
-                }
-            });
-
-            peer.on('connection', (connection) => {
-                conn = connection;
-                setupConnection();
-            });
-
-            peer.on('error', (err) => {
-                updateStatus('Network Error: ' + err.type);
-            });
+            enemyTracker.innerHTML = enemyShipsStatus.map(s => 
+                `<div class="ship-badge ${s.sunk ? 'sunk' : ''}">${s.name}</div>`
+            ).join('');
         }
 
+        // --- Network / PeerJS ---
         function hostGame() {
             document.getElementById('lobby').classList.add('hidden');
-            initPeer();
+            peer = new Peer();
+            peer.on('open', id => {
+                const url = new URL(window.location.href);
+                url.searchParams.set('join', id);
+                document.getElementById('share-url').value = url.href;
+                document.getElementById('share-area').classList.remove('hidden');
+                updateStatus('Waiting for an opponent to join...');
+            });
+            peer.on('connection', c => { conn = c; bindEvents(); });
         }
 
         function joinGame() {
-            let inputVal = document.getElementById('join-id').value.trim();
-            if (!inputVal) return;
-
-            // Extract ID if full URL pasted
-            if (inputVal.includes('join=')) {
-                const urlParams = new URLSearchParams(inputVal.split('?')[1]);
-                inputVal = urlParams.get('join');
-            }
-
+            let val = document.getElementById('join-id').value.trim();
+            if (!val) return;
+            if (val.includes('join=')) val = new URLSearchParams(val.split('?')[1]).get('join');
             document.getElementById('lobby').classList.add('hidden');
-            updateStatus('Connecting to host...');
-
+            updateStatus('Connecting to Host...');
             peer = new Peer();
             peer.on('open', () => {
-                conn = peer.connect(inputVal);
-                setupConnection();
+                conn = peer.connect(val);
+                bindEvents();
             });
         }
 
-        function setupConnection() {
-            document.getElementById('share-link-area').classList.add('hidden');
-            document.getElementById('game-container').classList.remove('hidden');
-            initGrids();
-            updateStatus('Connected! Place your ships.');
-
-            conn.on('data', handlePeerData);
-            conn.on('close', () => {
-                updateStatus('Opponent disconnected.');
-                alert('Opponent disconnected.');
+        function bindEvents() {
+            conn.on('open', () => {
+                document.getElementById('share-area').classList.add('hidden');
+                document.getElementById('game-area').classList.remove('hidden');
+                initGrids();
+                updateStatus('Connected! Position your fleet.');
             });
+            conn.on('data', handleData);
+            conn.on('close', () => { alert('Opponent disconnected.'); location.reload(); });
         }
 
         function copyLink() {
-            const copyText = document.getElementById('share-url');
-            copyText.select();
-            navigator.clipboard.writeText(copyText.value);
-            alert("Game link copied to clipboard!");
+            const el = document.getElementById('share-url');
+            el.select(); navigator.clipboard.writeText(el.value);
+            updateStatus('Link copied to clipboard! Send it to your friend.');
         }
 
-        // --- Ship Placement Logic ---
+        // --- Placement Mechanics ---
         function toggleOrientation() {
             isHorizontal = !isHorizontal;
-            document.getElementById('orient-label').innerText = isHorizontal ? 'Horizontal' : 'Vertical';
+            document.getElementById('orient-label').innerText = isHorizontal ? 'Horiz' : 'Vert';
         }
 
-        function handleShipHover(e) {
-            if (myShipsPlaced) return;
-            const r = parseInt(e.target.dataset.r);
-            const c = parseInt(e.target.dataset.c);
-            const size = SHIPS[currentShipIdx].size;
-
-            if (canPlaceShip(r, c, size, isHorizontal)) {
-                for (let i = 0; i < size; i++) {
-                    const cell = getCell(myBoardEl, isHorizontal ? r : r + i, isHorizontal ? c + i : c);
-                    if (cell) cell.style.backgroundColor = 'var(--grid-hover)';
-                }
-            }
-        }
-
-        function clearShipHover() {
-            if (myShipsPlaced) return;
-            document.querySelectorAll('#my-board .cell').forEach(cell => {
-                const r = cell.dataset.r;
-                const c = cell.dataset.c;
-                if (myBoardState[r][c] === 1) {
-                    cell.className = 'cell ship';
-                } else {
-                    cell.style.backgroundColor = '';
-                }
-            });
-        }
-
-        function canPlaceShip(r, c, size, horizontal) {
-            if (horizontal && c + size > BOARD_SIZE) return false;
-            if (!horizontal && r + size > BOARD_SIZE) return false;
+        function canPlace(r, c, size, horiz) {
+            if (horiz && c + size > 10) return false;
+            if (!horiz && r + size > 10) return false;
             for (let i = 0; i < size; i++) {
-                const checkR = horizontal ? r : r + i;
-                const checkC = horizontal ? c + i : c;
-                if (myBoardState[checkR][checkC] !== 0) return false;
+                if (myBoardState[horiz ? r : r + i][horiz ? c + i : c]) return false;
             }
             return true;
         }
 
-        function handleShipPlace(e) {
-            if (myShipsPlaced) return;
-            const r = parseInt(e.target.dataset.r);
-            const c = parseInt(e.target.dataset.c);
-            const ship = SHIPS[currentShipIdx];
-
-            if (canPlaceShip(r, c, ship.size, isHorizontal)) {
-                for (let i = 0; i < ship.size; i++) {
-                    const placeR = isHorizontal ? r : r + i;
-                    const placeC = isHorizontal ? c + i : c;
-                    myBoardState[placeR][placeC] = 1;
-                    getCell(myBoardEl, placeR, placeC).classList.add('ship');
-                }
-
-                currentShipIdx++;
-                if (currentShipIdx >= SHIPS.length) {
-                    myShipsPlaced = true;
-                    document.getElementById('setup-tools').classList.add('hidden');
-                    document.getElementById('ready-btn').classList.remove('hidden');
-                    updateStatus('Ships placed! Click "Ready to Play".');
-                } else {
-                    updateStatus(`Place your ${SHIPS[currentShipIdx].name} (${SHIPS[currentShipIdx].size} cells)`);
+        function handleHover(e) {
+            if (myReady || currentShipIdx >= SHIPS_DEF.length) return;
+            const r = +e.target.dataset.r, c = +e.target.dataset.c, size = SHIPS_DEF[currentShipIdx].size;
+            if (canPlace(r, c, size, isHorizontal)) {
+                for (let i = 0; i < size; i++) {
+                    const el = getCell(myBoardEl, isHorizontal ? r : r + i, isHorizontal ? c + i : c);
+                    if (el) el.style.backgroundColor = '#475569';
                 }
             }
         }
 
-        function confirmReady() {
-            document.getElementById('ready-btn').classList.add('hidden');
-            conn.send({ type: 'READY' });
-            if (enemyReady) {
-                startGame();
-            } else {
-                updateStatus('Waiting for opponent to finish placement...');
-            }
-        }
-
-        // --- Game Mechanics & Turns ---
-        function startGame() {
-            gameStarted = true;
-            // Host goes first by convention
-            myTurn = peer.id < conn.peer; 
-            updateTurnStatus();
-            toggleEnemyGridInteractivity();
-        }
-
-        function toggleEnemyGridInteractivity() {
-            document.querySelectorAll('#enemy-board .cell').forEach(cell => {
-                const r = cell.dataset.r;
-                const c = cell.dataset.c;
-                if (myTurn && enemyBoardState[r][c] === 0) {
-                    cell.classList.remove('disabled');
-                } else {
-                    cell.classList.add('disabled');
-                }
+        function clearHover() {
+            if (myReady) return;
+            document.querySelectorAll('#my-board .cell').forEach(cell => {
+                const r = cell.dataset.r, c = cell.dataset.c;
+                cell.style.backgroundColor = myBoardState[r][c] ? '' : '';
             });
         }
 
-        function makeAttack(r, c) {
-            if (!myTurn || !gameStarted || enemyBoardState[r][c] !== 0) return;
+        function handlePlace(e) {
+            if (myReady || currentShipIdx >= SHIPS_DEF.length) return;
+            const r = +e.target.dataset.r, c = +e.target.dataset.c, def = SHIPS_DEF[currentShipIdx];
+            if (canPlace(r, c, def.size, isHorizontal)) {
+                const coords = [];
+                for (let i = 0; i < def.size; i++) {
+                    const cr = isHorizontal ? r : r + i, cc = isHorizontal ? c + i : c;
+                    myBoardState[cr][cc] = def.id;
+                    coords.push({ r: cr, c: cc });
+                    getCell(myBoardEl, cr, cc).classList.add('ship');
+                }
+                myPlacedShips.push({ ...def, coordinates: coords, hits: 0 });
+                currentShipIdx++;
+                renderTrackers();
 
+                if (currentShipIdx >= SHIPS_DEF.length) {
+                    document.getElementById('placement-controls').classList.add('hidden');
+                    document.getElementById('ready-btn').classList.remove('hidden');
+                    updateStatus('All ships placed! Click "Ready for Battle".');
+                }
+            }
+        }
+
+        function randomizeShips() {
+            myBoardState = Array(10).fill(null).map(() => Array(10).fill(null));
+            myPlacedShips = [];
+            currentShipIdx = 0;
+            document.querySelectorAll('#my-board .cell').forEach(c => c.className = 'cell');
+
+            SHIPS_DEF.forEach(def => {
+                let placed = false;
+                while (!placed) {
+                    const horiz = Math.random() < 0.5;
+                    const r = Math.floor(Math.random() * 10);
+                    const c = Math.floor(Math.random() * 10);
+                    if (canPlace(r, c, def.size, horiz)) {
+                        const coords = [];
+                        for (let i = 0; i < def.size; i++) {
+                            const cr = horiz ? r : r + i, cc = horiz ? c + i : c;
+                            myBoardState[cr][cc] = def.id;
+                            coords.push({ r: cr, c: cc });
+                            getCell(myBoardEl, cr, cc).classList.add('ship');
+                        }
+                        myPlacedShips.push({ ...def, coordinates: coords, hits: 0 });
+                        placed = true;
+                    }
+                }
+            });
+            currentShipIdx = SHIPS_DEF.length;
+            renderTrackers();
+            document.getElementById('placement-controls').classList.add('hidden');
+            document.getElementById('ready-btn').classList.remove('hidden');
+            updateStatus('Fleet randomized! Click "Ready for Battle".');
+        }
+
+        function confirmReady() {
+            myReady = true;
+            document.getElementById('ready-btn').classList.add('hidden');
+            conn.send({ type: 'READY' });
+            if (enemyReady) startBattle();
+            else updateStatus('Waiting for opponent to get ready...');
+        }
+
+        // --- Battle Gameplay ---
+        function startBattle() {
+            gameStarted = true;
+            myTurn = peer.id < conn.peer; // Deterministic first turn
+            updateTurn();
+        }
+
+        function attackCell(r, c) {
+            if (!myTurn || !gameStarted || enemyBoardState[r][c] !== 0) return;
+            AudioFX.playShoot();
+            enemyBoardState[r][c] = 1; // Pending
             conn.send({ type: 'ATTACK', r, c });
             myTurn = false;
-            updateTurnStatus();
-            toggleEnemyGridInteractivity();
+            updateTurn();
         }
 
-        function handlePeerData(data) {
-            switch (data.type) {
-                case 'READY':
-                    enemyReady = true;
-                    if (myShipsPlaced && !gameStarted) {
-                        startGame();
-                    } else if (!myShipsPlaced) {
-                        updateStatus('Opponent is ready! Finish placing your ships.');
+        function handleData(data) {
+            if (data.type === 'READY') {
+                enemyReady = true;
+                if (myReady && !gameStarted) startBattle();
+                else updateStatus('Opponent is ready! Complete your setup.');
+            }
+            else if (data.type === 'ATTACK') {
+                const shipId = myBoardState[data.r][data.c];
+                const hit = !!shipId;
+                const cell = getCell(myBoardEl, data.r, data.c);
+                let sunkShipName = null;
+
+                if (hit) {
+                    AudioFX.playHit();
+                    document.body.classList.add('shake');
+                    setTimeout(() => document.body.classList.remove('shake'), 400);
+                    cell.classList.add('hit');
+                    const ship = myPlacedShips.find(s => s.id === shipId);
+                    ship.hits++;
+                    if (ship.hits === ship.size) sunkShipName = ship.name;
+                } else {
+                    AudioFX.playMiss();
+                    cell.classList.add('miss');
+                }
+
+                const allSunk = myPlacedShips.every(s => s.hits === s.size);
+                conn.send({ type: 'ATTACK_REPLY', r: data.r, c: data.c, hit, sunkShipName, gameOver: allSunk });
+
+                if (allSunk) {
+                    updateStatus('💥 DEFEAT! All your ships were destroyed.');
+                    gameStarted = false;
+                } else {
+                    myTurn = true;
+                    updateTurn();
+                }
+                renderTrackers();
+            }
+            else if (data.type === 'ATTACK_REPLY') {
+                const cell = getCell(enemyBoardEl, data.r, data.c);
+                enemyBoardState[data.r][data.c] = data.hit ? 2 : 3;
+
+                if (data.hit) {
+                    AudioFX.playHit();
+                    cell.classList.add('hit');
+                    if (data.sunkShipName) {
+                        const target = enemyShipsStatus.find(s => s.name === data.sunkShipName);
+                        if (target) target.sunk = true;
+                        updateStatus(`🎯 BOOM! You sunk their ${data.sunkShipName}!`);
                     }
-                    break;
+                } else {
+                    AudioFX.playMiss();
+                    cell.classList.add('miss');
+                }
 
-                case 'ATTACK':
-                    const hit = myBoardState[data.r][data.c] === 1;
-                    myBoardState[data.r][data.c] = hit ? 2 : 3;
-                    
-                    // Update visual cell on host/client my board
-                    const cell = getCell(myBoardEl, data.r, data.c);
-                    cell.classList.add(hit ? 'hit' : 'miss');
+                renderTrackers();
 
-                    // Check for defeat
-                    const hasShipsLeft = myBoardState.some(row => row.includes(1));
-                    conn.send({ type: 'ATTACK_RESULT', r: data.r, c: data.c, hit, gameOver: !hasShipsLeft });
-
-                    if (!hasShipsLeft) {
-                        updateStatus('Game Over - You Lost!');
-                        gameStarted = false;
-                    } else {
-                        myTurn = true;
-                        updateTurnStatus();
-                        toggleEnemyGridInteractivity();
-                    }
-                    break;
-
-                case 'ATTACK_RESULT':
-                    enemyBoardState[data.r][data.c] = data.hit ? 2 : 3;
-                    const enemyCell = getCell(enemyBoardEl, data.r, data.c);
-                    enemyCell.classList.add(data.hit ? 'hit' : 'miss');
-
-                    if (data.gameOver) {
-                        updateStatus('Game Over - You Won!');
-                        gameStarted = false;
-                    } else {
-                        updateTurnStatus();
-                    }
-                    break;
+                if (data.gameOver) {
+                    AudioFX.playWin();
+                    updateStatus('🏆 VICTORY! You destroyed the enemy fleet!');
+                    gameStarted = false;
+                } else if (!data.sunkShipName) {
+                    updateTurn();
+                }
+            }
+            else if (data.type === 'EMOJI') {
+                spawnEmoji(data.emoji, false);
             }
         }
 
-        function updateTurnStatus() {
+        function updateTurn() {
             if (!gameStarted) return;
-            if (myTurn) {
-                updateStatus('Your turn! Pick a spot on the enemy board.');
-            } else {
-                updateStatus("Opponent's turn. Waiting for incoming fire...");
-            }
+            document.querySelectorAll('#enemy-board .cell').forEach(cell => {
+                const r = cell.dataset.r, c = cell.dataset.c;
+                if (myTurn && enemyBoardState[r][c] === 0) cell.classList.remove('disabled');
+                else cell.classList.add('disabled');
+            });
+            updateStatus(myTurn ? '🎯 YOUR TURN! Take your shot.' : '⏳ OPPONENT TURN! Stand by for incoming fire...');
         }
 
-        function updateStatus(msg) {
-            statusEl.innerText = 'Status: ' + msg;
+        function sendEmoji(emoji) {
+            if (conn) conn.send({ type: 'EMOJI', emoji });
+            spawnEmoji(emoji, true);
         }
 
-        function getCell(boardEl, r, c) {
-            return boardEl.querySelector(`[data-r="${r}"][data-c="${c}"]`);
+        function spawnEmoji(emoji, isSelf) {
+            const el = document.createElement('div');
+            el.className = 'floating-emoji';
+            el.innerText = emoji;
+            el.style.left = (isSelf ? 30 : 70) + (Math.random() * 10 - 5) + 'vw';
+            el.style.top = '70vh';
+            document.body.appendChild(el);
+            setTimeout(() => el.remove(), 2000);
         }
 
-        // Auto-join if URL contains join parameter
+        function updateStatus(msg) { statusEl.innerHTML = '⚡ ' + msg; }
+        function getCell(boardEl, r, c) { return boardEl.querySelector(`[data-r="${r}"][data-c="${c}"]`); }
+
+        // Handle Direct Link Join
         window.addEventListener('load', () => {
-            const urlParams = new URLSearchParams(window.location.search);
-            const joinId = urlParams.get('join');
-            if (joinId) {
-                document.getElementById('join-id').value = joinId;
+            const join = new URLSearchParams(window.location.search).get('join');
+            if (join) {
+                document.getElementById('join-id').value = join;
                 joinGame();
             }
         });

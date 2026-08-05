@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>P2P Dots & Boxes</title>
+  <!-- PeerJS for WebRTC signaling -->
+  <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
+  <style>
+    :root {
+      --bg: #0f172a;
+      --panel: #1e293b;
+      --accent: #38bdf8;
+      --p1: #ef4444;
+      --p2: #3b82f6;
+      --dot: #64748b;
+      --line-hover: #475569;
+      --text: #f8fafc;
+    }
+
+    * { box-sizing: border-box; font-family: system-ui, -apple-system, sans-serif; margin: 0; padding: 0; }
+    body { background: var(--bg); color: var(--text); min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 20px; }
+    
+    .container { background: var(--panel); border-radius: 12px; padding: 24px; max-width: 500px; width: 100%; box-shadow: 0 10px 25px rgba(0,0,0,0.5); text-align: center; }
+    
+    /* Header & Navigation */
+    header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+    .home-btn { background: #334155; color: var(--text); text-decoration: none; padding: 8px 16px; border-radius: 6px; font-weight: bold; font-size: 14px; transition: 0.2s; }
+    .home-btn:hover { background: #475569; }
+    
+    h1 { font-size: 24px; color: var(--accent); }
+
+    /* Lobby Controls */
+    .lobby { margin-bottom: 20px; background: #0f172a; padding: 15px; border-radius: 8px; }
+    .status { margin-bottom: 12px; font-weight: 600; font-size: 14px; color: #94a3b8; }
+    .btn { background: var(--accent); color: #0f172a; border: none; padding: 10px 18px; font-weight: bold; border-radius: 6px; cursor: pointer; transition: 0.2s; font-size: 14px; }
+    .btn:hover { opacity: 0.9; }
+    
+    /* Scoreboard */
+    .scoreboard { display: flex; justify-content: space-around; margin-bottom: 20px; padding: 10px; background: #0f172a; border-radius: 8px; }
+    .score-card { font-size: 16px; font-weight: bold; }
+    .p1-color { color: var(--p1); }
+    .p2-color { color: var(--p2); }
+
+    /* Board Graphics */
+    #board { display: inline-grid; gap: 0; margin: 0 auto; background: var(--panel); padding: 10px; border-radius: 8px; }
+    
+    .dot { width: 12px; height: 12px; background: var(--dot); border-radius: 50%; justify-self: center; align-self: center; }
+    
+    .h-line { height: 12px; width: 50px; background: #334155; cursor: pointer; border-radius: 6px; align-self: center; }
+    .v-line { width: 12px; height: 50px; background: #334155; cursor: pointer; border-radius: 6px; justify-self: center; }
+    .h-line:hover:not(.taken), .v-line:hover:not(.taken) { background: var(--line-hover); }
+    
+    .taken { cursor: default; }
+    .taken.p1 { background: var(--p1); }
+    .taken.p2 { background: var(--p2); }
+
+    .box { width: 50px; height: 50px; border-radius: 4px; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 18px; }
+    .box.p1 { background: rgba(239, 68, 68, 0.2); color: var(--p1); }
+    .box.p2 { background: rgba(59, 130, 246, 0.2); color: var(--p2); }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <header>
+      <h1>Dots & Boxes</h1>
+      <a href="https://supernebula23.github.io/games" class="home-btn">← Home</a>
+    </header>
+
+    <div class="lobby">
+      <div id="status" class="status">Connecting to network...</div>
+      <button id="copy-btn" class="btn" style="display: none;" onclick="copyInviteLink()">Copy Invite Link</button>
+    </div>
+
+    <div class="scoreboard">
+      <div class="score-card p1-color">Player 1 (Red): <span id="score1">0</span></div>
+      <div class="score-card p2-color">Player 2 (Blue): <span id="score2">0</span></div>
+    </div>
+
+    <div id="board"></div>
+  </div>
+
+  <script>
+    // Configuration
+    const GRID_SIZE = 4; // 4x4 dots = 3x3 boxes grid
+    let peer, conn;
+    let myPlayerId = null; // 1 or 2
+    let currentTurn = 1;
+    let isMyTurn = false;
+    
+    // Game State Structures
+    const hLines = Array.from({ length: GRID_SIZE }, () => Array(GRID_SIZE - 1).fill(0));
+    const vLines = Array.from({ length: GRID_SIZE - 1 }, () => Array(GRID_SIZE).fill(0));
+    const boxes = Array.from({ length: GRID_SIZE - 1 }, () => Array(GRID_SIZE - 1).fill(0));
+    let score1 = 0, score2 = 0;
+
+    const statusEl = document.getElementById('status');
+    const copyBtn = document.getElementById('copy-btn');
+
+    // 1. WebRTC / PeerJS Initialization
+    function initP2P() {
+      const urlParams = new URLSearchParams(window.location.search);
+      const hostId = urlParams.get('room');
+
+      peer = new Peer();
+
+      peer.on('open', (id) => {
+        if (hostId) {
+          // Player 2 Joining
+          myPlayerId = 2;
+          statusEl.innerText = "Connecting to Host...";
+          conn = peer.connect(hostId);
+          setupConnectionListeners();
+        } else {
+          // Player 1 Hosting
+          myPlayerId = 1;
+          isMyTurn = true;
+          statusEl.innerText = "Waiting for Player 2...";
+          copyBtn.style.display = "inline-block";
+          
+          peer.on('connection', (c) => {
+            conn = c;
+            setupConnectionListeners();
+            statusEl.innerText = "Player 2 Connected! Your turn (Red).";
+          });
+        }
+      });
+
+      peer.on('error', (err) => {
+        statusEl.innerText = "Connection Error: " + err.type;
+      });
+    }
+
+    function setupConnectionListeners() {
+      conn.on('open', () => {
+        if (myPlayerId === 2) {
+          statusEl.innerText = "Connected! Player 1's turn (Red).";
+        }
+      });
+
+      conn.on('data', (data) => {
+        if (data.type === 'MOVE') {
+          handleMove(data.lineType, data.r, data.c, data.player, false);
+        }
+      });
+    }
+
+    function copyInviteLink() {
+      const roomUrl = `${window.location.origin}${window.location.pathname}?room=${peer.id}`;
+      navigator.clipboard.writeText(roomUrl).then(() => {
+        copyBtn.innerText = "Link Copied!";
+        setTimeout(() => copyBtn.innerText = "Copy Invite Link", 2000);
+      });
+    }
+
+    // 2. Render Board
+    function buildBoard() {
+      const board = document.getElementById('board');
+      board.style.gridTemplateColumns = `repeat(${GRID_SIZE * 2 - 1}, auto)`;
+
+      for (let r = 0; r < GRID_SIZE * 2 - 1; r++) {
+        for (let c = 0; c < GRID_SIZE * 2 - 1; c++) {
+          const isRowEven = r % 2 === 0;
+          const isColEven = c % 2 === 0;
+
+          if (isRowEven && isColEven) {
+            // Dot
+            const dot = document.createElement('div');
+            dot.className = 'dot';
+            board.appendChild(dot);
+          } else if (isRowEven && !isColEven) {
+            // Horizontal Line
+            const line = document.createElement('div');
+            line.className = 'h-line';
+            const row = r / 2;
+            const col = (c - 1) / 2;
+            line.id = `h-${row}-${col}`;
+            line.onclick = () => onLineClick('h', row, col);
+            board.appendChild(line);
+          } else if (!isRowEven && isColEven) {
+            // Vertical Line
+            const line = document.createElement('div');
+            line.className = 'v-line';
+            const row = (r - 1) / 2;
+            const col = c / 2;
+            line.id = `v-${row}-${col}`;
+            line.onclick = () => onLineClick('v', row, col);
+            board.appendChild(line);
+          } else {
+            // Box Space
+            const box = document.createElement('div');
+            box.className = 'box';
+            const row = (r - 1) / 2;
+            const col = (c - 1) / 2;
+            box.id = `box-${row}-${col}`;
+            board.appendChild(box);
+          }
+        }
+      }
+    }
+
+    // 3. Game Logic & Turn Handling
+    function onLineClick(type, r, c) {
+      if (!isMyTurn || !conn) return;
+      const isTaken = type === 'h' ? hLines[r][c] : vLines[r][c];
+      if (isTaken) return;
+
+      handleMove(type, r, c, myPlayerId, true);
+    }
+
+    function handleMove(type, r, c, player, isLocal) {
+      // Mark Line
+      const el = document.getElementById(`${type}-${r}-${c}`);
+      el.classList.add('taken', `p${player}`);
+      if (type === 'h') hLines[r][c] = player;
+      else vLines[r][c] = player;
+
+      // Check Box Completion
+      const completedBoxes = checkBoxes(type, r, c, player);
+
+      if (isLocal && conn) {
+        conn.send({ type: 'MOVE', lineType: type, r: r, c: c, player: player });
+      }
+
+      if (completedBoxes === 0) {
+        // Switch Turn
+        currentTurn = currentTurn === 1 ? 2 : 1;
+        isMyTurn = (currentTurn === myPlayerId);
+      } else {
+        // Player gets another turn if they completed a box
+        isMyTurn = (currentTurn === myPlayerId);
+      }
+
+      updateStatusUI();
+    }
+
+    function checkBoxes(type, r, c, player) {
+      let completed = 0;
+      const check = (br, bc) => {
+        if (br >= 0 && br < GRID_SIZE - 1 && bc >= 0 && bc < GRID_SIZE - 1) {
+          if (hLines[br][bc] && hLines[br + 1][bc] && vLines[br][bc] && vLines[br][bc + 1]) {
+            if (boxes[br][bc] === 0) {
+              boxes[br][bc] = player;
+              const boxEl = document.getElementById(`box-${br}-${bc}`);
+              boxEl.classList.add(`p${player}`);
+              boxEl.innerText = player === 1 ? 'R' : 'B';
+              if (player === 1) score1++; else score2++;
+              completed++;
+            }
+          }
+        }
+      };
+
+      if (type === 'h') {
+        check(r - 1, c); // Box above
+        check(r, c);     // Box below
+      } else {
+        check(r, c - 1); // Box left
+        check(r, c);     // Box right
+      }
+
+      document.getElementById('score1').innerText = score1;
+      document.getElementById('score2').innerText = score2;
+      return completed;
+    }
+
+    function updateStatusUI() {
+      const totalBoxes = (GRID_SIZE - 1) * (GRID_SIZE - 1);
+      if (score1 + score2 === totalBoxes) {
+        if (score1 > score2) statusEl.innerText = "Game Over! Player 1 Wins!";
+        else if (score2 > score1) statusEl.innerText = "Game Over! Player 2 Wins!";
+        else statusEl.innerText = "Game Over! It's a Tie!";
+        return;
+      }
+
+      if (isMyTurn) {
+        statusEl.innerText = `Your Turn (${myPlayerId === 1 ? 'Red' : 'Blue'})`;
+      } else {
+        statusEl.innerText = `Waiting for Opponent (${currentTurn === 1 ? 'Red' : 'Blue'})...`;
+      }
+    }
+
+    // Initialize Game
+    buildBoard();
+    initP2P();
+  </script>
+</body>
+</html>

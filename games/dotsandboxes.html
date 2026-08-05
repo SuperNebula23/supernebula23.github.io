@@ -3,61 +3,253 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>P2P Dots & Boxes</title>
+  <title>Dots & Boxes Multiplayer</title>
   <!-- PeerJS for WebRTC signaling -->
   <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
   <style>
     :root {
-      --bg: #0f172a;
-      --panel: #1e293b;
+      --bg: #090d16;
+      --panel: #131c2e;
+      --panel-border: rgba(255, 255, 255, 0.08);
       --accent: #38bdf8;
-      --p1: #ef4444;
+      --p1: #f43f5e;
+      --p1-glow: rgba(244, 63, 94, 0.35);
       --p2: #3b82f6;
-      --dot: #64748b;
-      --line-hover: #475569;
+      --p2-glow: rgba(59, 130, 246, 0.35);
+      --dot: #475569;
+      --line-idle: #1e293b;
+      --line-hover: #334155;
       --text: #f8fafc;
+      --text-muted: #94a3b8;
     }
 
-    * { box-sizing: border-box; font-family: system-ui, -apple-system, sans-serif; margin: 0; padding: 0; }
-    body { background: var(--bg); color: var(--text); min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 20px; }
+    * { 
+      box-sizing: border-box; 
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; 
+      margin: 0; 
+      padding: 0; 
+    }
+
+    body { 
+      background: var(--bg); 
+      background-image: 
+        radial-gradient(at 20% 20%, rgba(56, 189, 248, 0.08) 0px, transparent 50%),
+        radial-gradient(at 80% 80%, rgba(59, 130, 246, 0.08) 0px, transparent 50%);
+      color: var(--text); 
+      min-height: 100vh; 
+      display: flex; 
+      flex-direction: column; 
+      align-items: center; 
+      justify-content: center; 
+      padding: 24px 16px; 
+    }
     
-    .container { background: var(--panel); border-radius: 12px; padding: 24px; max-width: 500px; width: 100%; box-shadow: 0 10px 25px rgba(0,0,0,0.5); text-align: center; }
+    .container { 
+      background: var(--panel); 
+      border: 1px solid var(--panel-border);
+      border-radius: 20px; 
+      padding: 32px; 
+      max-width: 620px; 
+      width: 100%; 
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.6); 
+      text-align: center; 
+    }
     
     /* Header & Navigation */
-    header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
-    .home-btn { background: #334155; color: var(--text); text-decoration: none; padding: 8px 16px; border-radius: 6px; font-weight: bold; font-size: 14px; transition: 0.2s; }
-    .home-btn:hover { background: #475569; }
+    header { 
+      display: flex; 
+      justify-content: space-between; 
+      align-items: center; 
+      margin-bottom: 24px; 
+    }
+
+    .home-btn { 
+      background: rgba(255, 255, 255, 0.05); 
+      color: var(--text-muted); 
+      text-decoration: none; 
+      padding: 10px 18px; 
+      border-radius: 8px; 
+      font-weight: 600; 
+      font-size: 14px; 
+      border: 1px solid var(--panel-border);
+      transition: all 0.2s ease; 
+    }
+
+    .home-btn:hover { 
+      background: rgba(255, 255, 255, 0.1); 
+      color: var(--text);
+    }
     
-    h1 { font-size: 24px; color: var(--accent); }
+    h1 { 
+      font-size: 28px; 
+      font-weight: 800;
+      letter-spacing: -0.5px;
+      background: linear-gradient(135deg, #38bdf8 0%, #818cf8 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
 
     /* Lobby Controls */
-    .lobby { margin-bottom: 20px; background: #0f172a; padding: 15px; border-radius: 8px; }
-    .status { margin-bottom: 12px; font-weight: 600; font-size: 14px; color: #94a3b8; }
-    .btn { background: var(--accent); color: #0f172a; border: none; padding: 10px 18px; font-weight: bold; border-radius: 6px; cursor: pointer; transition: 0.2s; font-size: 14px; }
-    .btn:hover { opacity: 0.9; }
+    .lobby { 
+      margin-bottom: 24px; 
+      background: rgba(0, 0, 0, 0.25); 
+      padding: 18px; 
+      border-radius: 12px; 
+      border: 1px solid rgba(255, 255, 255, 0.03);
+    }
+
+    .status { 
+      font-weight: 600; 
+      font-size: 15px; 
+      color: var(--text-muted); 
+    }
+
+    .btn { 
+      background: var(--accent); 
+      color: #0f172a; 
+      border: none; 
+      padding: 12px 24px; 
+      font-weight: 700; 
+      border-radius: 8px; 
+      cursor: pointer; 
+      transition: all 0.2s ease; 
+      font-size: 14px; 
+      margin-top: 12px;
+      box-shadow: 0 4px 12px rgba(56, 189, 248, 0.25);
+    }
+
+    .btn:hover { 
+      transform: translateY(-1px);
+      box-shadow: 0 6px 16px rgba(56, 189, 248, 0.35);
+    }
     
     /* Scoreboard */
-    .scoreboard { display: flex; justify-content: space-around; margin-bottom: 20px; padding: 10px; background: #0f172a; border-radius: 8px; }
-    .score-card { font-size: 16px; font-weight: bold; }
+    .scoreboard { 
+      display: flex; 
+      justify-content: space-around; 
+      margin-bottom: 28px; 
+      padding: 16px; 
+      background: rgba(0, 0, 0, 0.25); 
+      border-radius: 12px; 
+      border: 1px solid rgba(255, 255, 255, 0.03);
+    }
+
+    .score-card { 
+      font-size: 16px; 
+      font-weight: 700; 
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .score-val {
+      font-size: 28px;
+      font-weight: 800;
+    }
+
     .p1-color { color: var(--p1); }
     .p2-color { color: var(--p2); }
 
-    /* Board Graphics */
-    #board { display: inline-grid; gap: 0; margin: 0 auto; background: var(--panel); padding: 10px; border-radius: 8px; }
-    
-    .dot { width: 12px; height: 12px; background: var(--dot); border-radius: 50%; justify-self: center; align-self: center; }
-    
-    .h-line { height: 12px; width: 50px; background: #334155; cursor: pointer; border-radius: 6px; align-self: center; }
-    .v-line { width: 12px; height: 50px; background: #334155; cursor: pointer; border-radius: 6px; justify-self: center; }
-    .h-line:hover:not(.taken), .v-line:hover:not(.taken) { background: var(--line-hover); }
-    
-    .taken { cursor: default; }
-    .taken.p1 { background: var(--p1); }
-    .taken.p2 { background: var(--p2); }
+    /* Board Graphics - Scaled Up */
+    .board-outer {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      width: 100%;
+      overflow-x: auto;
+      padding: 10px 0;
+    }
 
-    .box { width: 50px; height: 50px; border-radius: 4px; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 18px; }
-    .box.p1 { background: rgba(239, 68, 68, 0.2); color: var(--p1); }
-    .box.p2 { background: rgba(59, 130, 246, 0.2); color: var(--p2); }
+    #board { 
+      display: inline-grid; 
+      gap: 0; 
+      background: rgba(0, 0, 0, 0.3); 
+      padding: 20px; 
+      border-radius: 16px; 
+      border: 1px solid var(--panel-border);
+    }
+    
+    /* Scaled dimensions: Dots, Lines, and Boxes are ~40% larger */
+    .dot { 
+      width: 16px; 
+      height: 16px; 
+      background: var(--dot); 
+      border-radius: 50%; 
+      justify-self: center; 
+      align-self: center; 
+      box-shadow: 0 0 8px rgba(0,0,0,0.5);
+    }
+    
+    .h-line { 
+      height: 16px; 
+      width: 72px; 
+      background: var(--line-idle); 
+      cursor: pointer; 
+      border-radius: 8px; 
+      align-self: center; 
+      transition: background 0.15s ease;
+    }
+
+    .v-line { 
+      width: 16px; 
+      height: 72px; 
+      background: var(--line-idle); 
+      cursor: pointer; 
+      border-radius: 8px; 
+      justify-self: center; 
+      transition: background 0.15s ease;
+    }
+
+    .h-line:hover:not(.taken), 
+    .v-line:hover:not(.taken) { 
+      background: var(--line-hover); 
+    }
+    
+    .taken { 
+      cursor: default; 
+    }
+
+    .taken.p1 { 
+      background: var(--p1); 
+      box-shadow: 0 0 12px var(--p1-glow);
+    }
+
+    .taken.p2 { 
+      background: var(--p2); 
+      box-shadow: 0 0 12px var(--p2-glow);
+    }
+
+    .box { 
+      width: 72px; 
+      height: 72px; 
+      border-radius: 8px; 
+      display: flex; 
+      align-items: center; 
+      justify-content: center; 
+      font-weight: 800; 
+      font-size: 24px; 
+      transition: all 0.25s ease;
+    }
+
+    .box.p1 { 
+      background: rgba(244, 63, 94, 0.15); 
+      color: var(--p1); 
+      border: 1px solid rgba(244, 63, 94, 0.3);
+    }
+
+    .box.p2 { 
+      background: rgba(59, 130, 246, 0.15); 
+      color: var(--p2); 
+      border: 1px solid rgba(59, 130, 246, 0.3);
+    }
+
+    @media (max-width: 480px) {
+      .container { padding: 20px 16px; }
+      .h-line { width: 52px; height: 14px; }
+      .v-line { height: 52px; width: 14px; }
+      .box { width: 52px; height: 52px; font-size: 20px; }
+      .dot { width: 14px; height: 14px; }
+    }
   </style>
 </head>
 <body>
@@ -74,11 +266,19 @@
     </div>
 
     <div class="scoreboard">
-      <div class="score-card p1-color">Player 1 (Red): <span id="score1">0</span></div>
-      <div class="score-card p2-color">Player 2 (Blue): <span id="score2">0</span></div>
+      <div class="score-card p1-color">
+        <span>Player 1 (Red)</span>
+        <span id="score1" class="score-val">0</span>
+      </div>
+      <div class="score-card p2-color">
+        <span>Player 2 (Blue)</span>
+        <span id="score2" class="score-val">0</span>
+      </div>
     </div>
 
-    <div id="board"></div>
+    <div class="board-outer">
+      <div id="board"></div>
+    </div>
   </div>
 
   <script>
@@ -98,8 +298,8 @@
     const statusEl = document.getElementById('status');
     const copyBtn = document.getElementById('copy-btn');
 
-    // 1. WebRTC / PeerJS Initialization
-    function initP2P() {
+    // 1. Connection Initialization
+    function initConnection() {
       const urlParams = new URLSearchParams(window.location.search);
       const hostId = urlParams.get('room');
 
@@ -116,7 +316,7 @@
           // Player 1 Hosting
           myPlayerId = 1;
           isMyTurn = true;
-          statusEl.innerText = "Waiting for Player 2...";
+          statusEl.innerText = "Waiting for Player 2 to join...";
           copyBtn.style.display = "inline-block";
           
           peer.on('connection', (c) => {
@@ -283,7 +483,7 @@
 
     // Initialize Game
     buildBoard();
-    initP2P();
+    initConnection();
   </script>
 </body>
 </html>

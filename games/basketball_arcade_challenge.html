@@ -1,0 +1,1114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Basketball Arcade Challenge</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Teko:wght@500;700&family=Inter:wght@400;600;800&display=swap');
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            user-select: none;
+            -webkit-user-select: none;
+            touch-action: manipulation;
+            overflow: hidden;
+            background-color: #0f172a;
+        }
+        
+        .font-arcade {
+            font-family: 'Teko', sans-serif;
+            letter-spacing: 1px;
+        }
+
+        canvas {
+            display: block;
+            touch-action: none;
+        }
+
+        .custom-glass {
+            background: rgba(15, 23, 42, 0.75);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .glow-text {
+            text-shadow: 0 0 10px rgba(249, 115, 22, 0.6), 0 0 20px rgba(249, 115, 22, 0.3);
+        }
+
+        .glow-gold {
+            text-shadow: 0 0 10px rgba(234, 179, 8, 0.7), 0 0 20px rgba(234, 179, 8, 0.4);
+        }
+
+        /* Custom scrollbar for shop */
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: rgba(15, 23, 42, 0.6);
+        }
+        ::-webkit-scrollbar-thumb {
+            background: rgba(249, 115, 22, 0.5);
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body class="w-screen h-screen flex flex-col items-center justify-center relative select-none">
+
+    <!-- Main Game Canvas Container -->
+    <div id="game-container" class="relative w-full h-full max-w-5xl max-h-[900px] bg-slate-900 shadow-2xl overflow-hidden md:rounded-2xl border border-slate-800">
+        
+        <!-- Canvas Element -->
+        <canvas id="gameCanvas" class="w-full h-full cursor-grab active:cursor-grabbing"></canvas>
+
+        <!-- Top Header Bar / Scoreboard -->
+        <div class="absolute top-4 left-4 right-4 flex justify-between items-center pointer-events-none z-10">
+            <!-- Left Info: Score & Streak -->
+            <div class="flex items-center gap-3">
+                <div class="custom-glass px-4 py-2 rounded-xl flex flex-col items-center min-w-[90px]">
+                    <span class="text-xs uppercase tracking-wider text-slate-400 font-semibold">Score</span>
+                    <span id="ui-score" class="text-3xl font-bold font-arcade text-amber-400 leading-none">0</span>
+                </div>
+
+                <div id="ui-streak-box" class="custom-glass px-4 py-2 rounded-xl flex flex-col items-center min-w-[80px] transition-all duration-300 transform scale-95 opacity-80">
+                    <span class="text-xs uppercase tracking-wider text-slate-400 font-semibold">Streak</span>
+                    <span id="ui-streak" class="text-3xl font-bold font-arcade text-orange-500 leading-none flex items-center gap-1">
+                        <i class="fa-solid font-arcade text-lg">x</i><span id="streak-count">0</span>
+                    </span>
+                </div>
+            </div>
+
+            <!-- Center Info: Game Mode / Timer -->
+            <div id="ui-center-info" class="custom-glass px-6 py-2 rounded-2xl flex flex-col items-center">
+                <span id="ui-mode-label" class="text-xs uppercase tracking-wider text-amber-500 font-extrabold">Timer</span>
+                <span id="ui-timer" class="text-4xl font-extrabold font-arcade text-white leading-none tracking-wider">60</span>
+            </div>
+
+            <!-- Right Info: High Score & Actions -->
+            <div class="flex items-center gap-3 pointer-events-auto">
+                <div class="custom-glass px-4 py-2 rounded-xl flex flex-col items-center min-w-[90px] hidden sm:flex">
+                    <span class="text-xs uppercase tracking-wider text-slate-400 font-semibold">Best</span>
+                    <span id="ui-highscore" class="text-3xl font-bold font-arcade text-slate-200 leading-none">0</span>
+                </div>
+
+                <!-- Menu Buttons -->
+                <a href="https://supernebula23.github.io/games" id="btn-home" class="custom-glass p-3 rounded-xl text-slate-200 hover:text-amber-400 hover:scale-105 active:scale-95 transition flex items-center justify-center" title="More Games">
+                    <i class="fa-solid fa-house text-xl"></i>
+                </a>
+                <button id="btn-shop" class="custom-glass p-3 rounded-xl text-slate-200 hover:text-amber-400 hover:scale-105 active:scale-95 transition">
+                    <i class="fa-solid fa-basketball text-xl"></i>
+                </button>
+                <button id="btn-sound" class="custom-glass p-3 rounded-xl text-slate-200 hover:text-amber-400 hover:scale-105 active:scale-95 transition">
+                    <i id="sound-icon" class="fa-solid fa-volume-high text-xl"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- Center Floating Feedback Banner -->
+        <div id="feedback-banner" class="absolute top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none transition-all duration-300 transform scale-0 opacity-0 z-20 text-center">
+            <h2 id="feedback-text" class="text-5xl md:text-6xl font-black font-arcade text-amber-400 glow-text italic tracking-wider">
+                SWISH!
+            </h2>
+            <p id="feedback-subtext" class="text-lg md:text-xl font-bold text-white drop-shadow-md">+3 POINTS</p>
+        </div>
+
+        <!-- Start / Main Menu Overlay -->
+        <div id="modal-menu" class="absolute inset-0 custom-glass flex flex-col items-center justify-center p-6 z-30 transition-all duration-300">
+            <div class="text-center max-w-md w-full">
+                <div class="inline-block bg-gradient-to-tr from-orange-600 to-amber-400 p-4 rounded-3xl shadow-lg shadow-orange-500/30 mb-4 animate-bounce">
+                    <i class="fa-solid fa-basketball text-6xl text-white"></i>
+                </div>
+                <h1 class="text-5xl md:text-6xl font-black font-arcade text-white tracking-wide glow-text mb-2">HOOP MASTERS</h1>
+                <p class="text-slate-300 text-sm mb-6">Drag back to aim, set your arc height, and release to shoot!</p>
+
+                <!-- Mode Selectors -->
+                <div class="space-y-3 mb-6">
+                    <button data-mode="classic" class="mode-btn w-full py-3.5 px-6 rounded-2xl bg-gradient-to-r from-orange-500 to-amber-500 text-white font-bold text-lg shadow-lg hover:brightness-110 active:scale-[0.98] transition flex items-center justify-between">
+                        <span class="flex items-center gap-3"><i class="fa-solid fa-stopwatch text-xl"></i> Timed Arcade (60s)</span>
+                        <i class="fa-solid fa-chevron-right text-sm"></i>
+                    </button>
+
+                    <button data-mode="streak" class="mode-btn w-full py-3.5 px-6 rounded-2xl bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 font-bold text-lg shadow-md active:scale-[0.98] transition flex items-center justify-between">
+                        <span class="flex items-center gap-3"><i class="fa-solid fa-fire text-xl text-orange-500"></i> Streak Challenge (3 Lives)</span>
+                        <i class="fa-solid fa-chevron-right text-sm"></i>
+                    </button>
+
+                    <button data-mode="moving" class="mode-btn w-full py-3.5 px-6 rounded-2xl bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 font-bold text-lg shadow-md active:scale-[0.98] transition flex items-center justify-between">
+                        <span class="flex items-center gap-3"><i class="fa-solid fa-arrows-left-right text-xl text-amber-400"></i> Moving Hoop Madness</span>
+                        <i class="fa-solid fa-chevron-right text-sm"></i>
+                    </button>
+                </div>
+
+                <div class="flex justify-center gap-4">
+                    <a href="https://supernebula23.github.io/games" class="py-2.5 px-5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold text-sm border border-slate-700 transition flex items-center gap-2">
+                        <i class="fa-solid fa-house text-amber-400"></i> Home
+                    </a>
+                    <button id="menu-btn-shop" class="py-2.5 px-5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold text-sm border border-slate-700 transition flex items-center gap-2">
+                        <i class="fa-solid fa-palette text-amber-400"></i> Ball Skins
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Game Over Overlay -->
+        <div id="modal-gameover" class="absolute inset-0 custom-glass flex flex-col items-center justify-center p-6 z-30 hidden transition-all duration-300">
+            <div class="bg-slate-900 border border-slate-800 p-8 rounded-3xl max-w-sm w-full text-center shadow-2xl relative">
+                <h2 class="text-4xl font-extrabold font-arcade text-white tracking-wider mb-1">TIME'S UP!</h2>
+                <p class="text-slate-400 text-xs mb-6 uppercase tracking-widest">Final Performance Summary</p>
+
+                <!-- Stats Grid -->
+                <div class="grid grid-cols-2 gap-3 mb-6">
+                    <div class="bg-slate-800/70 p-3 rounded-2xl border border-slate-700/50">
+                        <span class="text-xs text-slate-400 uppercase font-semibold block mb-1">Final Score</span>
+                        <span id="final-score" class="text-4xl font-extrabold font-arcade text-amber-400">0</span>
+                    </div>
+                    <div class="bg-slate-800/70 p-3 rounded-2xl border border-slate-700/50">
+                        <span class="text-xs text-slate-400 uppercase font-semibold block mb-1">Best Streak</span>
+                        <span id="final-streak" class="text-4xl font-extrabold font-arcade text-orange-500">0</span>
+                    </div>
+                    <div class="bg-slate-800/70 p-3 rounded-2xl border border-slate-700/50">
+                        <span class="text-xs text-slate-400 uppercase font-semibold block mb-1">Accuracy</span>
+                        <span id="final-accuracy" class="text-3xl font-extrabold font-arcade text-slate-200">0%</span>
+                    </div>
+                    <div class="bg-slate-800/70 p-3 rounded-2xl border border-slate-700/50">
+                        <span class="text-xs text-slate-400 uppercase font-semibold block mb-1">Swishes</span>
+                        <span id="final-swishes" class="text-3xl font-extrabold font-arcade text-emerald-400">0</span>
+                    </div>
+                </div>
+
+                <div class="space-y-3">
+                    <button id="btn-restart" class="w-full py-3.5 rounded-2xl bg-gradient-to-r from-orange-500 to-amber-500 text-white font-bold text-lg shadow-lg hover:brightness-110 active:scale-95 transition flex items-center justify-center gap-2">
+                        <i class="fa-solid fa-rotate-right"></i> Play Again
+                    </button>
+                    <button id="btn-menu" class="w-full py-3 rounded-2xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold border border-slate-700 active:scale-95 transition">
+                        Main Menu
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Ball Skins Shop Modal -->
+        <div id="modal-shop" class="absolute inset-0 custom-glass flex flex-col items-center justify-center p-6 z-40 hidden transition-all duration-300">
+            <div class="bg-slate-900 border border-slate-800 p-6 rounded-3xl max-w-md w-full shadow-2xl flex flex-col max-h-[85vh]">
+                <div class="flex justify-between items-center mb-4 pb-3 border-b border-slate-800">
+                    <h3 class="text-2xl font-bold text-white flex items-center gap-2">
+                        <i class="fa-solid fa-palette text-amber-400"></i> Ball Customization
+                    </h3>
+                    <button id="btn-close-shop" class="text-slate-400 hover:text-white p-2 text-xl">
+                        <i class="fa-solid fa-xmark"></i>
+                    </button>
+                </div>
+
+                <!-- Ball Selection Grid -->
+                <div id="shop-items-container" class="grid grid-cols-2 gap-3 overflow-y-auto pr-1 py-2 flex-grow">
+                    <!-- Dynamic skin items will be inserted here -->
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        /* Sound Synthesizer via Web Audio API */
+        class SoundFX {
+            constructor() {
+                this.ctx = null;
+                this.muted = false;
+            }
+
+            init() {
+                if (!this.ctx) {
+                    const AudioContext = window.AudioContext || window.webkitAudioContext;
+                    if (AudioContext) {
+                        this.ctx = new AudioContext();
+                    }
+                }
+                if (this.ctx && this.ctx.state === 'suspended') {
+                    this.ctx.resume();
+                }
+            }
+
+            playBounce(velocity = 1) {
+                if (this.muted) return;
+                this.init();
+                if (!this.ctx) return;
+
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                const vol = Math.min(Math.max(velocity / 15, 0.1), 0.8);
+
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(140, this.ctx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(30, this.ctx.currentTime + 0.12);
+
+                gain.gain.setValueAtTime(vol, this.ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.12);
+
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+
+                osc.start();
+                osc.stop(this.ctx.currentTime + 0.12);
+            }
+
+            playRimHit() {
+                if (this.muted) return;
+                this.init();
+                if (!this.ctx) return;
+
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(480, this.ctx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(120, this.ctx.currentTime + 0.08);
+
+                gain.gain.setValueAtTime(0.5, this.ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.08);
+
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+
+                osc.start();
+                osc.stop(this.ctx.currentTime + 0.08);
+            }
+
+            playSwish() {
+                if (this.muted) return;
+                this.init();
+                if (!this.ctx) return;
+
+                // White noise buffer for net swish sound
+                const bufferSize = this.ctx.sampleRate * 0.25;
+                const buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
+                const output = buffer.getChannelData(0);
+                for (let i = 0; i < bufferSize; i++) {
+                    output[i] = Math.random() * 2 - 1;
+                }
+
+                const noise = this.ctx.createBufferSource();
+                noise.buffer = buffer;
+
+                const filter = this.ctx.createBiquadFilter();
+                filter.type = 'bandpass';
+                filter.frequency.setValueAtTime(1200, this.ctx.currentTime);
+                filter.Q.setValueAtTime(3, this.ctx.currentTime);
+
+                const gain = this.ctx.createGain();
+                gain.gain.setValueAtTime(0.6, this.ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.25);
+
+                noise.connect(filter);
+                filter.connect(gain);
+                gain.connect(this.ctx.destination);
+
+                noise.start();
+            }
+
+            playScore() {
+                if (this.muted) return;
+                this.init();
+                if (!this.ctx) return;
+
+                const now = this.ctx.currentTime;
+                const notes = [523.25, 659.25, 783.99]; // C5, E5, G5
+                notes.forEach((freq, idx) => {
+                    const osc = this.ctx.createOscillator();
+                    const gain = this.ctx.createGain();
+
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(freq, now + idx * 0.06);
+
+                    gain.gain.setValueAtTime(0.3, now + idx * 0.06);
+                    gain.gain.exponentialRampToValueAtTime(0.01, now + idx * 0.06 + 0.15);
+
+                    osc.connect(gain);
+                    gain.connect(this.ctx.destination);
+
+                    osc.start(now + idx * 0.06);
+                    osc.stop(now + idx * 0.06 + 0.15);
+                });
+            }
+
+            playBuzzer() {
+                if (this.muted) return;
+                this.init();
+                if (!this.ctx) return;
+
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(150, this.ctx.currentTime);
+
+                gain.gain.setValueAtTime(0.5, this.ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.8);
+
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+
+                osc.start();
+                osc.stop(this.ctx.currentTime + 0.8);
+            }
+        }
+
+        const audio = new SoundFX();
+
+        // Canvas Setup
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // Game Configuration & State
+        let width = 0;
+        let height = 0;
+        let dpr = window.devicePixelRatio || 1;
+
+        const GRAVITY = 0.45;
+        const AIR_RESISTANCE = 0.994;
+        const BOUNCE_RESTITUTION = 0.72;
+
+        let gameMode = 'classic'; // 'classic', 'streak', 'moving'
+        let isPlaying = false;
+        let score = 0;
+        let streak = 0;
+        let bestStreak = 0;
+        let timeRemaining = 60;
+        let lives = 3;
+        let totalShots = 0;
+        let successfulShots = 0;
+        let totalSwishes = 0;
+        let timerInterval = null;
+
+        // Ball Skins Definition
+        const SKINS = [
+            { id: 'classic', name: 'Classic Leather', color: '#ea580c', lines: '#1e293b', glow: null, icon: '🏀' },
+            { id: 'fire', name: 'Inferno Flame', color: '#ef4444', lines: '#fef08a', glow: 'rgba(239, 68, 68, 0.6)', icon: '🔥' },
+            { id: 'neon', name: 'Cyber Neon', color: '#06b6d4', lines: '#f43f5e', glow: 'rgba(6, 182, 212, 0.8)', icon: '⚡' },
+            { id: 'gold', name: 'Solid Gold', color: '#eab308', lines: '#713f12', glow: 'rgba(234, 179, 8, 0.8)', icon: '👑' },
+            { id: 'galaxy', name: 'Cosmic Void', color: '#8b5cf6', lines: '#ec4899', glow: 'rgba(139, 92, 246, 0.7)', icon: '🌌' }
+        ];
+        let currentSkin = SKINS[0];
+
+        // Basketball Physics Object
+        const ball = {
+            x: 0,
+            y: 0,
+            vx: 0,
+            vy: 0,
+            radius: 26,
+            isDragging: false,
+            isShot: false,
+            rotation: 0,
+            vRot: 0,
+            trail: [],
+            wasAboveRim: false,
+            hitRim: false,
+            resetPos: function() {
+                this.x = width * 0.22;
+                this.y = height * 0.68;
+                this.vx = 0;
+                this.vy = 0;
+                this.isShot = false;
+                this.isDragging = false;
+                this.wasAboveRim = false;
+                this.hitRim = false;
+                this.rotation = 0;
+                this.vRot = 0;
+                this.trail = [];
+            }
+        };
+
+        // Hoop Physics Structure
+        const hoop = {
+            x: 0,
+            y: 0,
+            rimWidth: 80,
+            rimRadius: 6,
+            backboardWidth: 12,
+            backboardHeight: 120,
+            baseX: 0,
+            moveDirection: 1,
+            moveSpeed: 1.8,
+            netSwishAnim: 0,
+            update: function() {
+                if (gameMode === 'moving' && isPlaying) {
+                    this.x += this.moveSpeed * this.moveDirection;
+                    const minX = width * 0.65;
+                    const maxX = width * 0.85;
+                    if (this.x > maxX || this.x < minX) {
+                        this.moveDirection *= -1;
+                    }
+                }
+            }
+        };
+
+        // Input Tracking
+        const drag = {
+            startX: 0,
+            startY: 0,
+            currentX: 0,
+            currentY: 0,
+            active: false
+        };
+
+        // Particle System
+        let particles = [];
+
+        function createParticles(x, y, color, count = 20) {
+            for (let i = 0; i < count; i++) {
+                const angle = Math.random() * Math.PI * 2;
+                const speed = Math.random() * 6 + 2;
+                particles.push({
+                    x,
+                    y,
+                    vx: Math.cos(angle) * speed,
+                    vy: Math.sin(angle) * speed - 1,
+                    size: Math.random() * 5 + 3,
+                    color,
+                    alpha: 1,
+                    life: 1
+                });
+            }
+        }
+
+        function resize() {
+            const rect = canvas.getBoundingClientRect();
+            width = rect.width;
+            height = rect.height;
+            dpr = window.devicePixelRatio || 1;
+
+            canvas.width = width * dpr;
+            canvas.height = height * dpr;
+            ctx.scale(dpr, dpr);
+
+            // Responsive physics sizing
+            ball.radius = Math.max(18, Math.min(28, width * 0.035));
+            hoop.rimWidth = ball.radius * 2.8;
+            hoop.baseX = width * 0.78;
+            hoop.x = hoop.baseX;
+            hoop.y = height * 0.38;
+
+            if (!ball.isShot) {
+                ball.resetPos();
+            }
+        }
+
+        window.addEventListener('resize', resize);
+
+        function getAimVector() {
+            if (!drag.active) return { vx: 0, vy: 0 };
+            
+            // Slingshot vector (pull back to shoot forward)
+            const dx = drag.startX - drag.currentX;
+            const dy = drag.startY - drag.currentY;
+
+            // Sensitivity scaling
+            const powerScalar = 0.14;
+            const maxVelocity = 28;
+
+            let vx = dx * powerScalar;
+            let vy = dy * powerScalar;
+
+            const currentSpeed = Math.sqrt(vx * vx + vy * vy);
+            if (currentSpeed > maxVelocity) {
+                vx = (vx / currentSpeed) * maxVelocity;
+                vy = (vy / currentSpeed) * maxVelocity;
+            }
+
+            return { vx, vy };
+        }
+
+        function drawTrajectory() {
+            if (!drag.active || ball.isShot) return;
+
+            const { vx, vy } = getAimVector();
+            if (Math.abs(vx) < 1 && Math.abs(vy) < 1) return;
+
+            ctx.save();
+            ctx.beginPath();
+            
+            let simX = ball.x;
+            let simY = ball.y;
+            let simVx = vx;
+            let simVy = vy;
+
+            ctx.moveTo(simX, simY);
+
+            for (let i = 0; i < 35; i++) {
+                simX += simVx;
+                simY += simVy;
+                simVx *= AIR_RESISTANCE;
+                simVy += GRAVITY;
+
+                if (i % 2 === 0) {
+                    ctx.lineTo(simX, simY);
+                } else {
+                    ctx.moveTo(simX, simY);
+                }
+            }
+
+            ctx.strokeStyle = 'rgba(251, 146, 60, 0.7)';
+            ctx.lineWidth = 3;
+            ctx.setLineDash([4, 4]);
+            ctx.stroke();
+            ctx.restore();
+        }
+
+        function updatePhysics() {
+            hoop.update();
+
+            // Particles animation
+            for (let i = particles.length - 1; i >= 0; i--) {
+                const p = particles[i];
+                p.x += p.vx;
+                p.y += p.vy;
+                p.vy += 0.15; // particle gravity
+                p.alpha -= 0.025;
+                if (p.alpha <= 0) {
+                    particles.splice(i, 1);
+                }
+            }
+
+            if (hoop.netSwishAnim > 0) {
+                hoop.netSwishAnim -= 0.05;
+            }
+
+            if (!ball.isShot) return;
+
+            // Store tail position
+            ball.trail.unshift({ x: ball.x, y: ball.y });
+            if (ball.trail.length > 8) ball.trail.pop();
+
+            // Apply Ball Physics
+            ball.vx *= AIR_RESISTANCE;
+            ball.vy += GRAVITY;
+            ball.x += ball.vx;
+            ball.y += ball.vy;
+
+            ball.rotation += ball.vRot;
+
+            // Rim collision points (Front rim peg & Back rim peg)
+            const frontRim = { x: hoop.x, y: hoop.y };
+            const backRim = { x: hoop.x + hoop.rimWidth, y: hoop.y };
+            const backboardX = hoop.x + hoop.rimWidth + 8;
+            const backboardTop = hoop.y - 70;
+            const backboardBottom = hoop.y + 40;
+
+            // Check collision with Backboard
+            if (
+                ball.x + ball.radius >= backboardX &&
+                ball.x - ball.radius <= backboardX + hoop.backboardWidth &&
+                ball.y >= backboardTop &&
+                ball.y <= backboardBottom
+            ) {
+                ball.x = backboardX - ball.radius;
+                ball.vx = -ball.vx * BOUNCE_RESTITUTION;
+                ball.vRot = (Math.random() - 0.5) * 0.2;
+                ball.hitRim = true;
+                audio.playRimHit();
+            }
+
+            // Collide with Rim Pegs (Circle to Circle collision)
+            [frontRim, backRim].forEach(peg => {
+                const dx = ball.x - peg.x;
+                const dy = ball.y - peg.y;
+                const dist = Math.sqrt(dx * dx + dy * dy);
+                const minDist = ball.radius + hoop.rimRadius;
+
+                if (dist < minDist) {
+                    // Push out
+                    const nx = dx / dist;
+                    const ny = dy / dist;
+                    ball.x = peg.x + nx * minDist;
+                    ball.y = peg.y + ny * minDist;
+
+                    // Reflect velocity vector
+                    const dot = ball.vx * nx + ball.vy * ny;
+                    ball.vx = (ball.vx - 2 * dot * nx) * BOUNCE_RESTITUTION;
+                    ball.vy = (ball.vy - 2 * dot * ny) * BOUNCE_RESTITUTION;
+
+                    ball.vRot = nx * 0.15;
+                    ball.hitRim = true;
+                    audio.playRimHit();
+                }
+            });
+
+            // Score Detection Logic
+            // Step 1: Ball must reach above hoop level inside rim bounds
+            if (ball.y < hoop.y && ball.x > hoop.x && ball.x < hoop.x + hoop.rimWidth) {
+                ball.wasAboveRim = true;
+            }
+
+            // Step 2: Ball passes downwards through the hoop ring plane
+            if (
+                ball.wasAboveRim &&
+                ball.y >= hoop.y &&
+                ball.y - ball.vy < hoop.y &&
+                ball.x > hoop.x + 5 &&
+                ball.x < hoop.x + hoop.rimWidth - 5
+            ) {
+                onScoreBasket(!ball.hitRim);
+                ball.wasAboveRim = false;
+            }
+
+            // Floor / Out of Bounds Reset
+            if (ball.y > height + 100 || ball.x > width + 100 || ball.x < -100) {
+                onMissBasket();
+            }
+        }
+
+        function triggerFeedback(text, subtext, color = 'text-amber-400') {
+            const banner = document.getElementById('feedback-banner');
+            const mainText = document.getElementById('feedback-text');
+            const subText = document.getElementById('feedback-subtext');
+
+            mainText.textContent = text;
+            mainText.className = `text-5xl md:text-6xl font-black font-arcade ${color} glow-text italic tracking-wider`;
+            subText.textContent = subtext;
+
+            banner.classList.remove('scale-0', 'opacity-0');
+            banner.classList.add('scale-100', 'opacity-100');
+
+            setTimeout(() => {
+                banner.classList.remove('scale-100', 'opacity-100');
+                banner.classList.add('scale-0', 'opacity-0');
+            }, 1000);
+        }
+
+        function onScoreBasket(isSwish) {
+            successfulShots++;
+            streak++;
+            if (streak > bestStreak) bestStreak = streak;
+
+            hoop.netSwishAnim = 1.0;
+
+            let points = isSwish ? 3 : 2;
+            // Streak multiplier
+            if (streak >= 3) points *= 2;
+
+            score += points;
+
+            if (isSwish) {
+                totalSwishes++;
+                audio.playSwish();
+                createParticles(hoop.x + hoop.rimWidth / 2, hoop.y + 10, '#38bdf8', 35);
+                triggerFeedback('SWISH!!', `+${points} POINTS (${streak}x STREAK)`, 'text-cyan-400');
+            } else {
+                audio.playScore();
+                createParticles(hoop.x + hoop.rimWidth / 2, hoop.y + 10, '#f59e0b', 20);
+                triggerFeedback('BUCKET!', `+${points} POINTS`, 'text-amber-400');
+            }
+
+            // Add bonus time in classic mode for swishes
+            if (gameMode === 'classic' && isSwish) {
+                timeRemaining += 2;
+            }
+
+            updateUI();
+            
+            // Reset ball position after score delay
+            setTimeout(() => ball.resetPos(), 600);
+        }
+
+        function onMissBasket() {
+            if (ball.isShot) {
+                streak = 0;
+
+                if (gameMode === 'streak') {
+                    lives = Math.max(0, lives - 1);
+                    updateUI();
+                    triggerFeedback('MISS!', `${lives} LIVES LEFT`, 'text-rose-500');
+                    if (lives <= 0) {
+                        endGame();
+                        return;
+                    }
+                } else {
+                    updateUI();
+                }
+            }
+            ball.resetPos();
+        }
+
+        function updateUI() {
+            document.getElementById('ui-score').textContent = score;
+            document.getElementById('streak-count').textContent = streak;
+            
+            const streakBox = document.getElementById('ui-streak-box');
+            if (streak >= 3) {
+                streakBox.classList.remove('scale-95', 'opacity-80');
+                streakBox.classList.add('scale-105', 'opacity-100', 'border-orange-500/50');
+            } else {
+                streakBox.classList.add('scale-95', 'opacity-80');
+                streakBox.classList.remove('scale-105', 'opacity-100', 'border-orange-500/50');
+            }
+
+            if (gameMode === 'streak') {
+                document.getElementById('ui-mode-label').textContent = 'Lives';
+                document.getElementById('ui-timer').textContent = '❤️'.repeat(Math.max(0, lives));
+            } else {
+                document.getElementById('ui-mode-label').textContent = 'Time';
+                document.getElementById('ui-timer').textContent = timeRemaining;
+            }
+        }
+
+        function render() {
+            ctx.clearRect(0, 0, width, height);
+
+            // Draw Court Background Gradient & Lines
+            const bgGradient = ctx.createLinearGradient(0, 0, 0, height);
+            bgGradient.addColorStop(0, '#0f172a');
+            bgGradient.addColorStop(0.65, '#1e1b4b');
+            bgGradient.addColorStop(1, '#312e81');
+            ctx.fillStyle = bgGradient;
+            ctx.fillRect(0, 0, width, height);
+
+            // Floor Hardwood Effect
+            const floorY = height * 0.82;
+            const floorGradient = ctx.createLinearGradient(0, floorY, 0, height);
+            floorGradient.addColorStop(0, '#78350f');
+            floorGradient.addColorStop(1, '#451a03');
+            ctx.fillStyle = floorGradient;
+            ctx.fillRect(0, floorY, width, height - floorY);
+
+            // Floor Markings
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.25)';
+            ctx.lineWidth = 4;
+            ctx.beginPath();
+            ctx.moveTo(0, floorY);
+            ctx.lineTo(width, floorY);
+            ctx.stroke();
+
+            // Draw Hoop Backboard Structure
+            const bx = hoop.x + hoop.rimWidth + 8;
+            const by = hoop.y - 70;
+
+            // Pole Support
+            ctx.fillStyle = '#475569';
+            ctx.fillRect(bx + hoop.backboardWidth, by + 40, 20, height - (by + 40));
+
+            // Backboard Glass
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.85)';
+            ctx.fillRect(bx, by, hoop.backboardWidth, hoop.backboardHeight);
+            ctx.strokeStyle = '#dc2626';
+            ctx.lineWidth = 3;
+            ctx.strokeRect(bx, by + 30, hoop.backboardWidth, 40);
+
+            // Draw Net Lines (Behind rim)
+            ctx.save();
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.7)';
+            ctx.lineWidth = 2;
+            const netHeight = 45 + hoop.netSwishAnim * 15;
+            const netBottomWidth = hoop.rimWidth * 0.6;
+            const netCenterX = hoop.x + hoop.rimWidth / 2;
+
+            ctx.beginPath();
+            ctx.moveTo(hoop.x, hoop.y);
+            ctx.lineTo(netCenterX - netBottomWidth / 2, hoop.y + netHeight);
+            ctx.lineTo(netCenterX + netBottomWidth / 2, hoop.y + netHeight);
+            ctx.lineTo(hoop.x + hoop.rimWidth, hoop.y);
+
+            // Crosshatch net pattern
+            for (let i = 1; i <= 3; i++) {
+                const ratio = i / 4;
+                const topX1 = hoop.x + (netCenterX - netBottomWidth / 2 - hoop.x) * ratio;
+                const topX2 = (hoop.x + hoop.rimWidth) - ((hoop.x + hoop.rimWidth) - (netCenterX + netBottomWidth / 2)) * ratio;
+                const currY = hoop.y + netHeight * ratio;
+                ctx.moveTo(topX1, currY);
+                ctx.lineTo(topX2, currY);
+            }
+            ctx.stroke();
+            ctx.restore();
+
+            // Draw Particles
+            particles.forEach(p => {
+                ctx.save();
+                ctx.globalAlpha = p.alpha;
+                ctx.fillStyle = p.color;
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.restore();
+            });
+
+            // Trajectory Arc
+            drawTrajectory();
+
+            // Ball Trail
+            if (ball.isShot) {
+                ball.trail.forEach((pos, idx) => {
+                    const alpha = (1 - idx / ball.trail.length) * 0.4;
+                    ctx.save();
+                    ctx.globalAlpha = alpha;
+                    ctx.fillStyle = currentSkin.glow || currentSkin.color;
+                    ctx.beginPath();
+                    ctx.arc(pos.x, pos.y, ball.radius * (1 - idx * 0.05), 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.restore();
+                });
+            }
+
+            // Draw Basketball Body
+            ctx.save();
+            ctx.translate(ball.x, ball.y);
+            ctx.rotate(ball.rotation);
+
+            // Glow effect if skin has glow
+            if (currentSkin.glow) {
+                ctx.shadowColor = currentSkin.glow;
+                ctx.shadowBlur = 18;
+            }
+
+            // Outer Ball Base
+            ctx.fillStyle = currentSkin.color;
+            ctx.beginPath();
+            ctx.arc(0, 0, ball.radius, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Ball Seams / Markings
+            ctx.strokeStyle = currentSkin.lines;
+            ctx.lineWidth = Math.max(2, ball.radius * 0.08);
+
+            // Cross seams
+            ctx.beginPath();
+            ctx.arc(0, 0, ball.radius, 0, Math.PI * 2);
+            ctx.stroke();
+
+            ctx.beginPath();
+            ctx.moveTo(-ball.radius, 0);
+            ctx.lineTo(ball.radius, 0);
+            ctx.moveTo(0, -ball.radius);
+            ctx.lineTo(0, ball.radius);
+            ctx.stroke();
+
+            // Curved rib seams
+            ctx.beginPath();
+            ctx.arc(-ball.radius * 0.4, 0, ball.radius * 0.8, -Math.PI * 0.45, Math.PI * 0.45);
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.arc(ball.radius * 0.4, 0, ball.radius * 0.8, Math.PI * 0.55, Math.PI * 1.45);
+            ctx.stroke();
+
+            ctx.restore();
+
+            // Front Rim Pegs (Drawn over ball for realistic depth when ball enters hoop)
+            ctx.fillStyle = '#ea580c';
+            ctx.beginPath();
+            ctx.arc(hoop.x, hoop.y, hoop.rimRadius, 0, Math.PI * 2);
+            ctx.arc(hoop.x + hoop.rimWidth, hoop.y, hoop.rimRadius, 0, Math.PI * 2);
+            ctx.fill();
+
+            ctx.strokeStyle = '#ea580c';
+            ctx.lineWidth = 5;
+            ctx.beginPath();
+            ctx.moveTo(hoop.x, hoop.y);
+            ctx.lineTo(hoop.x + hoop.rimWidth, hoop.y);
+            ctx.stroke();
+        }
+
+        function gameLoop() {
+            updatePhysics();
+            render();
+            requestAnimationFrame(gameLoop);
+        }
+
+        // Mouse & Touch Interaction Listeners
+        function handlePointerDown(e) {
+            if (!isPlaying || ball.isShot) return;
+
+            const rect = canvas.getBoundingClientRect();
+            const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+            const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+
+            const pointerX = clientX - rect.left;
+            const pointerY = clientY - rect.top;
+
+            // Check if pointer pressed near the ball
+            const dist = Math.hypot(pointerX - ball.x, pointerY - ball.y);
+            if (dist < ball.radius * 2.5) {
+                drag.active = true;
+                drag.startX = pointerX;
+                drag.startY = pointerY;
+                drag.currentX = pointerX;
+                drag.currentY = pointerY;
+                ball.isDragging = true;
+            }
+        }
+
+        function handlePointerMove(e) {
+            if (!drag.active) return;
+
+            const rect = canvas.getBoundingClientRect();
+            const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+            const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+
+            drag.currentX = clientX - rect.left;
+            drag.currentY = clientY - rect.top;
+        }
+
+        function handlePointerUp() {
+            if (!drag.active) return;
+
+            const { vx, vy } = getAimVector();
+
+            // Minimum velocity threshold to fire shot
+            if (Math.hypot(vx, vy) > 2) {
+                ball.vx = vx;
+                ball.vy = vy;
+                ball.isShot = true;
+                ball.vRot = (vx > 0 ? 1 : -1) * 0.12;
+                totalShots++;
+                audio.playBounce(Math.hypot(vx, vy));
+            }
+
+            drag.active = false;
+            ball.isDragging = false;
+        }
+
+        canvas.addEventListener('mousedown', handlePointerDown);
+        window.addEventListener('mousemove', handlePointerMove);
+        window.addEventListener('mouseup', handlePointerUp);
+
+        canvas.addEventListener('touchstart', handlePointerDown, { passive: true });
+        window.addEventListener('touchmove', handlePointerMove, { passive: true });
+        window.addEventListener('touchend', handlePointerUp);
+
+        function startGame(mode) {
+            gameMode = mode;
+            score = 0;
+            streak = 0;
+            bestStreak = 0;
+            totalShots = 0;
+            successfulShots = 0;
+            totalSwishes = 0;
+            timeRemaining = 60;
+            lives = 3;
+            isPlaying = true;
+
+            ball.resetPos();
+            updateUI();
+
+            document.getElementById('modal-menu').classList.add('hidden');
+            document.getElementById('modal-gameover').classList.add('hidden');
+
+            if (timerInterval) clearInterval(timerInterval);
+
+            if (gameMode === 'classic' || gameMode === 'moving') {
+                timerInterval = setInterval(() => {
+                    if (!isPlaying) return;
+                    timeRemaining--;
+                    updateUI();
+                    if (timeRemaining <= 0) {
+                        endGame();
+                    }
+                }, 1000);
+            }
+        }
+
+        function endGame() {
+            isPlaying = false;
+            if (timerInterval) clearInterval(timerInterval);
+            audio.playBuzzer();
+
+            // Save High Score
+            const localBest = localStorage.getItem('hoop_masters_high') || 0;
+            if (score > localBest) {
+                localStorage.setItem('hoop_masters_high', score);
+                document.getElementById('ui-highscore').textContent = score;
+            }
+
+            // Update stats
+            const accuracy = totalShots > 0 ? Math.round((successfulShots / totalShots) * 100) : 0;
+            document.getElementById('final-score').textContent = score;
+            document.getElementById('final-streak').textContent = bestStreak;
+            document.getElementById('final-accuracy').textContent = `${accuracy}%`;
+            document.getElementById('final-swishes').textContent = totalSwishes;
+
+            document.getElementById('modal-gameover').classList.remove('hidden');
+        }
+
+        // Shop UI Population
+        function renderShop() {
+            const container = document.getElementById('shop-items-container');
+            container.innerHTML = '';
+
+            SKINS.forEach(skin => {
+                const isSelected = currentSkin.id === skin.id;
+                const card = document.createElement('div');
+                card.className = `p-4 rounded-2xl border cursor-pointer transition flex flex-col items-center justify-between ${
+                    isSelected 
+                    ? 'bg-amber-500/20 border-amber-400 text-white' 
+                    : 'bg-slate-800/80 border-slate-700 hover:bg-slate-700/80 text-slate-300'
+                }`;
+
+                card.innerHTML = `
+                    <div class="text-4xl mb-2">${skin.icon}</div>
+                    <span class="font-bold text-sm text-center mb-2">${skin.name}</span>
+                    <button class="w-full py-1.5 px-3 rounded-xl text-xs font-bold ${
+                        isSelected ? 'bg-amber-400 text-slate-900' : 'bg-slate-700 text-slate-200'
+                    }">
+                        ${isSelected ? 'EQUIPPED' : 'SELECT'}
+                    </button>
+                `;
+
+                card.addEventListener('click', () => {
+                    currentSkin = skin;
+                    renderShop();
+                });
+
+                container.appendChild(card);
+            });
+        }
+
+        // Button Listeners
+        document.querySelectorAll('.mode-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const mode = btn.dataset.mode;
+                startGame(mode);
+            });
+        });
+
+        document.getElementById('btn-restart').addEventListener('click', () => startGame(gameMode));
+        document.getElementById('btn-menu').addEventListener('click', () => {
+            document.getElementById('modal-gameover').classList.add('hidden');
+            document.getElementById('modal-menu').classList.remove('hidden');
+        });
+
+        // Shop Modal triggers
+        const shopModal = document.getElementById('modal-shop');
+        document.getElementById('btn-shop').addEventListener('click', () => {
+            renderShop();
+            shopModal.classList.remove('hidden');
+        });
+        document.getElementById('menu-btn-shop').addEventListener('click', () => {
+            renderShop();
+            shopModal.classList.remove('hidden');
+        });
+        document.getElementById('btn-close-shop').addEventListener('click', () => {
+            shopModal.classList.add('hidden');
+        });
+
+        // Mute / Unmute audio toggle
+        const soundBtn = document.getElementById('btn-sound');
+        const soundIcon = document.getElementById('sound-icon');
+        soundBtn.addEventListener('click', () => {
+            audio.muted = !audio.muted;
+            if (audio.muted) {
+                soundIcon.className = 'fa-solid fa-volume-xmark text-xl text-rose-400';
+            } else {
+                soundIcon.className = 'fa-solid fa-volume-high text-xl';
+            }
+        });
+
+        // Initial setup on load
+        window.onload = function() {
+            resize();
+            const savedBest = localStorage.getItem('hoop_masters_high') || 0;
+            document.getElementById('ui-highscore').textContent = savedBest;
+            requestAnimationFrame(gameLoop);
+        };
+    </script>
+</body>
+</html>

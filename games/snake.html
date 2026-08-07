@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Snake Game - Supernebula23</title>
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    html, body {
+      height: 100%;
+      margin: 0;
+      padding: 0;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
+
+    body {
+      background: #0f172a;
+      color: #f8fafc;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+    }
+
+    .top-bar {
+      position: absolute;
+      top: 20px;
+      left: 20px;
+    }
+
+    .home-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: #1e293b;
+      color: #38bdf8;
+      border: 1px solid #334155;
+      padding: 10px 18px;
+      border-radius: 8px;
+      text-decoration: none;
+      font-weight: 600;
+      font-size: 14px;
+      transition: all 0.2s ease;
+    }
+
+    .home-btn:hover {
+      background: #334155;
+      color: #7dd3fc;
+      transform: translateY(-2px);
+    }
+
+    .game-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 15px;
+    }
+
+    .scoreboard {
+      display: flex;
+      gap: 30px;
+      font-size: 18px;
+      font-weight: bold;
+      background: #1e293b;
+      padding: 12px 24px;
+      border-radius: 8px;
+      border: 1px solid #334155;
+    }
+
+    .score-item span {
+      color: #4ade80;
+    }
+
+    .score-item.high-score span {
+      color: #facc15;
+    }
+
+    canvas {
+      border: 2px solid #334155;
+      background: #020617;
+      border-radius: 8px;
+      box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5);
+    }
+  </style>
+</head>
+<body>
+
+  <div class="top-bar">
+    <a href="https://supernebula23.github.io/games" class="home-btn">
+      ← Home
+    </a>
+  </div>
+
+  <div class="game-container">
+    <div class="scoreboard">
+      <div class="score-item">Score: <span id="current-score">0</span></div>
+      <div class="score-item high-score">High Score: <span id="high-score">0</span></div>
+    </div>
+
+    <canvas width="400" height="400" id="game"></canvas>
+  </div>
+
+<script>
+var canvas = document.getElementById('game');
+var context = canvas.getContext('2d');
+
+var grid = 16;
+var count = 0;
+
+var currentScore = 0;
+var highScore = localStorage.getItem('snake_high_score') || 0;
+
+// UI Elements
+var currentScoreEl = document.getElementById('current-score');
+var highScoreEl = document.getElementById('high-score');
+highScoreEl.textContent = highScore;
+
+var snake = {
+  x: 160,
+  y: 160,
+  dx: grid,
+  dy: 0,
+  cells: [],
+  maxCells: 4
+};
+
+var apple = {
+  x: 320,
+  y: 320
+};
+
+function getRandomInt(min, max) {
+  return Math.floor(Math.random() * (max - min)) + min;
+}
+
+function resetGame() {
+  snake.x = 160;
+  snake.y = 160;
+  snake.cells = [];
+  snake.maxCells = 4;
+  snake.dx = grid;
+  snake.dy = 0;
+
+  currentScore = 0;
+  currentScoreEl.textContent = currentScore;
+
+  apple.x = getRandomInt(0, 25) * grid;
+  apple.y = getRandomInt(0, 25) * grid;
+}
+
+function loop() {
+  requestAnimationFrame(loop);
+
+  // Slow loop to 15 FPS
+  if (++count < 4) {
+    return;
+  }
+
+  count = 0;
+  context.clearRect(0, 0, canvas.width, canvas.height);
+
+  // Move snake by velocity
+  snake.x += snake.dx;
+  snake.y += snake.dy;
+
+  // Horizontal wrap
+  if (snake.x < 0) {
+    snake.x = canvas.width - grid;
+  }
+  else if (snake.x >= canvas.width) {
+    snake.x = 0;
+  }
+
+  // Vertical wrap
+  if (snake.y < 0) {
+    snake.y = canvas.height - grid;
+  }
+  else if (snake.y >= canvas.height) {
+    snake.y = 0;
+  }
+
+  // Track body cells
+  snake.cells.unshift({x: snake.x, y: snake.y});
+
+  if (snake.cells.length > snake.maxCells) {
+    snake.cells.pop();
+  }
+
+  // Draw apple
+  context.fillStyle = '#ef4444';
+  context.fillRect(apple.x, apple.y, grid - 1, grid - 1);
+
+  // Draw snake
+  context.fillStyle = '#22c55e';
+  snake.cells.forEach(function(cell, index) {
+    context.fillRect(cell.x, cell.y, grid - 1, grid - 1);
+
+    // Snake eats apple
+    if (cell.x === apple.x && cell.y === apple.y) {
+      snake.maxCells++;
+      currentScore += 10;
+      currentScoreEl.textContent = currentScore;
+
+      // Update High Score
+      if (currentScore > highScore) {
+        highScore = currentScore;
+        localStorage.setItem('snake_high_score', highScore);
+        highScoreEl.textContent = highScore;
+      }
+
+      apple.x = getRandomInt(0, 25) * grid;
+      apple.y = getRandomInt(0, 25) * grid;
+    }
+
+    // Check collision with body
+    for (var i = index + 1; i < snake.cells.length; i++) {
+      if (cell.x === snake.cells[i].x && cell.y === snake.cells[i].y) {
+        resetGame();
+      }
+    }
+  });
+}
+
+// Controls (Arrow Keys + WASD)
+document.addEventListener('keydown', function(e) {
+  // Prevent arrow key scrolling
+  if ([37, 38, 39, 40].indexOf(e.keyCode) > -1) {
+    e.preventDefault();
+  }
+
+  // Left (Arrow Left or 'A')
+  if ((e.which === 37 || e.which === 65) && snake.dx === 0) {
+    snake.dx = -grid;
+    snake.dy = 0;
+  }
+  // Up (Arrow Up or 'W')
+  else if ((e.which === 38 || e.which === 87) && snake.dy === 0) {
+    snake.dy = -grid;
+    snake.dx = 0;
+  }
+  // Right (Arrow Right or 'D')
+  else if ((e.which === 39 || e.which === 68) && snake.dx === 0) {
+    snake.dx = grid;
+    snake.dy = 0;
+  }
+  // Down (Arrow Down or 'S')
+  else if ((e.which === 40 || e.which === 83) && snake.dy === 0) {
+    snake.dy = grid;
+    snake.dx = 0;
+  }
+});
+
+requestAnimationFrame(loop);
+</script>
+</body>
+</html>

@@ -1,0 +1,1056 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Neon Dash: Hyperspeed</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;800;900&family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #05050c;
+            color: #ffffff;
+            overflow: hidden;
+            touch-action: manipulation;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+        .font-orbitron {
+            font-family: 'Orbitron', sans-serif;
+        }
+        canvas {
+            display: block;
+            touch-action: none;
+        }
+        .glow-text {
+            text-shadow: 0 0 10px rgba(0, 243, 255, 0.7), 0 0 20px rgba(0, 243, 255, 0.4);
+        }
+        .glow-pink {
+            text-shadow: 0 0 10px rgba(255, 0, 127, 0.7), 0 0 20px rgba(255, 0, 127, 0.4);
+        }
+        .glow-box {
+            box-shadow: 0 0 15px rgba(0, 243, 255, 0.3), inset 0 0 15px rgba(0, 243, 255, 0.2);
+        }
+        .btn-neon {
+            background: linear-gradient(135deg, #00f3ff, #0066ff);
+            transition: all 0.2s ease;
+        }
+        .btn-neon:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 0 20px rgba(0, 243, 255, 0.6);
+        }
+        .btn-neon:active {
+            transform: translateY(1px);
+        }
+        /* Custom scrollbar for shop/modals */
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: rgba(15, 15, 30, 0.6);
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #00f3ff;
+            border-radius: 3px;
+        }
+    </style>
+</head>
+<body class="w-screen h-screen relative flex flex-col justify-center items-center">
+
+    <!-- Main Game Canvas -->
+    <canvas id="gameCanvas" class="absolute inset-0 w-full h-full z-0"></canvas>
+
+    <!-- UI Overlay Layer -->
+    <div id="uiContainer" class="absolute inset-0 pointer-events-none z-10 flex flex-col justify-between p-4 md:p-6">
+        
+        <!-- Top HUD (In-Game) -->
+        <div id="hud" class="hidden flex justify-between items-start w-full max-w-5xl mx-auto">
+            <!-- Left Info: Score & Multiplier -->
+            <div class="bg-slate-900/80 backdrop-blur border border-cyan-500/30 rounded-xl p-3 px-5 flex items-center space-x-6 glow-box">
+                <div>
+                    <div class="text-xs uppercase tracking-widest text-cyan-400 font-semibold">Score</div>
+                    <div id="scoreDisplay" class="text-2xl md:text-3xl font-black font-orbitron text-white">000000</div>
+                </div>
+                <div class="h-8 w-px bg-cyan-500/30"></div>
+                <div>
+                    <div class="text-xs uppercase tracking-widest text-pink-400 font-semibold">Gems</div>
+                    <div id="gemDisplay" class="text-2xl md:text-3xl font-black font-orbitron text-pink-400">💎 0</div>
+                </div>
+            </div>
+
+            <!-- Center Info: Speed Multiplier Gauge -->
+            <div class="bg-slate-900/80 backdrop-blur border border-cyan-500/30 rounded-xl p-3 px-6 text-center glow-box hidden sm:block">
+                <div class="text-xs uppercase tracking-widest text-amber-400 font-semibold">Hyperspeed</div>
+                <div id="speedGauge" class="text-2xl font-black font-orbitron text-amber-300">1.0x</div>
+            </div>
+
+            <!-- Right Info: Power-up Status & Pause -->
+            <div class="flex items-center space-x-3 pointer-events-auto">
+                <div id="powerupStatus" class="flex space-x-2"></div>
+                <button id="pauseBtn" class="bg-slate-900/80 hover:bg-slate-800 border border-cyan-500/40 p-3 rounded-xl text-cyan-400 hover:text-white transition">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 9v6m4-6v6m7-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                </button>
+            </div>
+        </div>
+
+        <!-- Touch Controls for Mobile/Tablet -->
+        <div id="touchControls" class="hidden pointer-events-auto flex justify-between items-end w-full max-w-4xl mx-auto pb-4 px-2 sm:px-6">
+            <button id="touchSlideBtn" class="w-28 h-28 sm:w-32 sm:h-32 rounded-full bg-pink-600/30 active:bg-pink-600/60 border-2 border-pink-500/80 flex flex-col justify-center items-center backdrop-blur shadow-lg shadow-pink-500/20 active:scale-95 transition">
+                <svg class="w-10 h-10 text-pink-300 mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 14l-7 7m0 0l-7-7m7 7V3"></path></svg>
+                <span class="text-xs font-bold font-orbitron text-pink-200 uppercase tracking-widest">SLIDE</span>
+            </button>
+
+            <button id="touchJumpBtn" class="w-28 h-28 sm:w-32 sm:h-32 rounded-full bg-cyan-600/30 active:bg-cyan-600/60 border-2 border-cyan-500/80 flex flex-col justify-center items-center backdrop-blur shadow-lg shadow-cyan-500/20 active:scale-95 transition">
+                <svg class="w-10 h-10 text-cyan-300 mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 10l7-7m0 0l7 7m-7-7v18"></path></svg>
+                <span class="text-xs font-bold font-orbitron text-cyan-200 uppercase tracking-widest">JUMP</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- START MENU OVERLAY -->
+    <div id="startMenu" class="absolute inset-0 z-20 flex items-center justify-center bg-slate-950/85 backdrop-blur-md p-4">
+        <div class="max-w-md w-full bg-slate-900/90 border border-cyan-500/40 rounded-2xl p-6 sm:p-8 text-center shadow-2xl shadow-cyan-500/20 relative overflow-hidden">
+            <div class="absolute -top-10 -left-10 w-32 h-32 bg-cyan-500/10 rounded-full blur-2xl"></div>
+            <div class="absolute -bottom-10 -right-10 w-32 h-32 bg-pink-500/10 rounded-full blur-2xl"></div>
+
+            <h1 class="text-4xl sm:text-5xl font-black font-orbitron text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 via-sky-200 to-pink-500 tracking-wider mb-2 glow-text">
+                NEON DASH
+            </h1>
+            <p class="text-xs uppercase tracking-widest text-cyan-400 font-semibold mb-6">Hyperspeed Runner</p>
+
+            <div class="bg-slate-950/60 rounded-xl p-4 border border-slate-800 mb-6 text-left space-y-2 text-sm text-slate-300">
+                <div class="flex justify-between items-center border-b border-slate-800/80 pb-2">
+                    <span class="text-cyan-400 font-medium">Jump / Triple Jump:</span>
+                    <span class="bg-slate-800 text-cyan-300 text-xs px-2.5 py-1 rounded font-mono">[SPACE] / [W] / [↑]</span>
+                </div>
+                <div class="flex justify-between items-center border-b border-slate-800/80 pb-2">
+                    <span class="text-pink-400 font-medium">Slide / Duck:</span>
+                    <span class="bg-slate-800 text-pink-300 text-xs px-2.5 py-1 rounded font-mono">[S] / [↓]</span>
+                </div>
+                <div class="flex justify-between items-center pt-1 text-xs text-slate-400">
+                    <span>🛡️ Free Shield every run!</span>
+                    <span>💎 Collect gems for upgrades</span>
+                </div>
+            </div>
+
+            <div class="flex justify-between items-center mb-6 px-2 text-sm">
+                <span class="text-slate-400">High Score:</span>
+                <span id="startHighScore" class="font-orbitron font-bold text-amber-400">0</span>
+            </div>
+
+            <div class="space-y-3">
+                <button id="startBtn" class="w-full btn-neon py-3.5 rounded-xl text-slate-950 font-black font-orbitron text-lg tracking-wider shadow-lg uppercase">
+                    Start Run
+                </button>
+                <button id="shopBtn" class="w-full bg-slate-800 hover:bg-slate-700 border border-pink-500/40 text-pink-300 py-3 rounded-xl font-semibold text-sm transition flex items-center justify-center space-x-2">
+                    <span>🎨 Customizer & Upgrades</span>
+                </button>
+                <a href="https://supernebula23.github.io/games" class="w-full bg-slate-800 hover:bg-slate-700 border border-cyan-500/40 text-cyan-300 py-3 rounded-xl font-semibold text-sm transition flex items-center justify-center space-x-2">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path></svg>
+                    <span>🏠 Home (More Games)</span>
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- GAME OVER OVERLAY -->
+    <div id="gameOverMenu" class="hidden absolute inset-0 z-20 flex items-center justify-center bg-slate-950/90 backdrop-blur-md p-4">
+        <div class="max-w-md w-full bg-slate-900/95 border border-pink-500/50 rounded-2xl p-6 sm:p-8 text-center shadow-2xl shadow-pink-500/20 relative">
+            <h2 class="text-3xl sm:text-4xl font-black font-orbitron text-pink-500 tracking-wider mb-1 glow-pink">CRASHED!</h2>
+            <p class="text-xs uppercase tracking-widest text-slate-400 mb-6">Run Statistics</p>
+
+            <div class="space-y-3 bg-slate-950/70 p-4 rounded-xl border border-slate-800 text-sm mb-6">
+                <div class="flex justify-between items-center">
+                    <span class="text-slate-400">Final Score:</span>
+                    <span id="finalScore" class="font-orbitron font-bold text-cyan-400 text-xl">0</span>
+                </div>
+                <div class="flex justify-between items-center">
+                    <span class="text-slate-400">Gems Collected:</span>
+                    <span id="finalGems" class="font-orbitron font-bold text-pink-400">💎 0</span>
+                </div>
+                <div class="flex justify-between items-center">
+                    <span class="text-slate-400">Max Speed:</span>
+                    <span id="finalSpeed" class="font-orbitron font-bold text-amber-300">1.0x</span>
+                </div>
+                <div class="flex justify-between items-center border-t border-slate-800 pt-2">
+                    <span class="text-slate-400">Personal Best:</span>
+                    <span id="finalHighScore" class="font-orbitron font-bold text-emerald-400">0</span>
+                </div>
+            </div>
+
+            <div class="flex space-x-3">
+                <button id="restartBtn" class="flex-1 btn-neon py-3.5 rounded-xl text-slate-950 font-black font-orbitron text-sm tracking-wider uppercase">
+                    Play Again
+                </button>
+                <button id="mainMenuBtn" class="bg-slate-800 hover:bg-slate-700 text-slate-200 px-5 py-3.5 rounded-xl font-bold text-sm transition">
+                    Menu
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- SHOP / CUSTOMIZER MODAL -->
+    <div id="shopModal" class="hidden absolute inset-0 z-30 flex items-center justify-center bg-slate-950/90 backdrop-blur-md p-4">
+        <div class="max-w-lg w-full bg-slate-900 border border-cyan-500/40 rounded-2xl p-6 shadow-2xl flex flex-col max-h-[90vh]">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-2xl font-black font-orbitron text-cyan-400">CUSTOMIZER</h3>
+                <div class="bg-slate-950 px-3 py-1.5 rounded-lg border border-pink-500/30 text-pink-400 font-orbitron font-bold text-sm">
+                    💎 <span id="shopGems">0</span>
+                </div>
+            </div>
+
+            <p class="text-xs text-slate-400 mb-4">Customize your neon trail & runner theme:</p>
+
+            <div class="overflow-y-auto space-y-3 pr-1 mb-6 flex-1" id="skinsList">
+                <!-- Skins dynamically inserted via JavaScript -->
+            </div>
+
+            <button id="closeShopBtn" class="w-full bg-slate-800 hover:bg-slate-700 text-cyan-400 border border-cyan-500/30 py-3 rounded-xl font-bold font-orbitron transition uppercase">
+                Back to Menu
+            </button>
+        </div>
+    </div>
+
+    <!-- PAUSE MODAL -->
+    <div id="pauseModal" class="hidden absolute inset-0 z-20 flex items-center justify-center bg-slate-950/80 backdrop-blur-md p-4">
+        <div class="max-w-xs w-full bg-slate-900 border border-cyan-500/40 rounded-2xl p-6 text-center shadow-2xl">
+            <h3 class="text-2xl font-black font-orbitron text-cyan-400 mb-6">GAME PAUSED</h3>
+            <div class="space-y-3">
+                <button id="resumeBtn" class="w-full btn-neon py-3 rounded-xl text-slate-950 font-bold font-orbitron uppercase">
+                    Resume
+                </button>
+                <button id="quitBtn" class="w-full bg-slate-800 hover:bg-slate-700 text-slate-300 py-3 rounded-xl font-bold font-orbitron text-sm uppercase">
+                    Quit to Menu
+                </button>
+                <a href="https://supernebula23.github.io/games" class="w-full bg-slate-800/80 hover:bg-slate-700 text-cyan-400 border border-cyan-500/30 py-3 rounded-xl font-bold font-orbitron text-sm uppercase flex items-center justify-center space-x-2">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path></svg>
+                    <span>Home Page</span>
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- GAME ENGINE LOGIC -->
+    <script>
+        // Synthesized Web Audio Sound Generator (Zero External Files)
+        class SoundEngine {
+            constructor() {
+                this.ctx = null;
+                this.muted = false;
+            }
+
+            init() {
+                if (!this.ctx) {
+                    const AudioCtx = window.AudioContext || window.webkitAudioContext;
+                    if (AudioCtx) this.ctx = new AudioCtx();
+                }
+                if (this.ctx && this.ctx.state === 'suspended') {
+                    this.ctx.resume();
+                }
+            }
+
+            playJump() {
+                if (this.muted || !this.ctx) return;
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(150, this.ctx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(500, this.ctx.currentTime + 0.15);
+                
+                gain.gain.setValueAtTime(0.3, this.ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.15);
+
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                osc.start();
+                osc.stop(this.ctx.currentTime + 0.15);
+            }
+
+            playSlide() {
+                if (this.muted || !this.ctx) return;
+                const bufferSize = this.ctx.sampleRate * 0.15;
+                const buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
+                const data = buffer.getChannelData(0);
+                for (let i = 0; i < bufferSize; i++) {
+                    data[i] = Math.random() * 2 - 1;
+                }
+
+                const noise = this.ctx.createBufferSource();
+                noise.buffer = buffer;
+
+                const filter = this.ctx.createBiquadFilter();
+                filter.type = 'lowpass';
+                filter.frequency.setValueAtTime(800, this.ctx.currentTime);
+                filter.frequency.linearRampToValueAtTime(200, this.ctx.currentTime + 0.15);
+
+                const gain = this.ctx.createGain();
+                gain.gain.setValueAtTime(0.2, this.ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.15);
+
+                noise.connect(filter);
+                filter.connect(gain);
+                gain.connect(this.ctx.destination);
+                noise.start();
+            }
+
+            playGem() {
+                if (this.muted || !this.ctx) return;
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(800, this.ctx.currentTime);
+                osc.frequency.setValueAtTime(1200, this.ctx.currentTime + 0.08);
+
+                gain.gain.setValueAtTime(0.25, this.ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.16);
+
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                osc.start();
+                osc.stop(this.ctx.currentTime + 0.16);
+            }
+
+            playPowerup() {
+                if (this.muted || !this.ctx) return;
+                const now = this.ctx.currentTime;
+                [440, 554.37, 659.25, 880].forEach((freq, idx) => {
+                    const osc = this.ctx.createOscillator();
+                    const gain = this.ctx.createGain();
+                    osc.type = 'sine';
+                    osc.frequency.value = freq;
+                    gain.gain.setValueAtTime(0.15, now + idx * 0.05);
+                    gain.gain.exponentialRampToValueAtTime(0.01, now + idx * 0.05 + 0.1);
+                    osc.connect(gain);
+                    gain.connect(this.ctx.destination);
+                    osc.start(now + idx * 0.05);
+                    osc.stop(now + idx * 0.05 + 0.1);
+                });
+            }
+
+            playCrash() {
+                if (this.muted || !this.ctx) return;
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(120, this.ctx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(30, this.ctx.currentTime + 0.4);
+
+                gain.gain.setValueAtTime(0.5, this.ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.4);
+
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                osc.start();
+                osc.stop(this.ctx.currentTime + 0.4);
+            }
+        }
+
+        const audio = new SoundEngine();
+
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // Skins Config
+        const SKINS = [
+            { id: 'cyan', name: 'Cyber Cyan', color: '#00f3ff', price: 0, unlocked: true },
+            { id: 'pink', name: 'Vaporwave Pink', color: '#ff007f', price: 25, unlocked: false },
+            { id: 'lime', name: 'Matrix Lime', color: '#39ff14', price: 50, unlocked: false },
+            { id: 'gold', name: 'Golden Flare', color: '#ffd700', price: 100, unlocked: false },
+            { id: 'purple', name: 'Plasma Purple', color: '#b026ff', price: 150, unlocked: false }
+        ];
+
+        let selectedSkin = SKINS[0];
+        let totalGems = parseInt(localStorage.getItem('nd_gems') || '0');
+        let highScore = parseInt(localStorage.getItem('nd_highscore') || '0');
+
+        // Game Configuration & State (Easier Settings)
+        let gameState = 'MENU'; // MENU, PLAYING, PAUSED, GAMEOVER
+        let baseSpeed = 5.5; // Reduced starting speed from 8 to 5.5
+        let currentSpeed = baseSpeed;
+        let speedMultiplier = 1.0;
+        let distanceScore = 0;
+        let gemsCollectedRun = 0;
+        let groundY = 0;
+        let lastTime = 0;
+        let spawnTimer = 0;
+        let itemSpawnTimer = 0;
+
+        const player = {
+            x: 100,
+            y: 0,
+            width: 36,
+            height: 64,
+            standingHeight: 64,
+            duckHeight: 32,
+            vy: 0,
+            gravity: 1.1, // Floatier jump physics
+            jumpForce: -17,
+            isGrounded: false,
+            isDucking: false,
+            jumpCount: 0,
+            maxJumps: 3, // Enabled Triple Jump for easier recovery
+            trail: [],
+            shield: true, // Free starting shield
+            shieldTimer: 0,
+            slowTimer: 0,
+
+            reset() {
+                this.y = groundY - this.standingHeight;
+                this.height = this.standingHeight;
+                this.vy = 0;
+                this.isGrounded = true;
+                this.isDucking = false;
+                this.jumpCount = 0;
+                this.trail = [];
+                this.shield = true; // Start each run with a protective shield
+                this.shieldTimer = 0;
+                this.slowTimer = 0;
+            },
+
+            jump() {
+                if (this.jumpCount < this.maxJumps) {
+                    this.vy = this.jumpForce;
+                    this.isGrounded = false;
+                    this.isDucking = false;
+                    this.height = this.standingHeight;
+                    this.jumpCount++;
+                    audio.playJump();
+                    createParticles(this.x + this.width / 2, this.y + this.height, 12, selectedSkin.color);
+                }
+            },
+
+            duck(isDucking) {
+                if (this.isDucking === isDucking) return;
+                this.isDucking = isDucking;
+                if (isDucking) {
+                    this.height = this.duckHeight;
+                    if (this.isGrounded) {
+                        this.y = groundY - this.duckHeight;
+                        audio.playSlide();
+                        createParticles(this.x + this.width / 2, groundY, 8, selectedSkin.color);
+                    }
+                } else {
+                    this.height = this.standingHeight;
+                    if (this.isGrounded) {
+                        this.y = groundY - this.standingHeight;
+                    }
+                }
+            },
+
+            update() {
+                // Apply Gravity
+                this.vy += this.gravity;
+                this.y += this.vy;
+
+                // Ground Collision
+                if (this.y + this.height >= groundY) {
+                    this.y = groundY - this.height;
+                    this.vy = 0;
+                    this.isGrounded = true;
+                    this.jumpCount = 0;
+                } else {
+                    this.isGrounded = false;
+                }
+
+                // Trail Effect Recording
+                if (gameState === 'PLAYING') {
+                    this.trail.unshift({
+                        x: this.x,
+                        y: this.y,
+                        width: this.width,
+                        height: this.height,
+                        alpha: 0.7
+                    });
+                    if (this.trail.length > 10) this.trail.pop();
+                    this.trail.forEach(t => t.alpha *= 0.82);
+                }
+
+                // Power-up Timers
+                if (this.shieldTimer > 0) {
+                    this.shieldTimer--;
+                    if (this.shieldTimer <= 0) this.shield = false;
+                }
+                if (this.slowTimer > 0) {
+                    this.slowTimer--;
+                }
+            },
+
+            draw() {
+                // Draw Trail
+                this.trail.forEach((t) => {
+                    ctx.fillStyle = selectedSkin.color;
+                    ctx.globalAlpha = t.alpha * 0.4;
+                    ctx.fillRect(t.x, t.y, t.width, t.height);
+                });
+                ctx.globalAlpha = 1.0;
+
+                // Draw Player Character
+                ctx.save();
+                ctx.shadowColor = selectedSkin.color;
+                ctx.shadowBlur = 15;
+                ctx.fillStyle = selectedSkin.color;
+                
+                // Rounded Runner Body
+                const radius = 6;
+                ctx.beginPath();
+                ctx.roundRect(this.x, this.y, this.width, this.height, radius);
+                ctx.fill();
+
+                // Core Visor / Accent
+                ctx.fillStyle = '#ffffff';
+                if (this.isDucking) {
+                    ctx.fillRect(this.x + this.width - 12, this.y + 6, 8, 8);
+                } else {
+                    ctx.fillRect(this.x + this.width - 12, this.y + 10, 8, 12);
+                }
+
+                // Shield Aura
+                if (this.shield) {
+                    ctx.strokeStyle = '#00f3ff';
+                    ctx.lineWidth = 3;
+                    ctx.beginPath();
+                    ctx.arc(this.x + this.width / 2, this.y + this.height / 2, this.height * 0.7, 0, Math.PI * 2);
+                    ctx.stroke();
+                }
+
+                ctx.restore();
+            }
+        };
+
+        let obstacles = [];
+        let items = [];
+        let particles = [];
+        let stars = [];
+
+        // Obstacle Types: Low Spikes, High Flying Drone, Tall Barrier
+        function spawnObstacle() {
+            const types = ['LOW', 'HIGH', 'TALL'];
+            // Increase complexity as speed increases
+            let allowedTypes = ['LOW'];
+            if (speedMultiplier > 1.2) allowedTypes.push('HIGH');
+            if (speedMultiplier > 1.5) allowedTypes.push('TALL');
+
+            const type = allowedTypes[Math.floor(Math.random() * allowedTypes.length)];
+            let obs = { x: canvas.width + 50, type: type, passed: false };
+
+            if (type === 'LOW') {
+                obs.width = 30 + Math.random() * 20;
+                obs.height = 40;
+                obs.y = groundY - obs.height;
+                obs.color = '#ff0055';
+            } else if (type === 'HIGH') {
+                obs.width = 45;
+                obs.height = 35;
+                obs.y = groundY - 85; // Requires sliding under
+                obs.color = '#ff9900';
+            } else if (type === 'TALL') {
+                obs.width = 28;
+                obs.height = 75;
+                obs.y = groundY - obs.height; // Requires high timing double jump
+                obs.color = '#b026ff';
+            }
+
+            obstacles.push(obs);
+        }
+
+        // Collectibles (Gems & Shield Orbs)
+        function spawnItem() {
+            const isShield = Math.random() < 0.35; // Increased shield spawn rate from 15% to 35%
+            const item = {
+                x: canvas.width + 30,
+                y: groundY - (40 + Math.random() * 80),
+                width: 24,
+                height: 24,
+                type: isShield ? 'SHIELD' : 'GEM',
+                color: isShield ? '#00f3ff' : '#ff007f',
+                pulse: 0
+            };
+            items.push(item);
+        }
+
+        function createParticles(x, y, count, color) {
+            for (let i = 0; i < count; i++) {
+                particles.push({
+                    x: x,
+                    y: y,
+                    vx: (Math.random() - 0.5) * 8,
+                    vy: (Math.random() - 0.5) * 8,
+                    size: Math.random() * 4 + 2,
+                    color: color,
+                    life: 1.0,
+                    decay: Math.random() * 0.05 + 0.02
+                });
+            }
+        }
+
+        function initStars() {
+            stars = [];
+            for (let i = 0; i < 70; i++) {
+                stars.push({
+                    x: Math.random() * canvas.width,
+                    y: Math.random() * (canvas.height * 0.7),
+                    size: Math.random() * 2 + 0.5,
+                    speed: Math.random() * 0.5 + 0.1,
+                    alpha: Math.random()
+                });
+            }
+        }
+
+        function setupInputs() {
+            window.addEventListener('keydown', (e) => {
+                if (gameState !== 'PLAYING') return;
+                audio.init();
+
+                if (e.code === 'Space' || e.code === 'KeyW' || e.code === 'ArrowUp') {
+                    e.preventDefault();
+                    player.jump();
+                } else if (e.code === 'KeyS' || e.code === 'ArrowDown') {
+                    e.preventDefault();
+                    player.duck(true);
+                }
+            });
+
+            window.addEventListener('keyup', (e) => {
+                if (e.code === 'KeyS' || e.code === 'ArrowDown') {
+                    player.duck(false);
+                }
+            });
+
+            // Mobile Touch Buttons
+            const touchJump = document.getElementById('touchJumpBtn');
+            const touchSlide = document.getElementById('touchSlideBtn');
+
+            const triggerJump = (e) => {
+                e.preventDefault();
+                if (gameState === 'PLAYING') {
+                    audio.init();
+                    player.jump();
+                }
+            };
+
+            const startSlide = (e) => {
+                e.preventDefault();
+                if (gameState === 'PLAYING') {
+                    audio.init();
+                    player.duck(true);
+                }
+            };
+
+            const stopSlide = (e) => {
+                e.preventDefault();
+                if (gameState === 'PLAYING') player.duck(false);
+            };
+
+            touchJump.addEventListener('touchstart', triggerJump);
+            touchSlide.addEventListener('touchstart', startSlide);
+            touchSlide.addEventListener('touchend', stopSlide);
+
+            // Canvas Direct Tap fallback (Tap right half = Jump, Tap left half = Slide)
+            canvas.addEventListener('touchstart', (e) => {
+                if (gameState !== 'PLAYING') return;
+                audio.init();
+                const touch = e.touches[0];
+                if (touch.clientX > window.innerWidth / 2) {
+                    player.jump();
+                } else {
+                    player.duck(true);
+                }
+            });
+
+            canvas.addEventListener('touchend', () => {
+                if (gameState === 'PLAYING') player.duck(false);
+            });
+        }
+
+        function checkCollisions() {
+            // Check Obstacle Collisions with inset hitboxes for a 6px forgiving margin
+            const margin = 6;
+            const px = player.x + margin;
+            const py = player.y + margin;
+            const pw = player.width - margin * 2;
+            const ph = player.height - margin * 2;
+
+            for (let i = obstacles.length - 1; i >= 0; i--) {
+                const obs = obstacles[i];
+                
+                // Forgiving AABB Box Collision Check
+                if (
+                    px < obs.x + obs.width - margin &&
+                    px + pw > obs.x + margin &&
+                    py < obs.y + obs.height - margin &&
+                    py + ph > obs.y + margin
+                ) {
+                    if (player.shield) {
+                        // Shield absorbs hit
+                        player.shield = false;
+                        audio.playCrash();
+                        createParticles(obs.x + obs.width / 2, obs.y + obs.height / 2, 20, '#00f3ff');
+                        obstacles.splice(i, 1);
+                        continue;
+                    } else {
+                        // Game Over Crash
+                        triggerGameOver();
+                        return;
+                    }
+                }
+            }
+
+            // Check Collectible Collisions
+            for (let i = items.length - 1; i >= 0; i--) {
+                const it = items[i];
+                if (
+                    player.x < it.x + it.width &&
+                    player.x + player.width > it.x &&
+                    player.y < it.y + it.height &&
+                    player.y + player.height > it.y
+                ) {
+                    if (it.type === 'GEM') {
+                        gemsCollectedRun++;
+                        totalGems++;
+                        audio.playGem();
+                        createParticles(it.x, it.y, 10, '#ff007f');
+                        localStorage.setItem('nd_gems', totalGems);
+                    } else if (it.type === 'SHIELD') {
+                        player.shield = true;
+                        audio.playPowerup();
+                        createParticles(it.x, it.y, 15, '#00f3ff');
+                    }
+                    items.splice(i, 1);
+                }
+            }
+        }
+
+        function updateSpeedAndScore() {
+            // Speed ramps up much more gradually now
+            distanceScore += Math.floor(currentSpeed);
+            speedMultiplier = 1.0 + Math.floor(distanceScore / 1600) * 0.08; // Slower speed escalation
+            currentSpeed = baseSpeed * (player.slowTimer > 0 ? 0.7 : speedMultiplier);
+
+            // Update HUD UI
+            document.getElementById('scoreDisplay').innerText = String(distanceScore).padStart(6, '0');
+            document.getElementById('gemDisplay').innerText = `💎 ${gemsCollectedRun}`;
+            document.getElementById('speedGauge').innerText = `${speedMultiplier.toFixed(1)}x`;
+        }
+
+        function update(deltaTime) {
+            if (gameState !== 'PLAYING') return;
+
+            updateSpeedAndScore();
+            player.update();
+
+            // Background Stars
+            stars.forEach(s => {
+                s.x -= s.speed * (currentSpeed / baseSpeed);
+                if (s.x < 0) s.x = canvas.width;
+            });
+
+            // Spawn Obstacles with wider gap spacing
+            spawnTimer += currentSpeed;
+            if (spawnTimer > 380 + Math.random() * 220) { // Increased obstacle distance threshold
+                spawnObstacle();
+                spawnTimer = 0;
+            }
+
+            // Move Obstacles
+            for (let i = obstacles.length - 1; i >= 0; i--) {
+                obstacles[i].x -= currentSpeed;
+                if (obstacles[i].x + obstacles[i].width < 0) {
+                    obstacles.splice(i, 1);
+                }
+            }
+
+            // Spawn & Move Items
+            itemSpawnTimer += currentSpeed;
+            if (itemSpawnTimer > 400 + Math.random() * 300) {
+                spawnItem();
+                itemSpawnTimer = 0;
+            }
+
+            for (let i = items.length - 1; i >= 0; i--) {
+                items[i].x -= currentSpeed;
+                items[i].pulse += 0.05;
+                if (items[i].x + items[i].width < 0) {
+                    items.splice(i, 1);
+                }
+            }
+
+            // Update Particles
+            for (let i = particles.length - 1; i >= 0; i--) {
+                const p = particles[i];
+                p.x += p.vx;
+                p.y += p.vy;
+                p.life -= p.decay;
+                if (p.life <= 0) particles.splice(i, 1);
+            }
+
+            checkCollisions();
+        }
+
+        function render() {
+            // Clear Frame with Dark Synthwave Background
+            ctx.fillStyle = '#05050c';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Render Stars
+            stars.forEach(s => {
+                ctx.fillStyle = `rgba(255, 255, 255, ${s.alpha})`;
+                ctx.fillRect(s.x, s.y, s.size, s.size);
+            });
+
+            // Render Distant Grid / Horizon Line
+            ctx.strokeStyle = 'rgba(0, 243, 255, 0.15)';
+            ctx.lineWidth = 1;
+            const gridOffset = (distanceScore * 2) % 40;
+            for (let x = -gridOffset; x < canvas.width; x += 40) {
+                ctx.beginPath();
+                ctx.moveTo(x, groundY);
+                ctx.lineTo(x - 200, canvas.height);
+                ctx.stroke();
+            }
+
+            // Render Ground
+            ctx.shadowBlur = 12;
+            ctx.shadowColor = '#00f3ff';
+            ctx.fillStyle = '#0a0d1a';
+            ctx.fillRect(0, groundY, canvas.width, canvas.height - groundY);
+
+            ctx.strokeStyle = '#00f3ff';
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            ctx.moveTo(0, groundY);
+            ctx.lineTo(canvas.width, groundY);
+            ctx.stroke();
+            ctx.shadowBlur = 0; // Reset shadow
+
+            // Render Items
+            items.forEach(it => {
+                ctx.save();
+                ctx.shadowColor = it.color;
+                ctx.shadowBlur = 10;
+                ctx.fillStyle = it.color;
+
+                const offsetY = Math.sin(it.pulse) * 4;
+                if (it.type === 'GEM') {
+                    // Diamond Shape
+                    ctx.beginPath();
+                    ctx.moveTo(it.x + it.width / 2, it.y + offsetY);
+                    ctx.lineTo(it.x + it.width, it.y + it.height / 2 + offsetY);
+                    ctx.lineTo(it.x + it.width / 2, it.y + it.height + offsetY);
+                    ctx.lineTo(it.x, it.y + it.height / 2 + offsetY);
+                    ctx.closePath();
+                    ctx.fill();
+                } else {
+                    // Shield Orb Circle
+                    ctx.beginPath();
+                    ctx.arc(it.x + it.width / 2, it.y + it.height / 2 + offsetY, it.width / 2, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+                ctx.restore();
+            });
+
+            // Render Obstacles
+            obstacles.forEach(obs => {
+                ctx.save();
+                ctx.shadowColor = obs.color;
+                ctx.shadowBlur = 12;
+                ctx.fillStyle = obs.color;
+
+                if (obs.type === 'LOW') {
+                    // Angular Neon Barrier
+                    ctx.beginPath();
+                    ctx.moveTo(obs.x, obs.y + obs.height);
+                    ctx.lineTo(obs.x + 10, obs.y);
+                    ctx.lineTo(obs.x + obs.width - 10, obs.y);
+                    ctx.lineTo(obs.x + obs.width, obs.y + obs.height);
+                    ctx.closePath();
+                    ctx.fill();
+                } else if (obs.type === 'HIGH') {
+                    // Drone / Floating Laser Gate
+                    ctx.fillRect(obs.x, obs.y, obs.width, obs.height);
+                    ctx.fillStyle = '#ffffff';
+                    ctx.fillRect(obs.x + 5, obs.y + obs.height / 2 - 2, obs.width - 10, 4);
+                } else {
+                    // Tall Solid Laser Tower
+                    ctx.fillRect(obs.x, obs.y, obs.width, obs.height);
+                }
+                ctx.restore();
+            });
+
+            // Render Player
+            player.draw();
+
+            // Render Particles
+            particles.forEach(p => {
+                ctx.save();
+                ctx.globalAlpha = p.life;
+                ctx.fillStyle = p.color;
+                ctx.fillRect(p.x, p.y, p.size, p.size);
+                ctx.restore();
+            });
+        }
+
+        function gameLoop(timestamp) {
+            const deltaTime = timestamp - lastTime;
+            lastTime = timestamp;
+
+            update(deltaTime);
+            render();
+
+            requestAnimationFrame(gameLoop);
+        }
+
+        function resizeCanvas() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+            groundY = canvas.height * 0.78;
+            if (player) player.y = groundY - player.height;
+            initStars();
+        }
+
+        function startGame() {
+            audio.init();
+            gameState = 'PLAYING';
+            distanceScore = 0;
+            gemsCollectedRun = 0;
+            currentSpeed = baseSpeed;
+            speedMultiplier = 1.0;
+            spawnTimer = 0;
+            itemSpawnTimer = 0;
+            obstacles = [];
+            items = [];
+            particles = [];
+            player.reset();
+
+            document.getElementById('startMenu').classList.add('hidden');
+            document.getElementById('gameOverMenu').classList.add('hidden');
+            document.getElementById('pauseModal').classList.add('hidden');
+            document.getElementById('hud').classList.remove('hidden');
+            document.getElementById('touchControls').classList.remove('hidden');
+        }
+
+        function triggerGameOver() {
+            gameState = 'GAMEOVER';
+            audio.playCrash();
+            createParticles(player.x + player.width / 2, player.y + player.height / 2, 40, selectedSkin.color);
+
+            if (distanceScore > highScore) {
+                highScore = distanceScore;
+                localStorage.setItem('nd_highscore', highScore);
+            }
+
+            document.getElementById('finalScore').innerText = String(distanceScore).padStart(6, '0');
+            document.getElementById('finalGems').innerText = `💎 ${gemsCollectedRun}`;
+            document.getElementById('finalSpeed').innerText = `${speedMultiplier.toFixed(1)}x`;
+            document.getElementById('finalHighScore').innerText = String(highScore).padStart(6, '0');
+
+            document.getElementById('hud').classList.add('hidden');
+            document.getElementById('touchControls').classList.add('hidden');
+            document.getElementById('gameOverMenu').classList.remove('hidden');
+        }
+
+        function renderShop() {
+            document.getElementById('shopGems').innerText = totalGems;
+            const container = document.getElementById('skinsList');
+            container.innerHTML = '';
+
+            SKINS.forEach(skin => {
+                const isSelected = selectedSkin.id === skin.id;
+                const div = document.createElement('div');
+                div.className = `p-3.5 rounded-xl border flex items-center justify-between bg-slate-950/60 ${isSelected ? 'border-cyan-400 glow-box' : 'border-slate-800'}`;
+                
+                div.innerHTML = `
+                    <div class="flex items-center space-x-3">
+                        <div class="w-8 h-8 rounded-lg shadow-md" style="background-color: ${skin.color}"></div>
+                        <div>
+                            <div class="font-bold text-sm text-slate-200">${skin.name}</div>
+                            <div class="text-xs text-slate-400">${skin.unlocked ? 'Unlocked' : `Cost: 💎 ${skin.price}`}</div>
+                        </div>
+                    </div>
+                    <button class="skin-btn px-4 py-1.5 rounded-lg text-xs font-bold font-orbitron uppercase transition ${
+                        isSelected 
+                            ? 'bg-cyan-500 text-slate-950' 
+                            : skin.unlocked 
+                            ? 'bg-slate-800 text-slate-200 hover:bg-slate-700' 
+                            : totalGems >= skin.price 
+                            ? 'bg-pink-600 text-white hover:bg-pink-500' 
+                            : 'bg-slate-800/50 text-slate-500 cursor-not-allowed'
+                    }">
+                        ${isSelected ? 'Active' : skin.unlocked ? 'Select' : 'Unlock'}
+                    </button>
+                `;
+
+                const btn = div.querySelector('.skin-btn');
+                btn.addEventListener('click', () => {
+                    if (skin.unlocked) {
+                        selectedSkin = skin;
+                        renderShop();
+                    } else if (totalGems >= skin.price) {
+                        totalGems -= skin.price;
+                        skin.unlocked = true;
+                        selectedSkin = skin;
+                        localStorage.setItem('nd_gems', totalGems);
+                        renderShop();
+                    }
+                });
+
+                container.appendChild(div);
+            });
+        }
+
+        function setupUIEvents() {
+            document.getElementById('startBtn').addEventListener('click', startGame);
+            document.getElementById('restartBtn').addEventListener('click', startGame);
+
+            document.getElementById('mainMenuBtn').addEventListener('click', () => {
+                document.getElementById('gameOverMenu').classList.add('hidden');
+                document.getElementById('startMenu').classList.remove('hidden');
+                document.getElementById('startHighScore').innerText = String(highScore).padStart(6, '0');
+                gameState = 'MENU';
+            });
+
+            document.getElementById('shopBtn').addEventListener('click', () => {
+                renderShop();
+                document.getElementById('shopModal').classList.remove('hidden');
+            });
+
+            document.getElementById('closeShopBtn').addEventListener('click', () => {
+                document.getElementById('shopModal').classList.add('hidden');
+            });
+
+            document.getElementById('pauseBtn').addEventListener('click', () => {
+                if (gameState === 'PLAYING') {
+                    gameState = 'PAUSED';
+                    document.getElementById('pauseModal').classList.remove('hidden');
+                }
+            });
+
+            document.getElementById('resumeBtn').addEventListener('click', () => {
+                gameState = 'PLAYING';
+                document.getElementById('pauseModal').classList.add('hidden');
+            });
+
+            document.getElementById('quitBtn').addEventListener('click', () => {
+                gameState = 'MENU';
+                document.getElementById('pauseModal').classList.add('hidden');
+                document.getElementById('hud').classList.add('hidden');
+                document.getElementById('touchControls').classList.add('hidden');
+                document.getElementById('startMenu').classList.remove('hidden');
+                document.getElementById('startHighScore').innerText = String(highScore).padStart(6, '0');
+            });
+        }
+
+        // Initialization on window load
+        window.onload = function() {
+            window.addEventListener('resize', resizeCanvas);
+            resizeCanvas();
+            setupInputs();
+            setupUIEvents();
+            document.getElementById('startHighScore').innerText = String(highScore).padStart(6, '0');
+            requestAnimationFrame(gameLoop);
+        };
+    </script>
+</body>
+</html>

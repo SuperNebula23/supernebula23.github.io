@@ -1,0 +1,888 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Count Masters 3D</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Inter:wght@600;800&display=swap" rel="stylesheet">
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            user-select: none;
+            -webkit-user-select: none;
+            background-color: #0f172a;
+            font-family: 'Fredoka One', cursive, 'Inter', sans-serif;
+            touch-action: none;
+        }
+        canvas {
+            display: block;
+            width: 100vw;
+            height: 100vh;
+        }
+        .ui-overlay {
+            pointer-events: none;
+        }
+        .ui-interactive {
+            pointer-events: auto;
+        }
+    </style>
+</head>
+<body class="w-full h-full relative overflow-hidden bg-slate-900">
+
+    <!-- 3D Canvas -->
+    <div id="canvas-container" class="w-full h-full absolute inset-0"></div>
+
+    <!-- HUD & UI Overlay -->
+    <div class="ui-overlay fixed inset-0 flex flex-col justify-between p-4 z-10">
+        <!-- Top Header: Level & Score -->
+        <div class="flex justify-between items-center w-full max-w-md mx-auto mt-2 px-2">
+            <div class="bg-slate-800/90 backdrop-blur-md px-5 py-2 rounded-full border border-slate-700 shadow-xl text-white">
+                <span class="text-[10px] text-slate-400 uppercase tracking-wider block leading-none mb-1">Level</span>
+                <span id="level-display" class="text-xl font-extrabold text-cyan-400 leading-none">1</span>
+            </div>
+            
+            <div class="bg-slate-800/90 backdrop-blur-md px-6 py-2 rounded-full border border-slate-700 shadow-xl text-white flex items-center space-x-2">
+                <span class="text-[10px] text-slate-400 uppercase tracking-wider">Crowd</span>
+                <span id="crowd-count-display" class="text-2xl font-black text-amber-400 leading-none">1</span>
+            </div>
+        </div>
+
+        <!-- Progress Bar -->
+        <div class="w-full max-w-md mx-auto my-2 px-2">
+            <div class="w-full bg-slate-800/80 rounded-full h-3 border border-slate-700 p-0.5 overflow-hidden shadow-inner">
+                <div id="progress-bar" class="bg-gradient-to-r from-cyan-500 to-blue-500 h-full rounded-full w-0 transition-all duration-100"></div>
+            </div>
+        </div>
+
+        <!-- Start Game Banner / Instructions -->
+        <div id="start-screen" class="ui-interactive fixed inset-0 flex flex-col items-center justify-center bg-black/50 backdrop-blur-sm z-20 transition-opacity duration-300 p-4">
+            <div class="text-center p-6 bg-slate-800/95 rounded-3xl border border-slate-700 shadow-2xl max-w-xs w-full transform hover:scale-105 transition-transform">
+                <h1 class="text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-500 mb-2">COUNT MASTERS</h1>
+                <p class="text-slate-300 text-xs mb-6 leading-relaxed">Drag mouse/finger or use A/D & Arrow Keys to steer your crowd!</p>
+                <button id="start-btn" class="w-full py-3.5 bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white text-lg font-bold rounded-2xl shadow-lg shadow-cyan-500/30 active:scale-95 transition-all">
+                    TAP TO PLAY
+                </button>
+            </div>
+        </div>
+
+        <!-- Game Over / Victory Modal -->
+        <div id="end-modal" class="ui-interactive hidden fixed inset-0 flex flex-col items-center justify-center bg-black/60 backdrop-blur-md z-30 p-4">
+            <div class="text-center p-6 bg-slate-800/95 rounded-3xl border border-slate-700 shadow-2xl max-w-xs w-full animate-bounce-short">
+                <h2 id="modal-title" class="text-3xl font-black text-amber-400 mb-2">VICTORY!</h2>
+                <p id="modal-sub" class="text-slate-300 text-sm mb-6">You reached the staircase!</p>
+                <button id="restart-btn" class="w-full py-3.5 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-white text-lg font-bold rounded-2xl shadow-lg shadow-emerald-500/30 active:scale-95 transition-all">
+                    PLAY AGAIN
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        class SoundSystem {
+            constructor() {
+                this.ctx = null;
+            }
+            init() {
+                if (!this.ctx) {
+                    this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+                }
+            }
+            playGatePass() {
+                if (!this.ctx) return;
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(523.25, this.ctx.currentTime); // C5
+                osc.frequency.exponentialRampToValueAtTime(1046.50, this.ctx.currentTime + 0.15); // C6
+                gain.gain.setValueAtTime(0.3, this.ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.15);
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                osc.start();
+                osc.stop(this.ctx.currentTime + 0.15);
+            }
+            playPop() {
+                if (!this.ctx) return;
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(320, this.ctx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(80, this.ctx.currentTime + 0.08);
+                gain.gain.setValueAtTime(0.2, this.ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.08);
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                osc.start();
+                osc.stop(this.ctx.currentTime + 0.08);
+            }
+            playWin() {
+                if (!this.ctx) return;
+                const notes = [523.25, 659.25, 783.99, 1046.50];
+                notes.forEach((freq, idx) => {
+                    const osc = this.ctx.createOscillator();
+                    const gain = this.ctx.createGain();
+                    osc.type = 'triangle';
+                    osc.frequency.setValueAtTime(freq, this.ctx.currentTime + idx * 0.1);
+                    gain.gain.setValueAtTime(0.25, this.ctx.currentTime + idx * 0.1);
+                    gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + idx * 0.1 + 0.25);
+                    osc.connect(gain);
+                    gain.connect(this.ctx.destination);
+                    osc.start(this.ctx.currentTime + idx * 0.1);
+                    osc.stop(this.ctx.currentTime + idx * 0.1 + 0.25);
+                });
+            }
+            playLose() {
+                if (!this.ctx) return;
+                const notes = [400, 350, 300, 220];
+                notes.forEach((freq, idx) => {
+                    const osc = this.ctx.createOscillator();
+                    const gain = this.ctx.createGain();
+                    osc.type = 'sawtooth';
+                    osc.frequency.setValueAtTime(freq, this.ctx.currentTime + idx * 0.12);
+                    gain.gain.setValueAtTime(0.2, this.ctx.currentTime + idx * 0.12);
+                    gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + idx * 0.12 + 0.2);
+                    osc.connect(gain);
+                    gain.connect(this.ctx.destination);
+                    osc.start(this.ctx.currentTime + idx * 0.12);
+                    osc.stop(this.ctx.currentTime + idx * 0.12 + 0.2);
+                });
+            }
+        }
+        const audio = new SoundSystem();
+
+        let scene, camera, renderer;
+        let blueMaterial, redMaterial, trackMaterial, glassGateMat;
+        
+        let gameState = 'START'; // START, PLAYING, FINISH_RUN, GAMEOVER
+        let currentLevel = 1;
+        let levelLength = 180;
+        let playerX = 0;
+        let playerZ = 0;
+        let forwardSpeed = 0.24;
+        let targetPlayerX = 0;
+        let finishClimbTimer = 0;
+
+        let isPointerDown = false;
+        let pointerStartX = 0;
+        let playerStartX = 0;
+        let keyLeft = false;
+        let keyRight = false;
+
+        let crowdMembers = [];
+        let enemyGroups = [];
+        let gateEntities = [];
+        let obstacleEntities = [];
+        let finishStairs = [];
+        let particleSystems = [];
+        let trackMesh = null;
+
+        function createSmoothCapsuleGeometry(radius, length) {
+            const group = new THREE.Group();
+
+            // Open-ended middle cylinder
+            const cylinderGeo = new THREE.CylinderGeometry(radius, radius, length, 16, 1, true);
+            const cylinder = new THREE.Mesh(cylinderGeo);
+            group.add(cylinder);
+
+            // Top dome cap
+            const topSphereGeo = new THREE.SphereGeometry(radius, 16, 12, 0, Math.PI * 2, 0, Math.PI / 2);
+            const topCap = new THREE.Mesh(topSphereGeo);
+            topCap.position.y = length / 2;
+            group.add(topCap);
+
+            // Bottom dome cap
+            const botSphereGeo = new THREE.SphereGeometry(radius, 16, 12, 0, Math.PI * 2, Math.PI / 2, Math.PI / 2);
+            const botCap = new THREE.Mesh(botSphereGeo);
+            botCap.position.y = -length / 2;
+            group.add(botCap);
+
+            return group;
+        }
+
+        function createCharacterMesh(material) {
+            const runnerGroup = new THREE.Group();
+
+            // 1. Oversized Bulbous Head
+            const headGeo = new THREE.SphereGeometry(0.42, 24, 24);
+            headGeo.scale(1.0, 1.15, 1.0);
+            const head = new THREE.Mesh(headGeo, material);
+            head.position.y = 1.45;
+            head.castShadow = true;
+            runnerGroup.add(head);
+
+            // 2. Smooth Tapered Torso
+            const torsoContainer = createSmoothCapsuleGeometry(0.24, 0.38);
+            torsoContainer.children.forEach(mesh => {
+                mesh.material = material;
+                mesh.castShadow = true;
+            });
+            torsoContainer.position.y = 0.85;
+            runnerGroup.add(torsoContainer);
+
+            // Helper to apply material to capsule groups
+            const createLimbMesh = (r, l) => {
+                const limbGroup = createSmoothCapsuleGeometry(r, l);
+                limbGroup.children.forEach(m => {
+                    m.material = material;
+                    m.castShadow = true;
+                });
+                return limbGroup;
+            };
+
+            // 3. Smooth Rounded Limbs with Pivots
+            const leftLegPivot = new THREE.Group();
+            leftLegPivot.position.set(-0.16, 0.58, 0);
+            const leftLegMesh = createLimbMesh(0.12, 0.35);
+            leftLegMesh.position.y = -0.20;
+            leftLegPivot.add(leftLegMesh);
+            runnerGroup.add(leftLegPivot);
+
+            const rightLegPivot = new THREE.Group();
+            rightLegPivot.position.set(0.16, 0.58, 0);
+            const rightLegMesh = createLimbMesh(0.12, 0.35);
+            rightLegMesh.position.y = -0.20;
+            rightLegPivot.add(rightLegMesh);
+            runnerGroup.add(rightLegPivot);
+
+            const leftArmPivot = new THREE.Group();
+            leftArmPivot.position.set(-0.28, 0.98, 0);
+            const leftArmMesh = createLimbMesh(0.11, 0.32);
+            leftArmMesh.position.y = -0.18;
+            leftArmPivot.add(leftArmMesh);
+            leftArmPivot.rotation.z = Math.PI / 6;
+            runnerGroup.add(leftArmPivot);
+
+            const rightArmPivot = new THREE.Group();
+            rightArmPivot.position.set(0.28, 0.98, 0);
+            const rightArmMesh = createLimbMesh(0.11, 0.32);
+            rightArmMesh.position.y = -0.18;
+            rightArmPivot.add(rightArmMesh);
+            rightArmPivot.rotation.z = -Math.PI / 6;
+            runnerGroup.add(rightArmPivot);
+
+            runnerGroup.userData = {
+                leftLeg: leftLegPivot,
+                rightLeg: rightLegPivot,
+                leftArm: leftArmPivot,
+                rightArm: rightArmPivot,
+                head: head,
+                animOffset: Math.random() * Math.PI * 2
+            };
+
+            return runnerGroup;
+        }
+
+        function initThree() {
+            const container = document.getElementById('canvas-container');
+
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(0xbae6fd); // Soft sky blue
+            scene.fog = new THREE.FogExp2(0xbae6fd, 0.007);
+
+            camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 300);
+            camera.position.set(0, 8, -12);
+            camera.lookAt(0, 1.5, 5);
+
+            renderer = new THREE.WebGLRenderer({ antialias: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+            renderer.shadowMap.enabled = true;
+            renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+            container.appendChild(renderer.domElement);
+
+            const ambientLight = new THREE.AmbientLight(0xffffff, 0.7);
+            scene.add(ambientLight);
+
+            const dirLight = new THREE.DirectionalLight(0xffffff, 0.9);
+            dirLight.position.set(20, 40, -20);
+            dirLight.castShadow = true;
+            dirLight.shadow.mapSize.width = 2048;
+            dirLight.shadow.mapSize.height = 2048;
+            dirLight.shadow.camera.near = 0.5;
+            dirLight.shadow.camera.far = 180;
+            const d = 35;
+            dirLight.shadow.camera.left = -d;
+            dirLight.shadow.camera.right = d;
+            dirLight.shadow.camera.top = d;
+            dirLight.shadow.camera.bottom = -d;
+            scene.add(dirLight);
+
+            blueMaterial = new THREE.MeshPhongMaterial({
+                color: 0x0284c7,
+                shininess: 90,
+                specular: 0x38bdf8
+            });
+
+            redMaterial = new THREE.MeshPhongMaterial({
+                color: 0xe11d48,
+                shininess: 90,
+                specular: 0xf43f5e
+            });
+
+            trackMaterial = new THREE.MeshPhongMaterial({
+                color: 0xf8fafc,
+                roughness: 0.8
+            });
+
+            setupLevel();
+            setupControls();
+            window.addEventListener('resize', onWindowResize);
+
+            animate();
+        }
+
+        function createGateTexture(label, isPositive) {
+            const canvas = document.createElement('canvas');
+            canvas.width = 512;
+            canvas.height = 384;
+            const ctx = canvas.getContext('2d');
+
+            const grad = ctx.createLinearGradient(0, 0, 0, canvas.height);
+            if (isPositive) {
+                grad.addColorStop(0, '#0284c7');
+                grad.addColorStop(1, '#0369a1');
+            } else {
+                grad.addColorStop(0, '#f43f5e');
+                grad.addColorStop(1, '#be123c');
+            }
+            ctx.fillStyle = grad;
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            ctx.lineWidth = 16;
+            ctx.strokeStyle = '#ffffff';
+            ctx.strokeRect(16, 16, canvas.width - 32, canvas.height - 32);
+
+            ctx.fillStyle = '#ffffff';
+            ctx.font = '900 110px "Fredoka One", "Inter", sans-serif';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.shadowColor = 'rgba(0,0,0,0.4)';
+            ctx.shadowBlur = 10;
+            ctx.shadowOffsetY = 5;
+
+            ctx.fillText(label, canvas.width / 2, canvas.height / 2);
+
+            return new THREE.CanvasTexture(canvas);
+        }
+
+        function setupLevel() {
+            // Clean up old objects safely
+            crowdMembers.forEach(m => scene.remove(m.mesh));
+            crowdMembers = [];
+
+            enemyGroups.forEach(eg => {
+                eg.members.forEach(m => scene.remove(m.mesh));
+                scene.remove(eg.group);
+            });
+            enemyGroups = [];
+
+            gateEntities.forEach(g => scene.remove(g.group));
+            gateEntities = [];
+
+            obstacleEntities.forEach(o => scene.remove(o.mesh));
+            obstacleEntities = [];
+
+            finishStairs.forEach(s => scene.remove(s));
+            finishStairs = [];
+
+            particleSystems.forEach(p => scene.remove(p.mesh));
+            particleSystems = [];
+
+            if (trackMesh) scene.remove(trackMesh);
+
+            playerX = 0;
+            playerZ = 0;
+            targetPlayerX = 0;
+            finishClimbTimer = 0;
+
+            // 1. Track Floor & Rails
+            const trackGeo = new THREE.BoxGeometry(10, 1, levelLength + 50);
+            trackMesh = new THREE.Mesh(trackGeo, trackMaterial);
+            trackMesh.position.set(0, -0.5, (levelLength + 10) / 2);
+            trackMesh.receiveShadow = true;
+            scene.add(trackMesh);
+
+            const railGeo = new THREE.BoxGeometry(0.4, 0.6, levelLength + 50);
+            const railMat = new THREE.MeshPhongMaterial({ color: 0x38bdf8 });
+            const leftRail = new THREE.Mesh(railGeo, railMat);
+            leftRail.position.set(-5.2, 0.3, (levelLength + 10) / 2);
+            scene.add(leftRail);
+
+            const rightRail = new THREE.Mesh(railGeo, railMat);
+            rightRail.position.set(5.2, 0.3, (levelLength + 10) / 2);
+            scene.add(rightRail);
+
+            // 2. Initial Crowd Member
+            addCrowdMember(0, 0);
+
+            // 3. Gates
+            const gateDistances = [25, 55, 95, 135];
+            gateDistances.forEach((zPos, idx) => {
+                if (zPos < levelLength - 20) {
+                    spawnGatePair(zPos, idx);
+                }
+            });
+
+            // 4. Saw Obstacles
+            [40, 80, 115].forEach(zPos => spawnSawBlade(zPos));
+
+            // 5. Enemy Crowds
+            [70, 145].forEach(zPos => spawnEnemyGroup(zPos, 6 + currentLevel * 3));
+
+            // 6. Finish Staircase
+            spawnFinishStaircase(levelLength);
+
+            updateCrowdDisplay();
+        }
+
+        function spawnGatePair(zPos, pairIdx) {
+            const gateGroup = new THREE.Group();
+            gateGroup.position.z = zPos;
+
+            const gateConfigs = [
+                [{ text: '+10', val: 10, op: '+' }, { text: 'x2', val: 2, op: '*' }],
+                [{ text: '+15', val: 15, op: '+' }, { text: '-5', val: 5, op: '-' }],
+                [{ text: 'x3', val: 3, op: '*' }, { text: '÷2', val: 2, op: '/' }],
+                [{ text: '+25', val: 25, op: '+' }, { text: 'x4', val: 4, op: '*' }]
+            ];
+
+            const pair = gateConfigs[pairIdx % gateConfigs.length];
+
+            const leftTex = createGateTexture(pair[0].text, pair[0].op === '+' || pair[0].op === '*');
+            const leftMat = new THREE.MeshBasicMaterial({ map: leftTex, transparent: true, side: THREE.DoubleSide });
+            const leftMesh = new THREE.Mesh(new THREE.PlaneGeometry(4.6, 3.2), leftMat);
+            leftMesh.position.set(-2.4, 2.0, 0);
+            leftMesh.rotation.y = Math.PI; // Face camera coming from behind
+            gateGroup.add(leftMesh);
+
+            const rightTex = createGateTexture(pair[1].text, pair[1].op === '+' || pair[1].op === '*');
+            const rightMat = new THREE.MeshBasicMaterial({ map: rightTex, transparent: true, side: THREE.DoubleSide });
+            const rightMesh = new THREE.Mesh(new THREE.PlaneGeometry(4.6, 3.2), rightMat);
+            rightMesh.position.set(2.4, 2.0, 0);
+            rightMesh.rotation.y = Math.PI; // Face camera coming from behind
+            gateGroup.add(rightMesh);
+
+            scene.add(gateGroup);
+
+            gateEntities.push({
+                group: gateGroup,
+                z: zPos,
+                passed: false,
+                leftData: pair[0],
+                rightData: pair[1]
+            });
+        }
+
+        function spawnSawBlade(zPos) {
+            const sawGroup = new THREE.Group();
+            sawGroup.position.set(0, 0.8, zPos);
+
+            // Saw Blade Disc
+            const discGeo = new THREE.CylinderGeometry(1.4, 1.4, 0.08, 24);
+            const discMat = new THREE.MeshStandardMaterial({ color: 0x94a3b8, metalness: 0.9, roughness: 0.1 });
+            const disc = new THREE.Mesh(discGeo, discMat);
+            disc.rotation.x = Math.PI / 2;
+            disc.castShadow = true;
+            sawGroup.add(disc);
+
+            // Center Hub Cap
+            const hubGeo = new THREE.CylinderGeometry(0.35, 0.35, 0.12, 16);
+            const hubMat = new THREE.MeshStandardMaterial({ color: 0xe2e8f0, metalness: 0.8 });
+            const hub = new THREE.Mesh(hubGeo, hubMat);
+            hub.rotation.x = Math.PI / 2;
+            sawGroup.add(hub);
+
+            // Floor Track Slider Base
+            const baseGeo = new THREE.BoxGeometry(0.8, 0.15, 0.8);
+            const baseMat = new THREE.MeshStandardMaterial({ color: 0x334155 });
+            const baseMesh = new THREE.Mesh(baseGeo, baseMat);
+            baseMesh.position.y = -0.7;
+            sawGroup.add(baseMesh);
+
+            scene.add(sawGroup);
+            obstacleEntities.push({
+                mesh: sawGroup,
+                z: zPos,
+                type: 'SAW',
+                dir: Math.random() > 0.5 ? 1 : -1,
+                speed: 0.08
+            });
+        }
+
+        function spawnEnemyGroup(zPos, count) {
+            const members = [];
+            const enemyCenter = new THREE.Group();
+            enemyCenter.position.set(0, 0, zPos);
+
+            for (let i = 0; i < count; i++) {
+                const mesh = createCharacterMesh(redMaterial);
+                const angle = i * 0.7;
+                const r = 0.45 * Math.sqrt(i);
+                mesh.position.set(Math.cos(angle) * r, 0, Math.sin(angle) * r);
+                enemyCenter.add(mesh);
+                members.push({ mesh: mesh, localX: Math.cos(angle) * r, localZ: Math.sin(angle) * r });
+            }
+
+            scene.add(enemyCenter);
+            enemyGroups.push({ group: enemyCenter, z: zPos, members: members, active: true });
+        }
+
+        function spawnFinishStaircase(startZ) {
+            const colors = [0xef4444, 0xf97316, 0xeab308, 0x22c55e, 0x06b6d4, 0x3b82f6, 0xa855f7];
+            for (let i = 0; i < 10; i++) {
+                const stairGeo = new THREE.BoxGeometry(10, 0.8 * (i + 1), 2.5);
+                const stairMat = new THREE.MeshPhongMaterial({ color: colors[i % colors.length] });
+                const stair = new THREE.Mesh(stairGeo, stairMat);
+                stair.position.set(0, (0.8 * (i + 1)) / 2, startZ + i * 2.5);
+                stair.receiveShadow = true;
+                scene.add(stair);
+                finishStairs.push(stair);
+            }
+        }
+
+        function addCrowdMember(offsetX, offsetZ) {
+            const mesh = createCharacterMesh(blueMaterial);
+            mesh.position.set(playerX + offsetX, 0, playerZ + offsetZ);
+            scene.add(mesh);
+
+            crowdMembers.push({
+                mesh: mesh,
+                offsetX: offsetX,
+                offsetZ: offsetZ
+            });
+        }
+
+        function updateCrowdPositions() {
+            const spacing = 0.65;
+            crowdMembers.forEach((m, idx) => {
+                if (idx === 0) {
+                    m.offsetX = 0;
+                    m.offsetZ = 0;
+                } else {
+                    const phi = idx * 137.5 * (Math.PI / 180);
+                    const r = spacing * Math.sqrt(idx);
+                    m.offsetX = r * Math.cos(phi);
+                    m.offsetZ = r * Math.sin(phi);
+                }
+
+                const targetX = Math.max(-4.4, Math.min(4.4, playerX + m.offsetX));
+                const targetZ = playerZ + m.offsetZ;
+
+                m.mesh.position.x += (targetX - m.mesh.position.x) * 0.25;
+                m.mesh.position.z += (targetZ - m.mesh.position.z) * 0.25;
+
+                // Animate running limbs
+                if (gameState === 'PLAYING' || gameState === 'FINISH_RUN') {
+                    const ud = m.mesh.userData;
+                    const time = Date.now() * 0.012 + ud.animOffset;
+                    ud.leftLeg.rotation.x = Math.sin(time) * 0.75;
+                    ud.rightLeg.rotation.x = -Math.sin(time) * 0.75;
+                    ud.leftArm.rotation.x = -Math.sin(time) * 0.75;
+                    ud.rightArm.rotation.x = Math.sin(time) * 0.75;
+                    
+                    if (gameState === 'PLAYING') {
+                        m.mesh.position.y = Math.abs(Math.sin(time * 2)) * 0.12;
+                    }
+                }
+            });
+
+            updateCrowdDisplay();
+        }
+
+        function updateCrowdDisplay() {
+            document.getElementById('crowd-count-display').innerText = crowdMembers.length;
+        }
+
+        function applyGateEffect(gateData) {
+            let currentCount = crowdMembers.length;
+            let targetCount = currentCount;
+
+            if (gateData.op === '+') targetCount = currentCount + gateData.val;
+            if (gateData.op === '-') targetCount = Math.max(1, currentCount - gateData.val);
+            if (gateData.op === '*') targetCount = currentCount * gateData.val;
+            if (gateData.op === '/') targetCount = Math.max(1, Math.floor(currentCount / gateData.val));
+
+            const diff = targetCount - currentCount;
+
+            if (diff > 0) {
+                for (let i = 0; i < diff; i++) {
+                    addCrowdMember((Math.random() - 0.5) * 2, (Math.random() - 0.5) * 2);
+                }
+            } else if (diff < 0) {
+                const removeCount = Math.min(crowdMembers.length - 1, Math.abs(diff));
+                for (let i = 0; i < removeCount; i++) {
+                    const removed = crowdMembers.pop();
+                    spawnPopParticles(removed.mesh.position, 0x0284c7);
+                    scene.remove(removed.mesh);
+                }
+            }
+
+            audio.playGatePass();
+        }
+
+        function spawnPopParticles(pos, colorHex) {
+            const count = 8;
+            const pGroup = new THREE.Group();
+            pGroup.position.copy(pos);
+            const mat = new THREE.MeshBasicMaterial({ color: colorHex });
+
+            const particles = [];
+            for (let i = 0; i < count; i++) {
+                const pMesh = new THREE.Mesh(new THREE.SphereGeometry(0.12, 8, 8), mat);
+                pMesh.userData = {
+                    vx: (Math.random() - 0.5) * 0.3,
+                    vy: Math.random() * 0.3 + 0.1,
+                    vz: (Math.random() - 0.5) * 0.3
+                };
+                pGroup.add(pMesh);
+                particles.push(pMesh);
+            }
+
+            scene.add(pGroup);
+            particleSystems.push({ mesh: pGroup, particles: particles, life: 1.0 });
+        }
+
+        function setupControls() {
+            window.addEventListener('pointerdown', (e) => {
+                if (gameState !== 'PLAYING') return;
+                isPointerDown = true;
+                pointerStartX = e.clientX;
+                playerStartX = targetPlayerX;
+            });
+
+            window.addEventListener('pointermove', (e) => {
+                if (!isPointerDown || gameState !== 'PLAYING') return;
+                const deltaX = (e.clientX - pointerStartX) / window.innerWidth;
+                targetPlayerX = playerStartX + deltaX * 12;
+                targetPlayerX = Math.max(-4.2, Math.min(4.2, targetPlayerX));
+            });
+
+            window.addEventListener('pointerup', () => { isPointerDown = false; });
+            window.addEventListener('pointercancel', () => { isPointerDown = false; });
+
+            window.addEventListener('keydown', (e) => {
+                if (e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'A') keyLeft = true;
+                if (e.key === 'ArrowRight' || e.key === 'd' || e.key === 'D') keyRight = true;
+            });
+
+            window.addEventListener('keyup', (e) => {
+                if (e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'A') keyLeft = false;
+                if (e.key === 'ArrowRight' || e.key === 'd' || e.key === 'D') keyRight = false;
+            });
+
+            document.getElementById('start-btn').addEventListener('click', () => {
+                audio.init();
+                document.getElementById('start-screen').classList.add('opacity-0', 'pointer-events-none');
+                setTimeout(() => document.getElementById('start-screen').classList.add('hidden'), 300);
+                gameState = 'PLAYING';
+            });
+
+            document.getElementById('restart-btn').addEventListener('click', () => {
+                document.getElementById('end-modal').classList.add('hidden');
+                setupLevel();
+                gameState = 'PLAYING';
+            });
+        }
+
+        function animate() {
+            requestAnimationFrame(animate);
+
+            // Update Particle FX
+            for (let i = particleSystems.length - 1; i >= 0; i--) {
+                const ps = particleSystems[i];
+                ps.life -= 0.04;
+                ps.particles.forEach(p => {
+                    p.position.x += p.userData.vx;
+                    p.position.y += p.userData.vy;
+                    p.position.z += p.userData.vz;
+                    p.userData.vy -= 0.015; // Gravity
+                });
+                if (ps.life <= 0) {
+                    scene.remove(ps.mesh);
+                    particleSystems.splice(i, 1);
+                }
+            }
+
+            if (gameState === 'PLAYING') {
+                if (keyLeft) targetPlayerX -= 0.22;
+                if (keyRight) targetPlayerX += 0.22;
+                targetPlayerX = Math.max(-4.2, Math.min(4.2, targetPlayerX));
+
+                playerX += (targetPlayerX - playerX) * 0.25;
+                playerZ += forwardSpeed;
+
+                const progressPercentage = Math.min(100, (playerZ / levelLength) * 100);
+                document.getElementById('progress-bar').style.width = progressPercentage + '%';
+
+                updateCrowdPositions();
+
+                // 1. Gate Collisions
+                gateEntities.forEach(gate => {
+                    if (!gate.passed && playerZ >= gate.z) {
+                        gate.passed = true;
+                        if (playerX < 0) {
+                            applyGateEffect(gate.leftData);
+                        } else {
+                            applyGateEffect(gate.rightData);
+                        }
+                    }
+                });
+
+                // 2. Saw Blade Collisions & Oscillations
+                const runnersToRemove = new Set();
+                obstacleEntities.forEach(obs => {
+                    obs.mesh.position.x += obs.speed * obs.dir;
+                    if (obs.mesh.position.x > 3.2 || obs.mesh.position.x < -3.2) {
+                        obs.dir *= -1;
+                    }
+                    obs.mesh.children[0].rotation.z += 0.2;
+
+                    if (Math.abs(playerZ - obs.z) < 1.2) {
+                        crowdMembers.forEach((m, idx) => {
+                            if (Math.abs(m.mesh.position.x - obs.mesh.position.x) < 1.5) {
+                                runnersToRemove.add(idx);
+                            }
+                        });
+                    }
+                });
+
+                // Safely remove hit runners
+                if (runnersToRemove.size > 0) {
+                    const sortedIndices = Array.from(runnersToRemove).sort((a, b) => b - a);
+                    sortedIndices.forEach(idx => {
+                        if (crowdMembers.length > 1) {
+                            const removed = crowdMembers.splice(idx, 1)[0];
+                            spawnPopParticles(removed.mesh.position, 0x0284c7);
+                            scene.remove(removed.mesh);
+                            audio.playPop();
+                        } else {
+                            triggerGameOver(false);
+                        }
+                    });
+                }
+
+                // 3. Enemy Battles Logic
+                enemyGroups.forEach(eg => {
+                    if (eg.active) {
+                        const distToPlayer = eg.z - playerZ;
+                        
+                        // Charge toward player when close
+                        if (distToPlayer < 16 && distToPlayer > 0) {
+                            eg.group.position.z -= 0.1; // Enemy run speed
+                            eg.members.forEach(m => {
+                                const ud = m.mesh.userData;
+                                const time = Date.now() * 0.012 + ud.animOffset;
+                                ud.leftLeg.rotation.x = Math.sin(time) * 0.75;
+                                ud.rightLeg.rotation.x = -Math.sin(time) * 0.75;
+                            });
+                        }
+
+                        // Battle Clash
+                        if (Math.abs(playerZ - eg.group.position.z) < 1.8) {
+                            if (crowdMembers.length > 0 && eg.members.length > 0) {
+                                // Clash 1 pair per frame
+                                const pRunner = crowdMembers.pop();
+                                const eRunner = eg.members.pop();
+
+                                spawnPopParticles(pRunner.mesh.position, 0x0284c7);
+                                spawnPopParticles(eRunner.mesh.position, 0xe11d48);
+
+                                scene.remove(pRunner.mesh);
+                                eg.group.remove(eRunner.mesh);
+
+                                audio.playPop();
+
+                                if (eg.members.length === 0) {
+                                    eg.active = false;
+                                }
+
+                                if (crowdMembers.length === 0) {
+                                    triggerGameOver(false);
+                                }
+                            }
+                        }
+                    }
+                });
+
+                // 4. Reach Finish Line
+                if (playerZ >= levelLength) {
+                    gameState = 'FINISH_RUN';
+                    audio.playWin();
+                }
+
+                // Dynamic Camera Positioning
+                const crowdRadius = Math.sqrt(crowdMembers.length) * 0.65;
+                camera.position.x = playerX * 0.5;
+                camera.position.z = playerZ - 12 - crowdRadius * 0.5;
+                camera.position.y = 8 + crowdRadius * 0.4;
+                camera.lookAt(playerX * 0.3, 1.5, playerZ + 5);
+
+            } else if (gameState === 'FINISH_RUN') {
+                // Climb finish stairs
+                finishClimbTimer += 0.03;
+                playerZ += forwardSpeed * 0.8;
+
+                const stairIndex = Math.min(9, Math.floor((playerZ - levelLength) / 2.5));
+                const targetY = (0.8 * (stairIndex + 1));
+
+                crowdMembers.forEach(m => {
+                    m.mesh.position.z = playerZ + m.offsetZ;
+                    m.mesh.position.y += (targetY - m.mesh.position.y) * 0.2;
+
+                    // Victory Jump Animation
+                    const ud = m.mesh.userData;
+                    const time = Date.now() * 0.015 + ud.animOffset;
+                    ud.leftArm.rotation.x = -Math.PI / 2;
+                    ud.rightArm.rotation.x = -Math.PI / 2;
+                });
+
+                camera.position.z = playerZ - 14;
+                camera.position.y = targetY + 7;
+                camera.lookAt(0, targetY + 2, playerZ + 5);
+
+                if (finishClimbTimer > 3.0) {
+                    triggerGameOver(true);
+                }
+            }
+
+            renderer.render(scene, camera);
+        }
+
+        function triggerGameOver(isWin) {
+            if (gameState === 'GAMEOVER') return;
+            gameState = 'GAMEOVER';
+
+            const modal = document.getElementById('end-modal');
+            const title = document.getElementById('modal-title');
+            const sub = document.getElementById('modal-sub');
+
+            if (isWin) {
+                title.innerText = 'VICTORY!';
+                title.className = 'text-4xl font-black text-emerald-400 mb-2';
+                sub.innerText = `You completed Level ${currentLevel} with ${crowdMembers.length} runners!`;
+                currentLevel++;
+                document.getElementById('level-display').innerText = currentLevel;
+            } else {
+                audio.playLose();
+                title.innerText = 'GAME OVER';
+                title.className = 'text-4xl font-black text-rose-500 mb-2';
+                sub.innerText = 'Your crowd was defeated!';
+            }
+
+            modal.classList.remove('hidden');
+        }
+
+        function onWindowResize() {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        }
+
+        window.onload = initThree;
+    </script>
+</body>
+</html>

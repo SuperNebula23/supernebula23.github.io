@@ -1,0 +1,1705 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Sokoban 2048: Block & Merge</title>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- FontAwesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  
+  <style>
+    * {
+      font-family: 'Outfit', sans-serif;
+      user-select: none;
+      -webkit-user-select: none;
+      touch-action: manipulation;
+    }
+
+    /* Custom Scrollbar */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: rgba(15, 23, 42, 0.6);
+    }
+    ::-webkit-scrollbar-thumb {
+      background: rgba(99, 102, 241, 0.5);
+      border-radius: 3px;
+    }
+
+    /* Smooth Tile Animations */
+    .tile-node {
+      transition: transform 0.12s ease-in-out, background-color 0.15s ease;
+    }
+    
+    .tile-merge-pop {
+      animation: mergePop 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+
+    .target-pulse {
+      animation: targetGlow 2s infinite alternate ease-in-out;
+    }
+
+    @keyframes mergePop {
+      0% { transform: scale(0.8); }
+      50% { transform: scale(1.18); }
+      100% { transform: scale(1); }
+    }
+
+    @keyframes targetGlow {
+      0% { box-shadow: 0 0 5px rgba(245, 158, 11, 0.4), inset 0 0 5px rgba(245, 158, 11, 0.2); }
+      100% { box-shadow: 0 0 15px rgba(245, 158, 11, 0.8), inset 0 0 10px rgba(245, 158, 11, 0.4); }
+    }
+
+    /* Confetti particle styling */
+    .confetti {
+      position: absolute;
+      width: 8px;
+      height: 8px;
+      pointer-events: none;
+      border-radius: 2px;
+      animation: fall 2.5s ease-out forwards;
+      z-index: 100;
+    }
+
+    @keyframes fall {
+      0% { opacity: 1; transform: translateY(0) rotate(0deg); }
+      100% { opacity: 0; transform: translateY(400px) rotate(720deg); }
+    }
+
+    /* Glassmorphic UI styles */
+    .glass-card {
+      background: rgba(30, 41, 59, 0.75);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    /* Block Number Color Styles */
+    .val-2    { background: linear-gradient(135deg, #e0f2fe, #bae6fd); color: #0369a1; border: 2px solid #38bdf8; }
+    .val-4    { background: linear-gradient(135deg, #ccfbf1, #99f6e4); color: #0f766e; border: 2px solid #2dd4bf; }
+    .val-8    { background: linear-gradient(135deg, #ffedd5, #fed7aa); color: #c2410c; border: 2px solid #fb923c; }
+    .val-16   { background: linear-gradient(135deg, #fef3c7, #fde68a); color: #b45309; border: 2px solid #facc15; }
+    .val-32   { background: linear-gradient(135deg, #fce7f3, #fbcfe8); color: #be185d; border: 2px solid #f472b6; }
+    .val-64   { background: linear-gradient(135deg, #f3e8ff, #e9d5ff); color: #6b21a8; border: 2px solid #c084fc; }
+    .val-128  { background: linear-gradient(135deg, #e0e7ff, #c7d2fe); color: #3730a3; border: 2px solid #818cf8; }
+    .val-256  { background: linear-gradient(135deg, #dcfce7, #bbf7d0); color: #15803d; border: 2px solid #4ade80; }
+    .val-512  { background: linear-gradient(135deg, #fee2e2, #fecaca); color: #b91c1c; border: 2px solid #f87171; }
+    .val-1024 { background: linear-gradient(135deg, #fae8ff, #f5d0fe); color: #86198f; border: 2px solid #e879f9; }
+    .val-2048 { background: linear-gradient(135deg, #fbbf24, #f59e0b); color: #ffffff; border: 2px solid #fef08a; text-shadow: 0 1px 2px rgba(0,0,0,0.5); }
+    .val-high { background: linear-gradient(135deg, #6366f1, #4f46e5); color: #ffffff; border: 2px solid #a5b4fc; text-shadow: 0 1px 2px rgba(0,0,0,0.5); }
+  </style>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col justify-between overflow-x-hidden selection:bg-indigo-500 selection:text-white">
+
+  <!-- Top Navigation Header -->
+  <header class="w-full bg-slate-900/80 border-b border-slate-800 backdrop-blur-md sticky top-0 z-40 px-4 py-3">
+    <div class="max-w-4xl mx-auto flex items-center justify-between">
+      <div class="flex items-center gap-3 cursor-pointer" onclick="app.showScreen('main-menu')">
+        <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-600 to-violet-500 flex items-center justify-center shadow-lg shadow-indigo-500/30 text-white font-extrabold text-xl">
+          <i class="fa-solid fa-cubes"></i>
+        </div>
+        <div>
+          <h1 class="font-black text-lg sm:text-xl tracking-tight bg-gradient-to-r from-white via-slate-200 to-indigo-300 bg-clip-text text-transparent">
+            SOKOBAN <span class="text-indigo-400">2048</span>
+          </h1>
+          <p class="text-[10px] text-slate-400 -mt-1 font-semibold uppercase tracking-wider">Push & Merge Puzzle</p>
+        </div>
+      </div>
+
+      <!-- Action Buttons -->
+      <div class="flex items-center gap-2">
+        <a href="https://supernebula23.github.io/games" class="p-2.5 rounded-xl bg-slate-800/80 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700/60 transition-all active:scale-95 flex items-center gap-1.5 text-xs font-semibold" title="More Games">
+          <i class="fa-solid fa-house text-indigo-400"></i>
+          <span class="hidden md:inline">Games</span>
+        </a>
+        <button id="btn-sound-toggle" onclick="app.toggleSound()" class="p-2.5 rounded-xl bg-slate-800/80 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700/60 transition-all active:scale-95" title="Toggle Sound">
+          <i id="sound-icon" class="fa-solid fa-volume-high text-indigo-400"></i>
+        </button>
+        <button onclick="app.openTutorial()" class="p-2.5 rounded-xl bg-slate-800/80 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700/60 transition-all active:scale-95" title="How to Play">
+          <i class="fa-solid fa-circle-question"></i>
+        </button>
+        <button onclick="app.showScreen('level-select')" class="hidden sm:flex items-center gap-2 px-3 py-2 rounded-xl bg-indigo-600/30 hover:bg-indigo-600/50 text-indigo-200 border border-indigo-500/30 transition-all text-sm font-semibold">
+          <i class="fa-solid fa-border-all"></i> Levels
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- MAIN CONTAINER FOR SCREENS -->
+  <main id="main-content" class="flex-grow flex items-center justify-center p-3 sm:p-6 max-w-4xl w-full mx-auto relative">
+
+    <!-- 1. MAIN MENU SCREEN -->
+    <div id="screen-main-menu" class="w-full max-w-md flex flex-col items-center gap-6 py-6 text-center animate-fade-in">
+      <div class="relative w-full">
+        <div class="absolute -inset-1 rounded-3xl bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 blur-xl opacity-40 animate-pulse"></div>
+        <div class="relative glass-card p-8 rounded-3xl border border-slate-700/80 shadow-2xl flex flex-col items-center">
+          <div class="w-20 h-20 rounded-2xl bg-gradient-to-tr from-indigo-600 via-indigo-500 to-violet-400 flex items-center justify-center text-4xl shadow-xl shadow-indigo-500/40 mb-4 text-white">
+            <i class="fa-solid fa-boxes-packing"></i>
+          </div>
+          <h2 class="text-3xl font-black text-white tracking-tight">Sokoban 2048</h2>
+          <p class="text-xs text-slate-400 mt-2 leading-relaxed">
+            Push numbered blocks into matching targets or collide identical blocks to merge them into higher values!
+          </p>
+
+          <div class="w-full flex flex-col gap-3 mt-8">
+            <button onclick="app.startCampaign()" class="w-full py-4 px-6 rounded-2xl bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white font-bold text-lg shadow-lg shadow-indigo-600/30 transition-all active:scale-95 flex items-center justify-center gap-3">
+              <i class="fa-solid fa-play"></i> Campaign Puzzle Mode
+            </button>
+            <button onclick="app.startEndless()" class="w-full py-3.5 px-6 rounded-2xl bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 font-bold text-base transition-all active:scale-95 flex items-center justify-center gap-3">
+              <i class="fa-solid fa-infinity text-teal-400"></i> Endless Merge Arcade
+            </button>
+            <button onclick="app.openEditor()" class="w-full py-3.5 px-6 rounded-2xl bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 font-bold text-base transition-all active:scale-95 flex items-center justify-center gap-3">
+              <i class="fa-solid fa-pen-ruler text-amber-400"></i> Level Builder / Custom
+            </button>
+            <a href="https://supernebula23.github.io/games" class="w-full py-3.5 px-6 rounded-2xl bg-slate-800/80 hover:bg-slate-700 text-slate-200 border border-slate-700 font-bold text-base transition-all active:scale-95 flex items-center justify-center gap-3">
+              <i class="fa-solid fa-house text-indigo-400"></i> More Games
+            </a>
+          </div>
+        </div>
+      </div>
+
+      <!-- Quick stats summary -->
+      <div class="w-full grid grid-cols-2 gap-3 text-left">
+        <div class="glass-card p-3.5 rounded-2xl border border-slate-800 flex items-center gap-3">
+          <div class="w-10 h-10 rounded-xl bg-amber-500/20 text-amber-400 flex items-center justify-center font-bold text-lg">
+            <i class="fa-solid fa-star"></i>
+          </div>
+          <div>
+            <div id="stat-total-stars" class="text-lg font-black text-white">0 / 72</div>
+            <div class="text-[10px] text-slate-400 uppercase font-semibold">Stars Earned</div>
+          </div>
+        </div>
+        <div class="glass-card p-3.5 rounded-2xl border border-slate-800 flex items-center gap-3">
+          <div class="w-10 h-10 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center font-bold text-lg">
+            <i class="fa-solid fa-trophy"></i>
+          </div>
+          <div>
+            <div id="stat-high-score" class="text-lg font-black text-white">0</div>
+            <div class="text-[10px] text-slate-400 uppercase font-semibold">Endless High Score</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 2. LEVEL SELECT SCREEN -->
+    <div id="screen-level-select" class="hidden w-full max-w-2xl flex-col gap-6 py-4">
+      <div class="flex items-center justify-between">
+        <button onclick="app.showScreen('main-menu')" class="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-300 hover:text-white font-semibold text-sm flex items-center gap-2">
+          <i class="fa-solid fa-arrow-left"></i> Menu
+        </button>
+        <h2 class="text-2xl font-black text-white">Select Level</h2>
+        <div class="w-20"></div>
+      </div>
+
+      <div id="level-grid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+        <!-- Level cards inserted dynamically -->
+      </div>
+    </div>
+
+    <!-- 3. GAMEPLAY SCREEN -->
+    <div id="screen-game" class="hidden w-full flex flex-col items-center gap-4 py-2">
+      <!-- Game Info Bar -->
+      <div class="w-full max-w-md flex items-center justify-between glass-card p-3 rounded-2xl border border-slate-800">
+        <div class="flex items-center gap-2">
+          <button onclick="app.exitToMenu()" class="p-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 transition-all" title="Back to Menu">
+            <i class="fa-solid fa-house"></i>
+          </button>
+          <div>
+            <h3 id="game-title" class="font-bold text-sm text-white leading-tight">Level 1</h3>
+            <span id="game-mode-badge" class="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">
+              Campaign
+            </span>
+          </div>
+        </div>
+
+        <!-- Moves / Score Display -->
+        <div class="flex items-center gap-4">
+          <div class="text-center">
+            <div id="label-counter-title" class="text-[10px] text-slate-400 uppercase font-bold tracking-wider">Moves</div>
+            <div id="val-counter" class="text-lg font-black text-indigo-400">0</div>
+          </div>
+          <div id="stars-display" class="flex gap-1 text-amber-400 text-sm">
+            <i class="fa-solid fa-star"></i>
+            <i class="fa-solid fa-star"></i>
+            <i class="fa-solid fa-star"></i>
+          </div>
+        </div>
+
+        <!-- Controls: Undo & Restart -->
+        <div class="flex items-center gap-1.5">
+          <button id="btn-undo" onclick="app.undoMove()" class="p-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 disabled:opacity-40 disabled:cursor-not-allowed transition-all" title="Undo (U)">
+            <i class="fa-solid fa-rotate-left"></i>
+          </button>
+          <button onclick="app.restartLevel()" class="p-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 transition-all" title="Restart Level (R)">
+            <i class="fa-solid fa-arrow-rotate-right"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- Target Goals Banner (For Campaign Mode) -->
+      <div id="target-goals-banner" class="w-full max-w-md flex items-center justify-between px-3 py-1.5 rounded-xl bg-indigo-950/50 border border-indigo-800/40 text-xs">
+        <span class="text-slate-300 font-semibold"><i class="fa-solid fa-bullseye text-amber-400 mr-1.5"></i> Goal Targets:</span>
+        <div id="target-requirements-list" class="flex items-center gap-2">
+          <!-- Dynamic goal requirements -->
+        </div>
+      </div>
+
+      <!-- MAIN GAME BOARD CANVAS / GRID CONTAINER -->
+      <div class="relative max-w-md w-full flex items-center justify-center p-2">
+        <div id="board-container" class="relative rounded-2xl bg-slate-900 border-2 border-slate-800 p-2 shadow-2xl overflow-hidden flex items-center justify-center">
+          <div id="board-grid" class="grid gap-1.5 relative">
+            <!-- Dynamic grid cells -->
+          </div>
+        </div>
+      </div>
+
+      <!-- ON-SCREEN VIRTUAL CONTROLS (Mobile Friendly) -->
+      <div class="w-full max-w-xs flex flex-col items-center gap-1 mt-1">
+        <button onclick="app.handleMove('up')" class="w-12 h-12 rounded-xl bg-slate-800 hover:bg-slate-700 active:bg-indigo-600 text-slate-200 active:text-white border border-slate-700 font-bold text-lg flex items-center justify-center transition-all shadow-md active:scale-95">
+          <i class="fa-solid fa-chevron-up"></i>
+        </button>
+        <div class="flex gap-4">
+          <button onclick="app.handleMove('left')" class="w-12 h-12 rounded-xl bg-slate-800 hover:bg-slate-700 active:bg-indigo-600 text-slate-200 active:text-white border border-slate-700 font-bold text-lg flex items-center justify-center transition-all shadow-md active:scale-95">
+            <i class="fa-solid fa-chevron-left"></i>
+          </button>
+          <button onclick="app.handleMove('down')" class="w-12 h-12 rounded-xl bg-slate-800 hover:bg-slate-700 active:bg-indigo-600 text-slate-200 active:text-white border border-slate-700 font-bold text-lg flex items-center justify-center transition-all shadow-md active:scale-95">
+            <i class="fa-solid fa-chevron-down"></i>
+          </button>
+          <button onclick="app.handleMove('right')" class="w-12 h-12 rounded-xl bg-slate-800 hover:bg-slate-700 active:bg-indigo-600 text-slate-200 active:text-white border border-slate-700 font-bold text-lg flex items-center justify-center transition-all shadow-md active:scale-95">
+            <i class="fa-solid fa-chevron-right"></i>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 4. LEVEL EDITOR SCREEN -->
+    <div id="screen-editor" class="hidden w-full max-w-3xl flex-col gap-4 py-2">
+      <div class="flex items-center justify-between glass-card p-3 rounded-2xl border border-slate-800">
+        <button onclick="app.showScreen('main-menu')" class="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold text-xs flex items-center gap-1.5">
+          <i class="fa-solid fa-arrow-left"></i> Menu
+        </button>
+        <h2 class="text-base font-bold text-white">Level Builder</h2>
+        <div class="flex items-center gap-2">
+          <button onclick="app.testCustomLevel()" class="px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs flex items-center gap-1.5 shadow-md">
+            <i class="fa-solid fa-play"></i> Test Level
+          </button>
+        </div>
+      </div>
+
+      <!-- Editor Canvas & Tools Palette -->
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <!-- Palette selector -->
+        <div class="glass-card p-4 rounded-2xl border border-slate-800 flex flex-col gap-3">
+          <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider">Select Tile Tool</h3>
+          <div class="grid grid-cols-2 gap-2" id="editor-palette">
+            <!-- Dynamic tools -->
+          </div>
+
+          <div class="mt-2 pt-3 border-t border-slate-800">
+            <label class="block text-xs font-semibold text-slate-400 mb-1">Target Number Value</label>
+            <select id="editor-target-val" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs font-bold text-white">
+              <option value="2">2 Target</option>
+              <option value="4">4 Target</option>
+              <option value="8">8 Target</option>
+              <option value="16">16 Target</option>
+              <option value="32">32 Target</option>
+              <option value="64">64 Target</option>
+              <option value="128">128 Target</option>
+            </select>
+          </div>
+
+          <div class="flex flex-col gap-2 mt-2">
+            <button onclick="app.clearEditorGrid()" class="w-full py-2 rounded-xl bg-slate-800 hover:bg-rose-900/50 hover:text-rose-300 text-slate-300 text-xs font-semibold border border-slate-700">
+              <i class="fa-solid fa-trash-can mr-1"></i> Clear Grid
+            </button>
+            <button onclick="app.exportLevelCode()" class="w-full py-2 rounded-xl bg-indigo-600/30 hover:bg-indigo-600/50 text-indigo-200 text-xs font-semibold border border-indigo-500/30">
+              <i class="fa-solid fa-code mr-1"></i> Copy Level JSON
+            </button>
+            <button onclick="app.importLevelCode()" class="w-full py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold border border-slate-700">
+              <i class="fa-solid fa-file-import mr-1"></i> Import JSON
+            </button>
+          </div>
+        </div>
+
+        <!-- Editor Grid Area -->
+        <div class="md:col-span-2 glass-card p-4 rounded-2xl border border-slate-800 flex flex-col items-center justify-center">
+          <div id="editor-grid" class="grid gap-1 rounded-xl bg-slate-950 p-2 border border-slate-800">
+            <!-- Dynamic editor tiles -->
+          </div>
+          <p class="text-[11px] text-slate-400 mt-3 text-center">
+            Click tiles on grid to apply active tool. Ensure exactly 1 Player start point is placed!
+          </p>
+        </div>
+      </div>
+    </div>
+
+  </main>
+
+  <!-- WIN / LEVEL COMPLETE MODAL -->
+  <div id="modal-win" class="hidden fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4 animate-fade-in">
+    <div class="glass-card max-w-sm w-full p-6 rounded-3xl border border-slate-700 shadow-2xl text-center relative overflow-hidden">
+      <div class="w-16 h-16 rounded-2xl bg-amber-500/20 text-amber-400 flex items-center justify-center text-3xl mx-auto mb-3 shadow-inner">
+        <i class="fa-solid fa-trophy"></i>
+      </div>
+      <h3 class="text-2xl font-black text-white">Level Cleared!</h3>
+      <p class="text-xs text-slate-400 mt-1" id="win-subtitle">All goal targets covered with matching blocks!</p>
+
+      <!-- Star Rating Earned -->
+      <div id="modal-stars" class="flex justify-center gap-2 text-3xl text-amber-400 my-4">
+        <i class="fa-solid fa-star"></i>
+        <i class="fa-solid fa-star"></i>
+        <i class="fa-solid fa-star"></i>
+      </div>
+
+      <div class="bg-slate-900/80 rounded-2xl p-3 my-3 text-xs text-slate-300 flex justify-around border border-slate-800">
+        <div>
+          <span class="block text-slate-500 text-[10px] uppercase font-bold">Moves Used</span>
+          <span id="win-moves-count" class="text-base font-black text-indigo-400">0</span>
+        </div>
+        <div class="border-r border-slate-800"></div>
+        <div>
+          <span class="block text-slate-500 text-[10px] uppercase font-bold">Target Par</span>
+          <span id="win-par-count" class="text-base font-black text-emerald-400">0</span>
+        </div>
+      </div>
+
+      <div class="flex flex-col gap-2.5 mt-5">
+        <button id="btn-next-level" onclick="app.nextLevel()" class="w-full py-3.5 rounded-2xl bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white font-bold text-sm shadow-lg shadow-indigo-600/30 transition-all active:scale-95">
+          Next Level <i class="fa-solid fa-arrow-right ml-1"></i>
+        </button>
+        <button onclick="app.showScreen('level-select')" class="w-full py-3 rounded-2xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold text-xs border border-slate-700">
+          Select Level
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- HOW TO PLAY / TUTORIAL MODAL -->
+  <div id="modal-tutorial" class="hidden fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4">
+    <div class="glass-card max-w-md w-full p-6 rounded-3xl border border-slate-700 shadow-2xl relative">
+      <button onclick="app.closeTutorial()" class="absolute top-4 right-4 p-2 text-slate-400 hover:text-white text-lg">
+        <i class="fa-solid fa-xmark"></i>
+      </button>
+
+      <h3 class="text-xl font-extrabold text-white flex items-center gap-2 mb-4">
+        <i class="fa-solid fa-book-open text-indigo-400"></i> How To Play
+      </h3>
+
+      <div class="space-y-3 text-xs text-slate-300">
+        <div class="flex items-start gap-3 p-2.5 rounded-xl bg-slate-900/60 border border-slate-800">
+          <div class="w-8 h-8 rounded-lg bg-indigo-500/20 text-indigo-400 flex-shrink-0 flex items-center justify-center font-bold">
+            <i class="fa-solid fa-person-walking"></i>
+          </div>
+          <div>
+            <h4 class="font-bold text-white mb-0.5">Move Player</h4>
+            <p>Use WASD, Arrow keys, or on-screen buttons to step around the grid.</p>
+          </div>
+        </div>
+
+        <div class="flex items-start gap-3 p-2.5 rounded-xl bg-slate-900/60 border border-slate-800">
+          <div class="w-8 h-8 rounded-lg bg-amber-500/20 text-amber-400 flex-shrink-0 flex items-center justify-center font-bold">
+            <i class="fa-solid fa-box-archive"></i>
+          </div>
+          <div>
+            <h4 class="font-bold text-white mb-0.5">Push Blocks</h4>
+            <p>Walk into a numbered box to push it into empty space or onto a target tile.</p>
+          </div>
+        </div>
+
+        <div class="flex items-start gap-3 p-2.5 rounded-xl bg-slate-900/60 border border-slate-800">
+          <div class="w-8 h-8 rounded-lg bg-teal-500/20 text-teal-400 flex-shrink-0 flex items-center justify-center font-bold">
+            <i class="fa-solid fa-code-merge"></i>
+          </div>
+          <div>
+            <h4 class="font-bold text-white mb-0.5">Slide & Merge Matching Numbers</h4>
+            <p>Pushing a box into another box with the SAME number merges them! (e.g. 2 + 2 = 4, 4 + 4 = 8).</p>
+          </div>
+        </div>
+
+        <div class="flex items-start gap-3 p-2.5 rounded-xl bg-slate-900/60 border border-slate-800">
+          <div class="w-8 h-8 rounded-lg bg-rose-500/20 text-rose-400 flex-shrink-0 flex items-center justify-center font-bold">
+            <i class="fa-solid fa-flag-checkered"></i>
+          </div>
+          <div>
+            <h4 class="font-bold text-white mb-0.5">Win Condition</h4>
+            <p>Cover every target spot with a box matching or exceeding its required target value!</p>
+          </div>
+        </div>
+      </div>
+
+      <button onclick="app.closeTutorial()" class="w-full mt-5 py-3 rounded-2xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs shadow-lg shadow-indigo-600/30">
+        Got it, Let's Play!
+      </button>
+    </div>
+  </div>
+
+  <!-- FOOTER -->
+  <footer class="w-full py-3 text-center text-[11px] text-slate-500 border-t border-slate-900">
+    <p>Sokoban 2048 &copy; Hybrid Puzzle Experience &bull; Push & Merge Rules</p>
+  </footer>
+
+  <script>
+    // Web Audio Sound Generator Class
+    class SoundFx {
+      constructor() {
+        this.ctx = null;
+        this.enabled = true;
+      }
+
+      init() {
+        if (!this.ctx) {
+          const AudioContext = window.AudioContext || window.webkitAudioContext;
+          if (AudioContext) {
+            this.ctx = new AudioContext();
+          }
+        }
+      }
+
+      playTone(freq, type, duration, startVol = 0.1, endVol = 0) {
+        if (!this.enabled) return;
+        this.init();
+        if (!this.ctx) return;
+
+        try {
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.type = type;
+          osc.frequency.setValueAtTime(freq, this.ctx.currentTime);
+          gain.gain.setValueAtTime(startVol, this.ctx.currentTime);
+          gain.gain.exponentialRampToValueAtTime(Math.max(endVol, 0.0001), this.ctx.currentTime + duration);
+
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+
+          osc.start();
+          osc.stop(this.ctx.currentTime + duration);
+        } catch (e) {
+          // Audio Context policy handler
+        }
+      }
+
+      playMove() {
+        this.playTone(300, 'sine', 0.06, 0.04);
+      }
+
+      playPush() {
+        this.playTone(180, 'triangle', 0.1, 0.08);
+      }
+
+      playMerge() {
+        if (!this.enabled) return;
+        this.playTone(400, 'sine', 0.08, 0.1);
+        setTimeout(() => this.playTone(600, 'sine', 0.12, 0.12), 60);
+      }
+
+      playTargetHit() {
+        if (!this.enabled) return;
+        this.playTone(523.25, 'sine', 0.1, 0.1);
+        setTimeout(() => this.playTone(659.25, 'sine', 0.12, 0.1), 80);
+      }
+
+      playUndo() {
+        this.playTone(220, 'sawtooth', 0.08, 0.04);
+      }
+
+      playWin() {
+        if (!this.enabled) return;
+        const notes = [523.25, 659.25, 783.99, 1046.50];
+        notes.forEach((freq, idx) => {
+          setTimeout(() => this.playTone(freq, 'triangle', 0.2, 0.12), idx * 100);
+        });
+      }
+    }
+
+    // Map Tile Codes:
+    // W = Wall, . = Floor, P = Player, T[val] = Target spot with required value
+    // B[val] = Block with value (e.g. B2, B4, B8)
+    const CAMPAIGN_LEVELS = [
+      {
+        id: 1,
+        title: "Push Basics",
+        par: 1,
+        grid: [
+          ["W","W","W","W","W"],
+          ["W",".",".",".","W"],
+          ["W","P","B2","T2","W"],
+          ["W",".",".",".","W"],
+          ["W","W","W","W","W"]
+        ]
+      },
+      {
+        id: 2,
+        title: "First Merge",
+        par: 2,
+        grid: [
+          ["W","W","W","W","W","W"],
+          ["W",".",".",".",".","W"],
+          ["W","P","B2","B2","T4","W"],
+          ["W",".",".",".",".","W"],
+          ["W","W","W","W","W","W"]
+        ]
+      },
+      {
+        id: 3,
+        title: "The Doubler",
+        par: 10,
+        grid: [
+          ["W","W","W","W","W","W"],
+          ["W",".",".",".",".","W"],
+          ["W",".","P",".",".","W"],
+          ["W",".","B2","B2",".","W"],
+          ["W",".",".","B4","T8","W"],
+          ["W","W","W","W","W","W"]
+        ]
+      },
+      {
+        id: 4,
+        title: "Cornering",
+        par: 10,
+        grid: [
+          ["W","W","W","W","W","W","W"],
+          ["W",".",".",".",".",".","W"],
+          ["W",".","P","B4",".",".","W"],
+          ["W",".",".","W",".",".","W"],
+          ["W",".",".","T4",".",".","W"],
+          ["W","W","W","W","W","W","W"]
+        ]
+      },
+      {
+        id: 5,
+        title: "Twin Targets",
+        par: 3,
+        grid: [
+          ["W","W","W","W","W","W","W","W"],
+          ["W",".",".",".",".",".",".","W"],
+          ["W",".","T2","B2","P","B2","T2","W"],
+          ["W",".",".",".",".",".",".","W"],
+          ["W","W","W","W","W","W","W","W"]
+        ]
+      },
+      {
+        id: 6,
+        title: "Crossroads",
+        par: 11,
+        grid: [
+          ["W","W","W","W","W","W","W"],
+          ["W",".",".",".",".",".","W"],
+          ["W",".",".","P",".",".","W"],
+          ["W",".","B2",".","B2",".","W"],
+          ["W",".",".","T4",".",".","W"],
+          ["W","W","W","W","W","W","W"]
+        ]
+      },
+      {
+        id: 7,
+        title: "Squeeze Alley",
+        par: 8,
+        grid: [
+          ["W","W","W","W","W","W","W"],
+          ["W",".",".",".",".",".","W"],
+          ["W",".","P","B2",".",".","W"],
+          ["W","W",".","B2",".",".","W"],
+          ["W",".",".",".",".",".","W"],
+          ["W",".",".","T4",".",".","W"],
+          ["W","W","W","W","W","W","W"]
+        ]
+      },
+      {
+        id: 8,
+        title: "Ascension 16",
+        par: 14,
+        grid: [
+          ["W","W","W","W","W","W","W","W"],
+          ["W",".",".",".",".",".",".","W"],
+          ["W",".","P","B2","B2",".",".","W"],
+          ["W",".",".","B4","B8","T16",".","W"],
+          ["W",".",".",".",".",".",".","W"],
+          ["W","W","W","W","W","W","W","W"]
+        ]
+      },
+      {
+        id: 9,
+        title: "Split Goals",
+        par: 12,
+        grid: [
+          ["W","W","W","W","W","W","W","W"],
+          ["W",".",".",".",".",".",".","W"],
+          ["W",".","T4",".","P",".","T8","W"],
+          ["W",".","B2","B2","B4","B4",".","W"],
+          ["W",".",".",".",".",".",".","W"],
+          ["W","W","W","W","W","W","W","W"]
+        ]
+      },
+      {
+        id: 10,
+        title: "Blockade",
+        par: 4,
+        grid: [
+          ["W","W","W","W","W","W","W","W"],
+          ["W",".",".",".",".",".",".","W"],
+          ["W",".","P",".",".","W",".","W"],
+          ["W",".",".","B4","B4",".","T8","W"],
+          ["W",".",".",".",".",".",".","W"],
+          ["W","W","W","W","W","W","W","W"]
+        ]
+      },
+      {
+        id: 11,
+        title: "The 32 Synthesis",
+        par: 14,
+        grid: [
+          ["W","W","W","W","W","W","W","W"],
+          ["W",".",".",".",".",".",".","W"],
+          ["W",".","P","B8","B8",".",".","W"],
+          ["W",".",".","B16",".","T32",".","W"],
+          ["W",".",".",".",".",".",".","W"],
+          ["W","W","W","W","W","W","W","W"]
+        ]
+      },
+      {
+        id: 12,
+        title: "Grand Master 64",
+        par: 14,
+        grid: [
+          ["W","W","W","W","W","W","W","W"],
+          ["W",".",".",".",".",".",".","W"],
+          ["W",".","P","B16","B16",".",".","W"],
+          ["W",".",".","B32",".","T64",".","W"],
+          ["W",".",".",".",".",".",".","W"],
+          ["W","W","W","W","W","W","W","W"]
+        ]
+      },
+      {
+        id: 13,
+        title: "Triple Threat",
+        par: 15,
+        grid: [
+          ["W","W","W","W","W","W"],
+          ["W",".",".",".",".","W"],
+          ["W",".","P","B2","B2","W"],
+          ["W",".","B2","B2",".","W"],
+          ["W",".","T4",".","T4","W"],
+          ["W","W","W","W","W","W"]
+        ]
+      },
+      {
+        id: 14,
+        title: "The 128 Threshold",
+        par: 16,
+        grid: [
+          ["W","W","W","W","W","W"],
+          ["W",".",".",".",".","W"],
+          ["W",".","P",".",".","W"],
+          ["W",".","B32","B32",".","W"],
+          ["W",".","B64",".",".","W"],
+          ["W",".",".",".","T128","W"],
+          ["W","W","W","W","W","W"]
+        ]
+      },
+      {
+        id: 15,
+        title: "Zig-Zag Highway",
+        par: 18,
+        grid: [
+          ["W","W","W","W","W","W","W"],
+          ["W","P",".",".","W",".","W"],
+          ["W","W","W",".","B4",".","W"],
+          ["W",".","B4",".","W",".","W"],
+          ["W",".","W",".","B8",".","W"],
+          ["W",".",".",".","W","T16","W"],
+          ["W","W","W","W","W","W","W"]
+        ]
+      },
+      {
+        id: 16,
+        title: "Matrix 256",
+        par: 16,
+        grid: [
+          ["W","W","W","W","W","W","W"],
+          ["W",".",".",".",".",".","W"],
+          ["W",".","P",".",".",".","W"],
+          ["W",".","B64","B64",".",".","W"],
+          ["W",".","B128",".",".",".","W"],
+          ["W",".",".",".",".","T256","W"],
+          ["W","W","W","W","W","W","W"]
+        ]
+      },
+      {
+        id: 17,
+        title: "Quad Stack",
+        par: 22,
+        grid: [
+          ["W","W","W","W","W","W","W"],
+          ["W",".",".",".",".",".","W"],
+          ["W",".","P","B2","B2",".","W"],
+          ["W",".","B2","B2",".",".","W"],
+          ["W",".","B4","B4",".",".","W"],
+          ["W",".","T8",".","T8",".","W"],
+          ["W","W","W","W","W","W","W"]
+        ]
+      },
+      {
+        id: 18,
+        title: "The Fortress 512",
+        par: 18,
+        grid: [
+          ["W","W","W","W","W","W","W"],
+          ["W",".",".",".",".",".","W"],
+          ["W",".","P",".",".",".","W"],
+          ["W",".","B128","B128",".",".","W"],
+          ["W",".",".","B256",".",".","W"],
+          ["W",".","W","W","W",".","W"],
+          ["W",".",".",".",".","T512","W"],
+          ["W","W","W","W","W","W","W"]
+        ]
+      },
+      {
+        id: 19,
+        title: "Chamber of Doubles",
+        par: 24,
+        grid: [
+          ["W","W","W","W","W","W","W"],
+          ["W",".",".",".",".",".","W"],
+          ["W",".","P",".",".",".","W"],
+          ["W",".","B4","B4",".",".","W"],
+          ["W",".","B8","B8",".",".","W"],
+          ["W",".","B16",".",".",".","W"],
+          ["W",".","T16",".","T32",".","W"],
+          ["W","W","W","W","W","W","W"]
+        ]
+      },
+      {
+        id: 20,
+        title: "The Millennium 1024",
+        par: 20,
+        grid: [
+          ["W","W","W","W","W","W","W"],
+          ["W",".",".",".",".",".","W"],
+          ["W",".","P",".",".",".","W"],
+          ["W",".","B256","B256",".",".","W"],
+          ["W",".",".","B512",".",".","W"],
+          ["W",".",".",".",".",".","W"],
+          ["W",".",".",".","T1024",".","W"],
+          ["W","W","W","W","W","W","W"]
+        ]
+      },
+      {
+        id: 21,
+        title: "Cross-Fire",
+        par: 20,
+        grid: [
+          ["W","W","W","W","W","W","W"],
+          ["W",".",".",".",".",".","W"],
+          ["W",".","T16","P","T16",".","W"],
+          ["W",".","B4","B4","B4",".","W"],
+          ["W",".","B4","B8",".",".","W"],
+          ["W",".",".",".",".",".","W"],
+          ["W","W","W","W","W","W","W"]
+        ]
+      },
+      {
+        id: 22,
+        title: "Pillar Maze",
+        par: 26,
+        grid: [
+          ["W","W","W","W","W","W","W"],
+          ["W",".",".",".",".",".","W"],
+          ["W",".","P","W","B8",".","W"],
+          ["W",".","B8","W","B8",".","W"],
+          ["W",".","B8",".","B16",".","W"],
+          ["W",".",".","W",".",".","W"],
+          ["W",".","T32",".","T32",".","W"],
+          ["W","W","W","W","W","W","W"]
+        ]
+      },
+      {
+        id: 23,
+        title: "The 2048 Pinnacle",
+        par: 22,
+        grid: [
+          ["W","W","W","W","W","W","W","W"],
+          ["W",".",".",".",".",".",".","W"],
+          ["W",".","P",".",".",".",".","W"],
+          ["W",".","B512","B512",".",".",".","W"],
+          ["W",".",".","B1024",".",".",".","W"],
+          ["W",".",".",".",".",".",".","W"],
+          ["W",".",".",".",".","T2048",".","W"],
+          ["W","W","W","W","W","W","W","W"]
+        ]
+      },
+      {
+        id: 24,
+        title: "Grand Finale 4096",
+        par: 28,
+        grid: [
+          ["W","W","W","W","W","W","W","W"],
+          ["W",".",".",".",".",".",".","W"],
+          ["W",".","P",".",".",".",".","W"],
+          ["W",".","B256","B256",".",".",".","W"],
+          ["W",".","B512","B1024",".",".",".","W"],
+          ["W",".","B1024",".",".",".",".","W"],
+          ["W",".","T1024",".","T2048",".",".","W"],
+          ["W","W","W","W","W","W","W","W"]
+        ]
+      }
+    ];
+
+    // Core Application State Manager
+    class Sokoban2048App {
+      constructor() {
+        this.sfx = new SoundFx();
+        this.currentScreen = 'main-menu';
+        this.currentMode = 'campaign'; // 'campaign', 'endless', 'custom'
+        this.currentLevelIdx = 0;
+        this.winAutoTimer = null;
+        
+        // Grid State
+        this.rows = 0;
+        this.cols = 0;
+        this.playerPos = { r: 0, c: 0 };
+        this.grid = []; // Stores cell objects { type: 'floor'|'wall', targetVal: null, blockVal: null }
+        
+        // Gameplay Stats
+        this.moveCount = 0;
+        this.score = 0;
+        this.highScore = parseInt(localStorage.getItem('sokoban2048_highScore') || '0');
+        this.undoStack = [];
+        
+        // Progress tracking: { levelId: starsEarned }
+        this.progress = JSON.parse(localStorage.getItem('sokoban2048_progress') || '{}');
+
+        // Level Editor state
+        this.editorSelectedTool = 'W'; // 'W', '.', 'P', 'B2', 'T'
+        this.editorTargetVal = 2;
+        this.editorGrid = [];
+        this.editorRows = 6;
+        this.editorCols = 6;
+
+        this.init();
+      }
+
+      init() {
+        this.bindEvents();
+        this.updateStatsUI();
+        this.renderLevelSelect();
+        this.showScreen('main-menu');
+      }
+
+      bindEvents() {
+        // Keyboard navigation
+        window.addEventListener('keydown', (e) => {
+          // If win modal is visible, Space or Enter immediately loads the next level
+          const winModal = document.getElementById('modal-win');
+          if (winModal && !winModal.classList.contains('hidden')) {
+            if (e.key === 'Enter' || e.key === ' ' || e.key === 'Spacebar') {
+              e.preventDefault();
+              this.nextLevel();
+              return;
+            }
+          }
+
+          if (this.currentScreen !== 'screen-game') return;
+
+          switch (e.key) {
+            case 'ArrowUp':
+            case 'w':
+            case 'W':
+              e.preventDefault();
+              this.handleMove('up');
+              break;
+            case 'ArrowDown':
+            case 's':
+            case 'S':
+              e.preventDefault();
+              this.handleMove('down');
+              break;
+            case 'ArrowLeft':
+            case 'a':
+            case 'A':
+              e.preventDefault();
+              this.handleMove('left');
+              break;
+            case 'ArrowRight':
+            case 'd':
+            case 'D':
+              e.preventDefault();
+              this.handleMove('right');
+              break;
+            case 'u':
+            case 'U':
+              e.preventDefault();
+              this.undoMove();
+              break;
+            case 'r':
+            case 'R':
+              e.preventDefault();
+              this.restartLevel();
+              break;
+          }
+        });
+
+        // Touch Swipe Gestures
+        let touchStartX = 0;
+        let touchStartY = 0;
+        const boardEl = document.getElementById('board-container');
+
+        boardEl.addEventListener('touchstart', (e) => {
+          if (e.touches.length > 0) {
+            touchStartX = e.touches[0].clientX;
+            touchStartY = e.touches[0].clientY;
+          }
+        }, { passive: true });
+
+        boardEl.addEventListener('touchend', (e) => {
+          if (this.currentScreen !== 'screen-game') return;
+          if (e.changedTouches.length === 0) return;
+
+          const diffX = e.changedTouches[0].clientX - touchStartX;
+          const diffY = e.changedTouches[0].clientY - touchStartY;
+          const threshold = 30;
+
+          if (Math.abs(diffX) > Math.abs(diffY)) {
+            if (Math.abs(diffX) > threshold) {
+              if (diffX > 0) this.handleMove('right');
+              else this.handleMove('left');
+            }
+          } else {
+            if (Math.abs(diffY) > threshold) {
+              if (diffY > 0) this.handleMove('down');
+              else this.handleMove('up');
+            }
+          }
+        }, { passive: true });
+      }
+
+      toggleSound() {
+        this.sfx.enabled = !this.sfx.enabled;
+        const icon = document.getElementById('sound-icon');
+        if (this.sfx.enabled) {
+          icon.className = 'fa-solid fa-volume-high text-indigo-400';
+        } else {
+          icon.className = 'fa-solid fa-volume-xmark text-slate-500';
+        }
+      }
+
+      showScreen(screenId) {
+        if (this.winAutoTimer) {
+          clearInterval(this.winAutoTimer);
+          this.winAutoTimer = null;
+        }
+
+        // Close any active modal overlays when switching screens
+        const winModal = document.getElementById('modal-win');
+        if (winModal) winModal.classList.add('hidden');
+        const tutModal = document.getElementById('modal-tutorial');
+        if (tutModal) tutModal.classList.add('hidden');
+
+        ['main-menu', 'level-select', 'game', 'editor'].forEach(id => {
+          const el = document.getElementById(`screen-${id}`);
+          if (el) el.classList.add('hidden');
+        });
+
+        // Re-render level select cards whenever level select is requested
+        if (screenId === 'level-select') {
+          this.renderLevelSelect();
+        }
+
+        const activeEl = document.getElementById(`screen-${screenId}`);
+        if (activeEl) {
+          activeEl.classList.remove('hidden');
+          activeEl.classList.add('flex');
+        }
+        this.currentScreen = `screen-${screenId}`;
+        this.updateStatsUI();
+      }
+
+      updateStatsUI() {
+        let totalStars = 0;
+        Object.values(this.progress).forEach(s => totalStars += s);
+        const maxStars = CAMPAIGN_LEVELS.length * 3;
+        
+        document.getElementById('stat-total-stars').innerText = `${totalStars} / ${maxStars}`;
+        document.getElementById('stat-high-score').innerText = this.highScore;
+      }
+
+      renderLevelSelect() {
+        const container = document.getElementById('level-grid');
+        container.innerHTML = '';
+
+        CAMPAIGN_LEVELS.forEach((lvl, idx) => {
+          const stars = this.progress[lvl.id] || 0;
+          const isUnlocked = idx === 0 || (this.progress[CAMPAIGN_LEVELS[idx - 1].id] !== undefined);
+
+          const card = document.createElement('div');
+          card.className = `glass-card p-4 rounded-2xl border ${
+            isUnlocked ? 'border-slate-700/80 hover:border-indigo-500 cursor-pointer' : 'border-slate-800/40 opacity-50 cursor-not-allowed'
+          } transition-all flex flex-col justify-between h-32 relative overflow-hidden group`;
+
+          let starsHtml = '';
+          for (let i = 1; i <= 3; i++) {
+            starsHtml += `<i class="fa-solid fa-star ${i <= stars ? 'text-amber-400' : 'text-slate-700'} text-xs"></i>`;
+          }
+
+          card.innerHTML = `
+            <div class="flex justify-between items-start">
+              <span class="font-extrabold text-slate-400 text-xs">LEVEL ${lvl.id}</span>
+              <div class="flex gap-1">${starsHtml}</div>
+            </div>
+            <div>
+              <h4 class="font-black text-white text-base group-hover:text-indigo-300 transition-colors">${lvl.title}</h4>
+              <p class="text-[10px] text-slate-400">Par: ${lvl.par} moves</p>
+            </div>
+            ${!isUnlocked ? '<div class="absolute inset-0 bg-slate-950/60 backdrop-blur-[1px] flex items-center justify-center text-slate-500 text-lg"><i class="fa-solid fa-lock"></i></div>' : ''}
+          `;
+
+          if (isUnlocked) {
+            card.onclick = () => this.loadCampaignLevel(idx);
+          }
+
+          container.appendChild(card);
+        });
+      }
+
+      startCampaign() {
+        this.renderLevelSelect();
+        this.showScreen('level-select');
+      }
+
+      loadCampaignLevel(idx) {
+        this.currentMode = 'campaign';
+        this.currentLevelIdx = idx;
+        const lvlData = CAMPAIGN_LEVELS[idx];
+
+        document.getElementById('game-title').innerText = `Level ${lvlData.id}: ${lvlData.title}`;
+        document.getElementById('game-mode-badge').innerText = 'Campaign';
+        document.getElementById('label-counter-title').innerText = 'Moves';
+        document.getElementById('stars-display').classList.remove('hidden');
+        document.getElementById('target-goals-banner').classList.remove('hidden');
+
+        this.parseGridFromBlueprint(lvlData.grid);
+        this.showScreen('game');
+      }
+
+      startEndless() {
+        this.currentMode = 'endless';
+        document.getElementById('game-title').innerText = 'Endless Merge Arcade';
+        document.getElementById('game-mode-badge').innerText = 'Endless';
+        document.getElementById('label-counter-title').innerText = 'Score';
+        document.getElementById('stars-display').classList.add('hidden');
+        document.getElementById('target-goals-banner').classList.add('hidden');
+
+        // Create 7x7 open arena for endless mode
+        const endlessGrid = [
+          ["W","W","W","W","W","W","W"],
+          ["W",".",".",".",".",".","W"],
+          ["W",".","B2",".",".",".","W"],
+          ["W",".",".","P",".","B2","W"],
+          ["W",".",".",".",".",".","W"],
+          ["W",".",".","B4",".",".","W"],
+          ["W","W","W","W","W","W","W"]
+        ];
+
+        this.score = 0;
+        this.parseGridFromBlueprint(endlessGrid);
+        this.showScreen('game');
+      }
+
+      parseGridFromBlueprint(blueprint) {
+        this.rows = blueprint.length;
+        this.cols = blueprint[0].length;
+        this.grid = [];
+        this.undoStack = [];
+        this.moveCount = 0;
+
+        for (let r = 0; r < this.rows; r++) {
+          const rowArr = [];
+          for (let c = 0; c < this.cols; c++) {
+            const raw = blueprint[r][c];
+            const cell = { type: 'floor', targetVal: null, blockVal: null };
+
+            if (raw === 'W') {
+              cell.type = 'wall';
+            } else if (raw === 'P') {
+              this.playerPos = { r, c };
+            } else if (raw.startsWith('B')) {
+              cell.blockVal = parseInt(raw.substring(1));
+            } else if (raw.startsWith('T')) {
+              cell.targetVal = parseInt(raw.substring(1));
+            } else if (raw.includes('+')) { // Player + Target
+              this.playerPos = { r, c };
+              cell.targetVal = parseInt(raw.split('+')[1]);
+            }
+
+            rowArr.push(cell);
+          }
+          this.grid.push(rowArr);
+        }
+
+        this.renderBoard();
+        this.updateGameHeader();
+      }
+
+      // Core Movement Engine (Sokoban + Merge Mechanics)
+      handleMove(dir) {
+        const delta = {
+          up: { r: -1, c: 0 },
+          down: { r: 1, c: 0 },
+          left: { r: 0, c: -1 },
+          right: { r: 0, c: 1 }
+        }[dir];
+
+        if (!delta) return;
+
+        const pR = this.playerPos.r;
+        const pC = this.playerPos.c;
+        const targetR = pR + delta.r;
+        const targetC = pC + delta.c;
+
+        if (!this.isValidPos(targetR, targetC)) return;
+
+        const targetCell = this.grid[targetR][targetC];
+
+        // Wall check
+        if (targetCell.type === 'wall') return;
+
+        // Save snapshot for Undo
+        this.saveStateToUndo();
+
+        let moved = false;
+        let merged = false;
+
+        // Scenario 1: Target tile is empty (No block)
+        if (targetCell.blockVal === null) {
+          this.playerPos = { r: targetR, c: targetC };
+          moved = true;
+          this.sfx.playMove();
+        } 
+        // Scenario 2: Target tile has a block -> Attempt Push or Merge!
+        else {
+          const pushR = targetR + delta.r;
+          const pushC = targetC + delta.c;
+
+          if (this.isValidPos(pushR, pushC)) {
+            const destinationCell = this.grid[pushR][pushC];
+
+            // 2A: Pushing block into empty tile
+            if (destinationCell.type !== 'wall' && destinationCell.blockVal === null) {
+              destinationCell.blockVal = targetCell.blockVal;
+              targetCell.blockVal = null;
+              this.playerPos = { r: targetR, c: targetC };
+              moved = true;
+              this.sfx.playPush();
+
+              if (destinationCell.targetVal !== null) {
+                this.sfx.playTargetHit();
+              }
+            } 
+            // 2B: Pushing block into ANOTHER block -> Check if values match to MERGE!
+            else if (destinationCell.type !== 'wall' && destinationCell.blockVal === targetCell.blockVal) {
+              // COMBINE BLOCKS! (e.g. 2+2 -> 4)
+              const newVal = targetCell.blockVal * 2;
+              destinationCell.blockVal = newVal;
+              targetCell.blockVal = null;
+              this.playerPos = { r: targetR, c: targetC };
+              moved = true;
+              merged = true;
+              this.sfx.playMerge();
+
+              if (this.currentMode === 'endless') {
+                this.score += newVal;
+                if (this.score > this.highScore) {
+                  this.highScore = this.score;
+                  localStorage.setItem('sokoban2048_highScore', this.highScore);
+                }
+              }
+
+              // Trigger Pop Animation on destination block
+              setTimeout(() => {
+                const el = document.getElementById(`cell-${pushR}-${pushC}`);
+                if (el) el.classList.add('tile-merge-pop');
+              }, 10);
+            }
+          }
+        }
+
+        if (moved) {
+          if (this.currentMode === 'campaign') {
+            this.moveCount++;
+          }
+
+          // If in Endless mode, spawn a new 2 block randomly after move
+          if (this.currentMode === 'endless') {
+            this.spawnRandomEndlessBlock();
+          }
+
+          this.renderBoard();
+          this.updateGameHeader();
+
+          // Check Win Condition for Campaign
+          if (this.currentMode === 'campaign') {
+            this.checkWinCondition();
+          }
+        } else {
+          // Move was invalid, pop undo snapshot
+          this.undoStack.pop();
+        }
+      }
+
+      isValidPos(r, c) {
+        return r >= 0 && r < this.rows && c >= 0 && c < this.cols;
+      }
+
+      saveStateToUndo() {
+        const gridCopy = this.grid.map(row => row.map(cell => ({ ...cell })));
+        this.undoStack.push({
+          playerPos: { ...this.playerPos },
+          grid: gridCopy,
+          moveCount: this.moveCount,
+          score: this.score
+        });
+
+        document.getElementById('btn-undo').disabled = false;
+      }
+
+      undoMove() {
+        if (this.undoStack.length === 0) return;
+
+        const state = this.undoStack.pop();
+        this.playerPos = state.playerPos;
+        this.grid = state.grid;
+        this.moveCount = state.moveCount;
+        this.score = state.score;
+
+        this.sfx.playUndo();
+        this.renderBoard();
+        this.updateGameHeader();
+
+        if (this.undoStack.length === 0) {
+          document.getElementById('btn-undo').disabled = true;
+        }
+      }
+
+      restartLevel() {
+        if (this.currentMode === 'campaign') {
+          this.loadCampaignLevel(this.currentLevelIdx);
+        } else if (this.currentMode === 'endless') {
+          this.startEndless();
+        }
+      }
+
+      spawnRandomEndlessBlock() {
+        const emptyCells = [];
+        for (let r = 0; r < this.rows; r++) {
+          for (let c = 0; c < this.cols; c++) {
+            if (this.grid[r][c].type !== 'wall' && 
+                this.grid[r][c].blockVal === null && 
+                !(r === this.playerPos.r && c === this.playerPos.c)) {
+              emptyCells.push({ r, c });
+            }
+          }
+        }
+
+        if (emptyCells.length > 0) {
+          const rand = emptyCells[Math.floor(Math.random() * emptyCells.length)];
+          this.grid[rand.r][rand.c].blockVal = Math.random() < 0.8 ? 2 : 4;
+        }
+      }
+
+      checkWinCondition() {
+        let allTargetsCovered = true;
+        let totalTargets = 0;
+
+        for (let r = 0; r < this.rows; r++) {
+          for (let c = 0; c < this.cols; c++) {
+            const cell = this.grid[r][c];
+            if (cell.targetVal !== null) {
+              totalTargets++;
+              if (cell.blockVal === null || cell.blockVal < cell.targetVal) {
+                allTargetsCovered = false;
+              }
+            }
+          }
+        }
+
+        if (totalTargets > 0 && allTargetsCovered) {
+          this.handleWin();
+        }
+      }
+
+      handleWin() {
+        this.sfx.playWin();
+        this.triggerConfetti();
+
+        const lvlData = CAMPAIGN_LEVELS[this.currentLevelIdx];
+        let stars = 1;
+        if (this.moveCount <= lvlData.par) {
+          stars = 3;
+        } else if (this.moveCount <= lvlData.par * 1.4) {
+          stars = 2;
+        }
+
+        // Save progress
+        const prevStars = this.progress[lvlData.id] || 0;
+        if (stars > prevStars) {
+          this.progress[lvlData.id] = stars;
+          localStorage.setItem('sokoban2048_progress', JSON.stringify(this.progress));
+        }
+
+        // Update Win Modal UI
+        document.getElementById('win-moves-count').innerText = this.moveCount;
+        document.getElementById('win-par-count').innerText = lvlData.par;
+
+        const modalStars = document.getElementById('modal-stars');
+        modalStars.innerHTML = '';
+        for (let i = 1; i <= 3; i++) {
+          modalStars.innerHTML += `<i class="fa-solid fa-star ${i <= stars ? 'text-amber-400' : 'text-slate-700'}"></i>`;
+        }
+
+        const nextBtn = document.getElementById('btn-next-level');
+        const winSub = document.getElementById('win-subtitle');
+        
+        if (this.currentLevelIdx < CAMPAIGN_LEVELS.length - 1) {
+          nextBtn.classList.remove('hidden');
+          let countdown = 2;
+          nextBtn.innerHTML = `Next Level (${countdown}s) <i class="fa-solid fa-arrow-right ml-1"></i>`;
+          if (winSub) winSub.innerText = "All goal targets covered! Auto-advancing...";
+
+          if (this.winAutoTimer) clearInterval(this.winAutoTimer);
+          this.winAutoTimer = setInterval(() => {
+            countdown--;
+            if (countdown > 0) {
+              nextBtn.innerHTML = `Next Level (${countdown}s) <i class="fa-solid fa-arrow-right ml-1"></i>`;
+            } else {
+              this.nextLevel();
+            }
+          }, 1000);
+        } else {
+          nextBtn.classList.add('hidden');
+          if (winSub) winSub.innerText = "Congratulations! You have cleared all campaign levels!";
+        }
+
+        document.getElementById('modal-win').classList.remove('hidden');
+      }
+
+      nextLevel() {
+        if (this.winAutoTimer) {
+          clearInterval(this.winAutoTimer);
+          this.winAutoTimer = null;
+        }
+        document.getElementById('modal-win').classList.add('hidden');
+        if (this.currentLevelIdx < CAMPAIGN_LEVELS.length - 1) {
+          this.loadCampaignLevel(this.currentLevelIdx + 1);
+        } else {
+          this.showScreen('level-select');
+        }
+      }
+
+      updateGameHeader() {
+        if (this.currentMode === 'campaign') {
+          const lvlData = CAMPAIGN_LEVELS[this.currentLevelIdx];
+          document.getElementById('val-counter').innerText = this.moveCount;
+
+          let stars = 1;
+          if (this.moveCount <= lvlData.par) stars = 3;
+          else if (this.moveCount <= lvlData.par * 1.4) stars = 2;
+
+          const starsContainer = document.getElementById('stars-display');
+          starsContainer.innerHTML = '';
+          for (let i = 1; i <= 3; i++) {
+            starsContainer.innerHTML += `<i class="fa-solid fa-star ${i <= stars ? 'text-amber-400' : 'text-slate-700'}"></i>`;
+          }
+
+          // Target requirements summary
+          const reqList = document.getElementById('target-requirements-list');
+          reqList.innerHTML = '';
+          const targets = [];
+          for (let r = 0; r < this.rows; r++) {
+            for (let c = 0; c < this.cols; c++) {
+              if (this.grid[r][c].targetVal !== null) {
+                targets.push(this.grid[r][c].targetVal);
+              }
+            }
+          }
+          targets.forEach(val => {
+            reqList.innerHTML += `<span class="px-2 py-0.5 rounded-md bg-amber-500/20 text-amber-300 font-bold text-xs border border-amber-500/30">${val}</span>`;
+          });
+        } else if (this.currentMode === 'endless') {
+          document.getElementById('val-counter').innerText = this.score;
+        }
+      }
+
+      renderBoard() {
+        const board = document.getElementById('board-grid');
+        board.style.gridTemplateColumns = `repeat(${this.cols}, minmax(0, 1fr))`;
+        board.innerHTML = '';
+
+        for (let r = 0; r < this.rows; r++) {
+          for (let c = 0; c < this.cols; c++) {
+            const cell = this.grid[r][c];
+            const isPlayer = (r === this.playerPos.r && c === this.playerPos.c);
+
+            const cellEl = document.createElement('div');
+            cellEl.id = `cell-${r}-${c}`;
+            cellEl.className = 'w-11 h-11 sm:w-14 sm:h-14 rounded-xl flex items-center justify-center relative font-black text-sm sm:text-base select-none transition-all duration-100';
+
+            if (cell.type === 'wall') {
+              cellEl.className += ' bg-slate-800 border-2 border-slate-700 shadow-inner text-slate-600';
+              cellEl.innerHTML = '<i class="fa-solid fa-square"></i>';
+            } else {
+              // Floor Base
+              cellEl.className += ' bg-slate-900/90 border border-slate-800/80';
+
+              // Target Spot Layer
+              if (cell.targetVal !== null) {
+                cellEl.className += ' target-pulse border-2 border-amber-500/60 bg-amber-950/20';
+                cellEl.innerHTML += `<span class="absolute top-1 left-1.5 text-[9px] font-bold text-amber-400/80"><i class="fa-solid fa-bullseye text-[8px]"></i> ${cell.targetVal}</span>`;
+              }
+
+              // Block Layer
+              if (cell.blockVal !== null) {
+                const valClass = cell.blockVal <= 2048 ? `val-${cell.blockVal}` : 'val-high';
+                const blockEl = document.createElement('div');
+                blockEl.className = `w-full h-full rounded-xl flex items-center justify-center font-black shadow-lg ${valClass} tile-node`;
+                blockEl.innerText = cell.blockVal;
+                cellEl.appendChild(blockEl);
+              }
+
+              // Player Avatar Layer
+              if (isPlayer) {
+                const playerEl = document.createElement('div');
+                playerEl.className = 'absolute inset-0 m-auto w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-gradient-to-tr from-indigo-500 to-violet-400 text-white flex items-center justify-center text-base sm:text-lg shadow-lg shadow-indigo-500/50 border border-white/40 z-20 animate-bounce-short';
+                playerEl.innerHTML = '<i class="fa-solid fa-user-ninja"></i>';
+                cellEl.appendChild(playerEl);
+              }
+            }
+
+            board.appendChild(cellEl);
+          }
+        }
+      }
+
+      // Level Editor Logic
+      openEditor() {
+        this.currentMode = 'custom';
+        this.editorRows = 6;
+        this.editorCols = 6;
+        this.editorSelectedTool = 'W';
+        this.editorTargetVal = 2;
+
+        // Initialize empty grid with walls surrounding
+        this.editorGrid = [];
+        for (let r = 0; r < this.editorRows; r++) {
+          const row = [];
+          for (let c = 0; c < this.editorCols; c++) {
+            if (r === 0 || r === this.editorRows - 1 || c === 0 || c === this.editorCols - 1) {
+              row.push('W');
+            } else {
+              row.push('.');
+            }
+          }
+          this.editorGrid.push(row);
+        }
+
+        // Set default player
+        this.editorGrid[1][1] = 'P';
+        this.editorGrid[2][2] = 'B2';
+        this.editorGrid[3][3] = 'T2';
+
+        this.renderEditorPalette();
+        this.renderEditorGrid();
+        this.showScreen('editor');
+      }
+
+      renderEditorPalette() {
+        const palette = document.getElementById('editor-palette');
+        palette.innerHTML = '';
+
+        const tools = [
+          { id: 'W', label: 'Wall', icon: 'fa-square', color: 'bg-slate-700 text-slate-300' },
+          { id: '.', label: 'Floor', icon: 'fa-border-none', color: 'bg-slate-900 text-slate-400' },
+          { id: 'P', label: 'Player', icon: 'fa-user-ninja', color: 'bg-indigo-600 text-white' },
+          { id: 'B2', label: 'Block 2', icon: 'fa-cube', color: 'bg-teal-500 text-slate-950' },
+          { id: 'B4', label: 'Block 4', icon: 'fa-cube', color: 'bg-amber-500 text-slate-950' },
+          { id: 'T', label: 'Target Spot', icon: 'fa-bullseye', color: 'bg-amber-500/20 text-amber-400' }
+        ];
+
+        tools.forEach(tool => {
+          const btn = document.createElement('button');
+          const isActive = this.editorSelectedTool === tool.id;
+          btn.className = `p-2 rounded-xl text-xs font-bold flex items-center gap-2 border transition-all ${tool.color} ${
+            isActive ? 'ring-2 ring-indigo-400 border-indigo-400 shadow-md' : 'border-slate-700/60 opacity-80'
+          }`;
+          btn.innerHTML = `<i class="fa-solid ${tool.icon}"></i> ${tool.label}`;
+          btn.onclick = () => {
+            this.editorSelectedTool = tool.id;
+            this.renderEditorPalette();
+          };
+          palette.appendChild(btn);
+        });
+
+        const targetSelect = document.getElementById('editor-target-val');
+        targetSelect.onchange = (e) => {
+          this.editorTargetVal = parseInt(e.target.value);
+        };
+      }
+
+      renderEditorGrid() {
+        const gridEl = document.getElementById('editor-grid');
+        gridEl.style.gridTemplateColumns = `repeat(${this.editorCols}, minmax(0, 1fr))`;
+        gridEl.innerHTML = '';
+
+        for (let r = 0; r < this.editorRows; r++) {
+          for (let c = 0; c < this.editorCols; c++) {
+            const val = this.editorGrid[r][c];
+            const tile = document.createElement('div');
+            tile.className = 'w-10 h-10 rounded-lg flex items-center justify-center font-bold text-xs cursor-pointer border border-slate-800 transition-all hover:scale-105';
+
+            if (val === 'W') {
+              tile.className += ' bg-slate-800 text-slate-500';
+              tile.innerHTML = '<i class="fa-solid fa-square"></i>';
+            } else if (val === '.') {
+              tile.className += ' bg-slate-900/60 text-slate-700';
+              tile.innerText = '.';
+            } else if (val === 'P') {
+              tile.className += ' bg-indigo-600 text-white shadow-md';
+              tile.innerHTML = '<i class="fa-solid fa-user-ninja"></i>';
+            } else if (val.startsWith('B')) {
+              tile.className += ' bg-teal-400 text-slate-950 shadow-sm';
+              tile.innerText = val.substring(1);
+            } else if (val.startsWith('T')) {
+              tile.className += ' bg-amber-500/30 border-2 border-amber-500 text-amber-300';
+              tile.innerText = `T${val.substring(1)}`;
+            }
+
+            tile.onclick = () => {
+              let tool = this.editorSelectedTool;
+              if (tool === 'T') {
+                tool = `T${this.editorTargetVal}`;
+              }
+
+              // Ensure only 1 player exists
+              if (tool === 'P') {
+                for (let er = 0; er < this.editorRows; er++) {
+                  for (let ec = 0; ec < this.editorCols; ec++) {
+                    if (this.editorGrid[er][ec] === 'P') this.editorGrid[er][ec] = '.';
+                  }
+                }
+              }
+
+              this.editorGrid[r][c] = tool;
+              this.renderEditorGrid();
+            };
+
+            gridEl.appendChild(tile);
+          }
+        }
+      }
+
+      clearEditorGrid() {
+        for (let r = 0; r < this.editorRows; r++) {
+          for (let c = 0; c < this.editorCols; c++) {
+            if (r === 0 || r === this.editorRows - 1 || c === 0 || c === this.editorCols - 1) {
+              this.editorGrid[r][c] = 'W';
+            } else {
+              this.editorGrid[r][c] = '.';
+            }
+          }
+        }
+        this.renderEditorGrid();
+      }
+
+      testCustomLevel() {
+        // Check if player exists
+        let hasPlayer = false;
+        for (let r = 0; r < this.editorRows; r++) {
+          for (let c = 0; c < this.editorCols; c++) {
+            if (this.editorGrid[r][c] === 'P') hasPlayer = true;
+          }
+        }
+
+        if (!hasPlayer) {
+          alert("Please place a Player start point 'P' on the grid before testing!");
+          return;
+        }
+
+        this.currentMode = 'campaign';
+        document.getElementById('game-title').innerText = 'Custom Level';
+        document.getElementById('game-mode-badge').innerText = 'Custom';
+        document.getElementById('label-counter-title').innerText = 'Moves';
+        document.getElementById('stars-display').classList.add('hidden');
+        document.getElementById('target-goals-banner').classList.remove('hidden');
+
+        this.parseGridFromBlueprint(this.editorGrid);
+        this.showScreen('game');
+      }
+
+      exportLevelCode() {
+        const jsonStr = JSON.stringify(this.editorGrid);
+        document.execCommand('copy');
+        alert('Custom level JSON ready/copied!');
+      }
+
+      importLevelCode() {
+        const raw = prompt('Paste level JSON array:');
+        if (raw) {
+          try {
+            const parsed = JSON.parse(raw);
+            if (Array.isArray(parsed) && parsed.length > 0) {
+              this.editorGrid = parsed;
+              this.editorRows = parsed.length;
+              this.editorCols = parsed[0].length;
+              this.renderEditorGrid();
+            }
+          } catch(e) {
+            alert('Invalid level JSON format.');
+          }
+        }
+      }
+
+      openTutorial() {
+        document.getElementById('modal-tutorial').classList.remove('hidden');
+      }
+
+      closeTutorial() {
+        document.getElementById('modal-tutorial').classList.add('hidden');
+      }
+
+      exitToMenu() {
+        document.getElementById('modal-win').classList.add('hidden');
+        this.showScreen('main-menu');
+      }
+
+      triggerConfetti() {
+        const container = document.getElementById('main-content');
+        const colors = ['#6366f1', '#a855f7', '#ec4899', '#f59e0b', '#10b981', '#3b82f6'];
+
+        for (let i = 0; i < 40; i++) {
+          const confetti = document.createElement('div');
+          confetti.className = 'confetti';
+          confetti.style.left = `${Math.random() * 90 + 5}%`;
+          confetti.style.top = '10%';
+          confetti.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+          confetti.style.animationDelay = `${Math.random() * 0.5}s`;
+          container.appendChild(confetti);
+
+          setTimeout(() => confetti.remove(), 2600);
+        }
+      }
+    }
+
+    // Initialize Game on load
+    let app;
+    window.onload = () => {
+      app = new Sokoban2048App();
+    };
+  </script>
+</body>
+</html>

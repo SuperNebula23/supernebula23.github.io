@@ -9,9 +9,6 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
 
-  <!-- GOOGLE ADSENSE SCRIPT PLACEHOLDER (Uncomment & replace with your client ID when ready) -->
-  <!-- <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-XXXXXXXXXXXXXXXX" crossorigin="anonymous"></script> -->
-
   <style>
     :root {
       --bg-dark: #0b1d28;
@@ -106,30 +103,6 @@
       font-weight: bold;
       display: none;
       box-shadow: 0 1px 0 #000;
-    }
-
-    /* Ad Container Styling */
-    .ad-banner-wrapper {
-      width: 100%;
-      max-width: 960px;
-      margin: 15px auto;
-      background: rgba(0, 0, 0, 0.3);
-      border: 2px dashed #33556b;
-      border-radius: 8px;
-      padding: 10px;
-      text-align: center;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      min-height: 90px;
-    }
-
-    .ad-label {
-      font-size: 7px;
-      color: #5b7e96;
-      margin-bottom: 6px;
-      letter-spacing: 1px;
     }
 
     .controls-bar {
@@ -495,16 +468,6 @@
         <p>Select A Game!</p>
       </div>
 
-      <!-- AD SLOT #1: TOP LEADERBOARD BANNER -->
-      <div class="ad-banner-wrapper">
-        <div class="ad-label">ADVERTISEMENT</div>
-        <ins class="adsbygoogle"
-             style="display:block; width:100%; height:90px;"
-             data-ad-client="ca-pub-XXXXXXXXXXXXXXXX"
-             data-ad-slot="1111111111"
-             data-ad-format="horizontal"></ins>
-      </div>
-
       <!-- Search & Category Filters -->
       <div class="controls-bar">
         <input type="text" id="searchInput" class="search-input" placeholder="SEARCH GAMES..." oninput="handleSearchAndFilter()">
@@ -528,16 +491,6 @@
       <div id="recommended-section" style="display: none; width: 100%;">
         <h2 class="section-heading">🔥 RECOMMENDED FOR YOU</h2>
         <div class="games-grid" id="recommendedGrid"></div>
-      </div>
-
-      <!-- AD SLOT #2: MID-FEED IN-ARTICLE BANNER -->
-      <div class="ad-banner-wrapper">
-        <div class="ad-label">ADVERTISEMENT</div>
-        <ins class="adsbygoogle"
-             style="display:block; width:100%; height:90px;"
-             data-ad-client="ca-pub-XXXXXXXXXXXXXXXX"
-             data-ad-slot="2222222222"
-             data-ad-format="horizontal"></ins>
       </div>
 
       <!-- ALL GAMES SECTION -->
@@ -870,16 +823,6 @@
 
       </div>
 
-      <!-- AD SLOT #3: BOTTOM FOOTER BANNER -->
-      <div class="ad-banner-wrapper">
-        <div class="ad-label">ADVERTISEMENT</div>
-        <ins class="adsbygoogle"
-             style="display:block; width:100%; height:90px;"
-             data-ad-client="ca-pub-XXXXXXXXXXXXXXXX"
-             data-ad-slot="3333333333"
-             data-ad-format="horizontal"></ins>
-      </div>
-
     </section>
   </main>
 
@@ -976,11 +919,6 @@
       });
 
       renderRecommendations();
-
-      // Trigger standard AdSense script load if ads are enabled
-      try {
-        (adsbygoogle = window.adsbygoogle || []).push({});
-      } catch (e) {}
     }
 
     function handleSearchAndFilter() {

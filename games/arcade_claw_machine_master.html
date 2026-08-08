@@ -1,0 +1,1137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Arcade Claw Machine Master</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons CDN -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&family=Press+Start+2P&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Fredoka', sans-serif;
+            background: #0d0f18;
+            color: #ffffff;
+            touch-action: manipulation;
+            user-select: none;
+            overflow-x: hidden;
+        }
+
+        .font-arcade {
+            font-family: 'Press Start 2P', cursive;
+        }
+
+        /* Neon Glow Effects */
+        .neon-border {
+            box-shadow: 0 0 15px rgba(236, 72, 153, 0.6), inset 0 0 15px rgba(236, 72, 153, 0.4);
+        }
+        .neon-border-blue {
+            box-shadow: 0 0 15px rgba(59, 130, 246, 0.6), inset 0 0 15px rgba(59, 130, 246, 0.4);
+        }
+        .neon-text-yellow {
+            text-shadow: 0 0 8px rgba(250, 204, 21, 0.8);
+        }
+
+        /* Custom Arcade Button Push Animation */
+        .arcade-btn {
+            transition: all 0.1s ease;
+            box-shadow: 0 8px 0 rgba(0,0,0,0.4);
+        }
+        .arcade-btn:active {
+            transform: translateY(4px);
+            box-shadow: 0 4px 0 rgba(0,0,0,0.4);
+        }
+
+        /* Flashing Cabinet Lights Animation */
+        @keyframes marquee {
+            0% { background-position: 0% 0%; }
+            100% { background-position: 200% 0%; }
+        }
+        .arcade-lights {
+            background: linear-gradient(90deg, #ff0055, #00ffff, #ff00ff, #ffff00, #ff0055);
+            background-size: 200% 100%;
+            animation: marquee 3s linear infinite;
+        }
+
+        /* Glass Reflection Overlay */
+        .glass-overlay {
+            background: linear-gradient(135deg, rgba(255,255,255,0.15) 0%, rgba(255,255,255,0.02) 40%, rgba(255,255,255,0) 50%, rgba(255,255,255,0.05) 100%);
+            pointer-events: none;
+        }
+
+        /* Modal Blur */
+        .backdrop-blur-custom {
+            backdrop-filter: blur(8px);
+        }
+
+        /* Hide Scrollbar */
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .no-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col items-center justify-between p-2 sm:p-4 select-none">
+
+    <!-- Top Header / Scoreboard -->
+    <header class="w-full max-w-2xl flex items-center justify-between bg-slate-900/90 border-2 border-pink-500/80 rounded-2xl p-3 mb-2 shadow-lg neon-border z-10">
+        <div class="flex items-center space-x-3">
+            <div class="w-10 h-10 rounded-xl bg-pink-500/20 flex items-center justify-center text-pink-400 border border-pink-500/50">
+                <i class="fa-solid fa-trophy text-xl"></i>
+            </div>
+            <div>
+                <div class="text-xs uppercase text-slate-400 font-bold tracking-wider">Score</div>
+                <div id="scoreDisplay" class="text-xl sm:text-2xl font-arcade text-yellow-400 neon-text-yellow">0</div>
+            </div>
+        </div>
+
+        <div class="flex items-center space-x-2">
+            <a href="https://supernebula23.github.io/games" class="px-3 py-2 bg-slate-800 hover:bg-slate-700 rounded-xl border border-slate-600 text-slate-300 font-bold flex items-center space-x-1 transition shadow-md" title="Home Page">
+                <i class="fa-solid fa-house text-pink-400"></i>
+                <span class="hidden sm:inline">Home</span>
+            </a>
+            <button id="soundToggleBtn" class="px-3 py-2 bg-slate-800 hover:bg-slate-700 rounded-xl border border-slate-600 text-slate-300 transition">
+                <i id="soundIcon" class="fa-solid fa-volume-high"></i>
+            </button>
+            <button id="collectionBtn" class="px-3 py-2 bg-purple-600 hover:bg-purple-500 text-white rounded-xl font-bold flex items-center space-x-1 shadow-md transition">
+                <i class="fa-solid fa-box-open"></i>
+                <span class="hidden sm:inline">Prize Box</span>
+            </button>
+            <button id="shopBtn" class="px-3 py-2 bg-amber-500 hover:bg-amber-400 text-slate-900 rounded-xl font-bold flex items-center space-x-1 shadow-md transition">
+                <i class="fa-solid fa-wrench"></i>
+                <span>Upgrades</span>
+            </button>
+        </div>
+
+        <div class="flex items-center space-x-3">
+            <div class="text-right">
+                <div class="text-xs uppercase text-slate-400 font-bold tracking-wider">Tickets</div>
+                <div class="flex items-center justify-end space-x-1 text-xl sm:text-2xl font-arcade text-pink-400">
+                    <i class="fa-solid fa-ticket text-sm"></i>
+                    <span id="ticketDisplay">0</span>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Arcade Cabinet Frame -->
+    <main class="relative w-full max-w-2xl flex-1 flex flex-col items-center justify-center">
+        <div class="relative w-full bg-slate-900 border-4 border-slate-800 rounded-3xl p-3 shadow-2xl overflow-hidden flex flex-col items-center">
+            
+            <!-- Marquee Flashing Lights -->
+            <div class="w-full h-3 rounded-t-xl arcade-lights mb-2 opacity-90"></div>
+
+            <!-- Arcade Header Title -->
+            <div class="w-full flex justify-between items-center px-4 py-1 mb-1 bg-slate-950 rounded-xl border border-slate-800">
+                <span class="text-xs font-arcade text-pink-400 tracking-widest"><i class="fa-solid fa-star text-yellow-400 mr-1"></i>PRIZE CRANE</span>
+                <span id="clawStatusText" class="text-xs font-bold text-cyan-400 uppercase tracking-wide">READY</span>
+            </div>
+
+            <!-- Game Canvas Container -->
+            <div class="relative w-full rounded-2xl overflow-hidden border-2 border-slate-700/80 bg-slate-950 shadow-inner flex items-center justify-center">
+                <canvas id="gameCanvas" class="w-full h-[380px] sm:h-[460px] block"></canvas>
+                
+                <!-- Glass Shine Effect -->
+                <div class="absolute inset-0 glass-overlay rounded-2xl"></div>
+
+                <!-- Floating Feedback Overlay for Points -->
+                <div id="floatingPointsContainer" class="absolute inset-0 pointer-events-none overflow-hidden"></div>
+            </div>
+
+            <!-- Cabinet Control Deck -->
+            <div class="w-full mt-3 bg-slate-950 p-3 sm:p-4 rounded-2xl border-2 border-slate-800 flex flex-col sm:flex-row items-center justify-between gap-3">
+                
+                <!-- D-Pad Directional Controls -->
+                <div class="flex items-center space-x-2 w-full sm:w-auto justify-center">
+                    <button id="btnLeft" class="arcade-btn w-16 h-14 bg-blue-600 hover:bg-blue-500 active:bg-blue-700 text-white rounded-xl text-2xl font-bold flex items-center justify-center border-b-4 border-blue-900">
+                        <i class="fa-solid fa-arrow-left"></i>
+                    </button>
+                    <button id="btnRight" class="arcade-btn w-16 h-14 bg-blue-600 hover:bg-blue-500 active:bg-blue-700 text-white rounded-xl text-2xl font-bold flex items-center justify-center border-b-4 border-blue-900">
+                        <i class="fa-solid fa-arrow-right"></i>
+                    </button>
+                </div>
+
+                <!-- Super Grip Skill Button -->
+                <div class="flex items-center space-x-2">
+                    <button id="powerGripBtn" class="arcade-btn px-4 h-14 bg-amber-500 hover:bg-amber-400 disabled:opacity-40 disabled:cursor-not-allowed text-slate-950 rounded-xl font-bold flex flex-col items-center justify-center border-b-4 border-amber-800 transition">
+                        <div class="flex items-center space-x-1">
+                            <i class="fa-solid fa-magnet text-lg"></i>
+                            <span class="text-sm">SUPER GRIP</span>
+                        </div>
+                        <span id="powerGripCostText" class="text-[10px] font-arcade text-slate-900">10 TICKETS</span>
+                    </button>
+                </div>
+
+                <!-- DROP / GRAB Action Button -->
+                <div class="w-full sm:w-auto flex justify-center">
+                    <button id="btnDrop" class="arcade-btn w-full sm:w-36 h-14 bg-gradient-to-r from-pink-600 to-rose-500 hover:from-pink-500 hover:to-rose-400 active:from-pink-700 active:to-rose-600 text-white font-black text-xl rounded-xl border-b-4 border-pink-900 flex items-center justify-center space-x-2 tracking-wider shadow-lg">
+                        <i class="fa-solid fa-hand-back-fist text-xl"></i>
+                        <span>GRAB!</span>
+                    </button>
+                </div>
+
+            </div>
+
+        </div>
+    </main>
+
+    <!-- Upgrade Shop Modal -->
+    <div id="shopModal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-custom flex items-center justify-center p-4 z-50 hidden">
+        <div class="bg-slate-900 border-2 border-amber-500/80 rounded-3xl p-5 w-full max-w-lg shadow-2xl relative neon-border">
+            <button id="closeShopBtn" class="absolute top-4 right-4 text-slate-400 hover:text-white text-xl">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+            
+            <div class="flex items-center space-x-3 mb-4">
+                <div class="w-12 h-12 bg-amber-500/20 border border-amber-500/50 rounded-2xl flex items-center justify-center text-amber-400 text-2xl">
+                    <i class="fa-solid fa-store"></i>
+                </div>
+                <div>
+                    <h2 class="text-2xl font-bold text-amber-400">Claw Upgrades</h2>
+                    <p class="text-xs text-slate-400">Spend tickets to boost machine stats!</p>
+                </div>
+            </div>
+
+            <div class="space-y-3 mb-4 max-h-[60vh] overflow-y-auto no-scrollbar pr-1">
+                <!-- Upgrade Item 1: Grip Strength -->
+                <div class="bg-slate-800/80 p-3 rounded-2xl border border-slate-700 flex items-center justify-between">
+                    <div class="flex items-center space-x-3">
+                        <div class="w-10 h-10 bg-rose-500/20 text-rose-400 rounded-xl flex items-center justify-center text-xl">
+                            <i class="fa-solid fa-hand-holding"></i>
+                        </div>
+                        <div>
+                            <div class="font-bold text-sm">Grip Strength <span id="lvlGrip" class="text-xs text-amber-400 font-arcade">Lv.1</span></div>
+                            <div class="text-xs text-slate-400">Reduces chances of plushies slipping.</div>
+                        </div>
+                    </div>
+                    <button id="buyGripBtn" class="px-3 py-2 bg-amber-500 hover:bg-amber-400 text-slate-950 rounded-xl font-bold text-xs flex items-center space-x-1">
+                        <i class="fa-solid fa-ticket"></i>
+                        <span id="costGrip">15</span>
+                    </button>
+                </div>
+
+                <!-- Upgrade Item 2: Claw Speed -->
+                <div class="bg-slate-800/80 p-3 rounded-2xl border border-slate-700 flex items-center justify-between">
+                    <div class="flex items-center space-x-3">
+                        <div class="w-10 h-10 bg-cyan-500/20 text-cyan-400 rounded-xl flex items-center justify-center text-xl">
+                            <i class="fa-solid fa-bolt"></i>
+                        </div>
+                        <div>
+                            <div class="font-bold text-sm">Motor Speed <span id="lvlSpeed" class="text-xs text-amber-400 font-arcade">Lv.1</span></div>
+                            <div class="text-xs text-slate-400">Moves and drops the claw faster.</div>
+                        </div>
+                    </div>
+                    <button id="buySpeedBtn" class="px-3 py-2 bg-amber-500 hover:bg-amber-400 text-slate-950 rounded-xl font-bold text-xs flex items-center space-x-1">
+                        <i class="fa-solid fa-ticket"></i>
+                        <span id="costSpeed">10</span>
+                    </button>
+                </div>
+
+                <!-- Upgrade Item 3: Golden Luck -->
+                <div class="bg-slate-800/80 p-3 rounded-2xl border border-slate-700 flex items-center justify-between">
+                    <div class="flex items-center space-x-3">
+                        <div class="w-10 h-10 bg-yellow-500/20 text-yellow-400 rounded-xl flex items-center justify-center text-xl">
+                            <i class="fa-solid fa-clover"></i>
+                        </div>
+                        <div>
+                            <div class="font-bold text-sm">Golden Luck <span id="lvlLuck" class="text-xs text-amber-400 font-arcade">Lv.1</span></div>
+                            <div class="text-xs text-slate-400">Increases chance of rare & legend prizes.</div>
+                        </div>
+                    </div>
+                    <button id="buyLuckBtn" class="px-3 py-2 bg-amber-500 hover:bg-amber-400 text-slate-950 rounded-xl font-bold text-xs flex items-center space-x-1">
+                        <i class="fa-solid fa-ticket"></i>
+                        <span id="costLuck">25</span>
+                    </button>
+                </div>
+
+                <!-- Upgrade Item 4: Claw Size -->
+                <div class="bg-slate-800/80 p-3 rounded-2xl border border-slate-700 flex items-center justify-between">
+                    <div class="flex items-center space-x-3">
+                        <div class="w-10 h-10 bg-purple-500/20 text-purple-400 rounded-xl flex items-center justify-center text-xl">
+                            <i class="fa-solid fa-expand"></i>
+                        </div>
+                        <div>
+                            <div class="font-bold text-sm">Wide Claw <span id="lvlSize" class="text-xs text-amber-400 font-arcade">Lv.1</span></div>
+                            <div class="text-xs text-slate-400">Widens claw scoop reach.</div>
+                        </div>
+                    </div>
+                    <button id="buySizeBtn" class="px-3 py-2 bg-amber-500 hover:bg-amber-400 text-slate-950 rounded-xl font-bold text-xs flex items-center space-x-1">
+                        <i class="fa-solid fa-ticket"></i>
+                        <span id="costSize">20</span>
+                    </button>
+                </div>
+            </div>
+
+            <button id="restockBtn" class="w-full py-3 bg-purple-600 hover:bg-purple-500 text-white rounded-xl font-bold text-sm flex items-center justify-center space-x-2 transition">
+                <i class="fa-solid fa-rotate text-sm"></i>
+                <span>Refill Toys Machine (Free)</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- Collection Modal -->
+    <div id="collectionModal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-custom flex items-center justify-center p-4 z-50 hidden">
+        <div class="bg-slate-900 border-2 border-purple-500/80 rounded-3xl p-5 w-full max-w-md shadow-2xl relative">
+            <button id="closeCollectionBtn" class="absolute top-4 right-4 text-slate-400 hover:text-white text-xl">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+            <div class="flex items-center space-x-3 mb-4">
+                <div class="w-12 h-12 bg-purple-500/20 border border-purple-500/50 rounded-2xl flex items-center justify-center text-purple-400 text-2xl">
+                    <i class="fa-solid fa-award"></i>
+                </div>
+                <div>
+                    <h2 class="text-2xl font-bold text-purple-400">Prize Gallery</h2>
+                    <p class="text-xs text-slate-400">Prizes you have successfully caught!</p>
+                </div>
+            </div>
+
+            <div id="collectionList" class="grid grid-cols-2 gap-3 max-h-[55vh] overflow-y-auto no-scrollbar p-1">
+                <!-- Dynamic collection list will be rendered here -->
+            </div>
+        </div>
+    </div>
+
+    <!-- System Message Toast Box -->
+    <div id="toast" class="fixed bottom-20 left-1/2 -translate-x-1/2 bg-slate-800 border-2 border-pink-500 text-white px-5 py-2.5 rounded-2xl shadow-2xl font-bold text-sm flex items-center space-x-2 transition-all opacity-0 pointer-events-none z-50 transform translate-y-4">
+        <i id="toastIcon" class="fa-solid fa-circle-info text-pink-400"></i>
+        <span id="toastMsg">Notification message</span>
+    </div>
+
+    <script>
+        // --- Web Audio API Synthetic Sound Generator ---
+        class ArcadeAudioEngine {
+            constructor() {
+                this.ctx = null;
+                this.enabled = true;
+            }
+
+            init() {
+                if (!this.ctx) {
+                    const AudioContext = window.AudioContext || window.webkitAudioContext;
+                    if (AudioContext) this.ctx = new AudioContext();
+                }
+            }
+
+            playMoveSound() {
+                if (!this.enabled || !this.ctx) return;
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(140, this.ctx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(180, this.ctx.currentTime + 0.05);
+                gain.gain.setValueAtTime(0.04, this.ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + 0.05);
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                osc.start();
+                osc.stop(this.ctx.currentTime + 0.05);
+            }
+
+            playDropSound() {
+                if (!this.enabled || !this.ctx) return;
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(350, this.ctx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(120, this.ctx.currentTime + 0.25);
+                gain.gain.setValueAtTime(0.1, this.ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + 0.25);
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                osc.start();
+                osc.stop(this.ctx.currentTime + 0.25);
+            }
+
+            playGrabSound() {
+                if (!this.enabled || !this.ctx) return;
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.type = 'square';
+                osc.frequency.setValueAtTime(200, this.ctx.currentTime);
+                osc.frequency.setValueAtTime(400, this.ctx.currentTime + 0.08);
+                gain.gain.setValueAtTime(0.08, this.ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + 0.2);
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                osc.start();
+                osc.stop(this.ctx.currentTime + 0.2);
+            }
+
+            playWinSound() {
+                if (!this.enabled || !this.ctx) return;
+                const now = this.ctx.currentTime;
+                const notes = [261.63, 329.63, 392.00, 523.25, 659.25];
+                notes.forEach((freq, idx) => {
+                    const osc = this.ctx.createOscillator();
+                    const gain = this.ctx.createGain();
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(freq, now + idx * 0.08);
+                    gain.gain.setValueAtTime(0.12, now + idx * 0.08);
+                    gain.gain.exponentialRampToValueAtTime(0.001, now + idx * 0.08 + 0.25);
+                    osc.connect(gain);
+                    gain.connect(this.ctx.destination);
+                    osc.start(now + idx * 0.08);
+                    osc.stop(now + idx * 0.08 + 0.25);
+                });
+            }
+
+            playFailSound() {
+                if (!this.enabled || !this.ctx) return;
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(180, this.ctx.currentTime);
+                osc.frequency.linearRampToValueAtTime(90, this.ctx.currentTime + 0.3);
+                gain.gain.setValueAtTime(0.1, this.ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + 0.3);
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                osc.start();
+                osc.stop(this.ctx.currentTime + 0.3);
+            }
+        }
+
+        const soundSystem = new ArcadeAudioEngine();
+
+        // --- Toy / Prize Catalog Definitions ---
+        const PRIZE_CATALOG = [
+            { id: 'duck', name: 'Rubber Duck', points: 100, tickets: 3, rarity: 'common', color: '#facc15', size: 22, weight: 1.0, emoji: '🦆' },
+            { id: 'bear', name: 'Teddy Bear', points: 150, tickets: 5, rarity: 'common', color: '#d97706', size: 24, weight: 1.1, emoji: '🧸' },
+            { id: 'bunny', name: 'Fluffy Bunny', points: 250, tickets: 8, rarity: 'uncommon', color: '#f472b6', size: 23, weight: 1.0, emoji: '🐰' },
+            { id: 'panda', name: 'Panda Plush', points: 350, tickets: 12, rarity: 'uncommon', color: '#f8fafc', size: 25, weight: 1.2, emoji: '🐼' },
+            { id: 'cat', name: 'Lucky Cat', points: 450, tickets: 15, rarity: 'uncommon', color: '#fb923c', size: 22, weight: 1.0, emoji: '🐱' },
+            { id: 'unicorn', name: 'Magic Unicorn', points: 700, tickets: 25, rarity: 'rare', color: '#a855f7', size: 26, weight: 1.3, emoji: '🦄' },
+            { id: 'dragon', name: 'Golden Dragon', points: 1500, tickets: 50, rarity: 'legendary', color: '#eab308', size: 28, weight: 1.5, emoji: '🐲' },
+            { id: 'box', name: 'Mystery Gift', points: 500, tickets: 30, rarity: 'rare', color: '#ec4899', size: 24, weight: 1.2, emoji: '🎁' }
+        ];
+
+        // --- Game Main State Engine ---
+        const game = {
+            score: 0,
+            tickets: 0,
+            superGripActive: false,
+            upgrades: {
+                grip: 1,  // level 1 to 5
+                speed: 1, // level 1 to 5
+                luck: 1,  // level 1 to 5
+                size: 1   // level 1 to 5
+            },
+            collection: {}, // id -> count
+            canvas: null,
+            ctx: null,
+            width: 600,
+            height: 460,
+            
+            // Claw physics & state
+            claw: {
+                x: 300,
+                y: 60,
+                homeY: 60,
+                width: 44,
+                armLength: 28,
+                angle: 0.3, // claw open angle
+                targetAngle: 0.3,
+                state: 'IDLE', // IDLE, DROPPING, GRABBING, RETRACTING, RETURNING, RELEASING
+                speed: 2.5,
+                grabbedItems: [],
+                dropSpeed: 3.5,
+                gripFactor: 0.7
+            },
+
+            prizes: [],
+            particles: [],
+            dropChute: { x: 30, y: 340, w: 90, h: 100 },
+            
+            // Controller inputs
+            keys: { left: false, right: false }
+        };
+
+        window.addEventListener('load', () => {
+            initGame();
+        });
+
+        function initGame() {
+            game.canvas = document.getElementById('gameCanvas');
+            game.ctx = game.canvas.getContext('2d');
+
+            resizeCanvas();
+            window.addEventListener('resize', resizeCanvas);
+
+            // Setup input events
+            setupControls();
+            
+            // Spawn initial prizes pile
+            spawnPrizesPile();
+
+            // Start animation frame update loop
+            requestAnimationFrame(gameLoop);
+            
+            updateUI();
+        }
+
+        function resizeCanvas() {
+            const rect = game.canvas.getBoundingClientRect();
+            game.canvas.width = rect.width;
+            game.canvas.height = rect.height;
+            game.width = rect.width;
+            game.height = rect.height;
+
+            // Update chute location according to responsive canvas size
+            game.dropChute.x = 10;
+            game.dropChute.w = 85;
+            game.dropChute.y = game.height - 110;
+            game.dropChute.h = 100;
+        }
+
+        function spawnPrizesPile() {
+            game.prizes = [];
+            const count = 28;
+            const chuteRightEdge = game.dropChute.x + game.dropChute.w;
+            const minX = chuteRightEdge + 45;
+            const maxX = game.width - 30;
+
+            for (let i = 0; i < count; i++) {
+                const pType = selectRandomPrizeType();
+                // Random position across floor width (buffered away from drop chute)
+                const x = minX + Math.random() * Math.max(10, maxX - minX - 20);
+                // Spawn prizes above the floor so gravity drops and scatters them into a pile
+                const y = game.height - 140 - Math.random() * 100;
+                
+                game.prizes.push({
+                    ...pType,
+                    x: x,
+                    y: y,
+                    vx: (Math.random() - 0.5) * 3, // Initial scattering horizontal momentum
+                    vy: Math.random() * 2,          // Downward velocity
+                    rotation: (Math.random() - 0.5) * Math.PI * 0.8,
+                    isGrabbed: false
+                });
+            }
+        }
+
+        function selectRandomPrizeType() {
+            const luckBonus = (game.upgrades.luck - 1) * 0.08;
+            const rand = Math.random();
+
+            if (rand < 0.05 + luckBonus * 0.5) {
+                return PRIZE_CATALOG.find(p => p.id === 'dragon');
+            } else if (rand < 0.20 + luckBonus) {
+                return PRIZE_CATALOG[Math.floor(Math.random() * 2) + 5]; // Unicorn or Mystery Box
+            } else if (rand < 0.50) {
+                return PRIZE_CATALOG[Math.floor(Math.random() * 3) + 2]; // Bunny, Panda, Cat
+            } else {
+                return PRIZE_CATALOG[Math.floor(Math.random() * 2)]; // Duck, Bear
+            }
+        }
+
+        function setupControls() {
+            const btnLeft = document.getElementById('btnLeft');
+            const btnRight = document.getElementById('btnRight');
+            const btnDrop = document.getElementById('btnDrop');
+            const powerGripBtn = document.getElementById('powerGripBtn');
+
+            // Sound Init on user interaction
+            const startAudio = () => soundSystem.init();
+
+            // Touch / Mouse controls for movement
+            const startLeft = (e) => { e.preventDefault(); startAudio(); game.keys.left = true; };
+            const stopLeft = (e) => { e.preventDefault(); game.keys.left = false; };
+            const startRight = (e) => { e.preventDefault(); startAudio(); game.keys.right = true; };
+            const stopRight = (e) => { e.preventDefault(); game.keys.right = false; };
+
+            btnLeft.addEventListener('mousedown', startLeft);
+            btnLeft.addEventListener('mouseup', stopLeft);
+            btnLeft.addEventListener('touchstart', startLeft);
+            btnLeft.addEventListener('touchend', stopLeft);
+
+            btnRight.addEventListener('mousedown', startRight);
+            btnRight.addEventListener('mouseup', stopRight);
+            btnRight.addEventListener('touchstart', startRight);
+            btnRight.addEventListener('touchend', stopRight);
+
+            btnDrop.addEventListener('click', () => {
+                startAudio();
+                triggerDrop();
+            });
+
+            powerGripBtn.addEventListener('click', () => {
+                startAudio();
+                activateSuperGrip();
+            });
+
+            // Keyboard Arrow / WASD Controls
+            window.addEventListener('keydown', (e) => {
+                startAudio();
+                if (e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'A') game.keys.left = true;
+                if (e.key === 'ArrowRight' || e.key === 'd' || e.key === 'D') game.keys.right = true;
+                if ((e.key === ' ' || e.key === 'ArrowDown' || e.key === 's' || e.key === 'S') && !e.repeat) triggerDrop();
+            });
+
+            window.addEventListener('keyup', (e) => {
+                if (e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'A') game.keys.left = false;
+                if (e.key === 'ArrowRight' || e.key === 'd' || e.key === 'D') game.keys.right = false;
+            });
+
+            // Navigation / Modals Setup
+            document.getElementById('soundToggleBtn').addEventListener('click', toggleSound);
+            document.getElementById('shopBtn').addEventListener('click', () => toggleModal('shopModal', true));
+            document.getElementById('closeShopBtn').addEventListener('click', () => toggleModal('shopModal', false));
+            document.getElementById('collectionBtn').addEventListener('click', () => {
+                renderCollectionUI();
+                toggleModal('collectionModal', true);
+            });
+            document.getElementById('closeCollectionBtn').addEventListener('click', () => toggleModal('collectionModal', false));
+            document.getElementById('restockBtn').addEventListener('click', () => {
+                spawnPrizesPile();
+                showToast('Machine refilled with fresh toys!', 'fa-arrows-rotate');
+                toggleModal('shopModal', false);
+            });
+
+            // Shop Buy Buttons Setup
+            document.getElementById('buyGripBtn').addEventListener('click', () => buyUpgrade('grip', 15));
+            document.getElementById('buySpeedBtn').addEventListener('click', () => buyUpgrade('speed', 10));
+            document.getElementById('buyLuckBtn').addEventListener('click', () => buyUpgrade('luck', 25));
+            document.getElementById('buySizeBtn').addEventListener('click', () => buyUpgrade('size', 20));
+        }
+
+        function triggerDrop() {
+            if (game.claw.state === 'IDLE') {
+                game.claw.state = 'DROPPING';
+                document.getElementById('clawStatusText').innerText = 'DROPPING...';
+                document.getElementById('clawStatusText').className = 'text-xs font-bold text-amber-400 uppercase tracking-wide';
+                soundSystem.playDropSound();
+            }
+        }
+
+        function activateSuperGrip() {
+            if (game.superGripActive) return;
+            if (game.tickets >= 10) {
+                game.tickets -= 10;
+                game.superGripActive = true;
+                updateUI();
+                showToast('Super Magnet Grip Activated!', 'fa-magnet');
+                soundSystem.playWinSound();
+            } else {
+                showToast('Not enough tickets!', 'fa-triangle-exclamation');
+            }
+        }
+
+        function gameLoop() {
+            updateClawPhysics();
+            updatePrizesPhysics();
+            updateParticles();
+            renderCanvas();
+            requestAnimationFrame(gameLoop);
+        }
+
+        function updateClawPhysics() {
+            const c = game.claw;
+            const clawSpeed = (2.2 + game.upgrades.speed * 0.8);
+            const dropSpeed = (3.2 + game.upgrades.speed * 0.8);
+            const clawWidth = 40 + game.upgrades.size * 6;
+            c.width = clawWidth;
+
+            // 1. IDLE State Maneuvering
+            if (c.state === 'IDLE') {
+                c.targetAngle = 0.35; // Open prongs
+                const minX = game.dropChute.w + c.width/2 + 10;
+                const maxX = game.width - c.width/2 - 15;
+
+                if (game.keys.left) {
+                    c.x = Math.max(minX, c.x - clawSpeed);
+                    soundSystem.playMoveSound();
+                }
+                if (game.keys.right) {
+                    c.x = Math.min(maxX, c.x + clawSpeed);
+                    soundSystem.playMoveSound();
+                }
+            } 
+            // 2. DROPPING State
+            else if (c.state === 'DROPPING') {
+                c.y += dropSpeed;
+                
+                // Check collision with floor or prizes
+                const floorLimit = game.height - 45;
+                let touchedPrize = false;
+
+                for (let prize of game.prizes) {
+                    const dist = Math.hypot(c.x - prize.x, c.y + 25 - prize.y);
+                    if (dist < prize.size + 10) {
+                        touchedPrize = true;
+                        break;
+                    }
+                }
+
+                if (c.y >= floorLimit || touchedPrize) {
+                    c.state = 'GRABBING';
+                    c.targetAngle = 0.05; // Close prongs
+                    soundSystem.playGrabSound();
+                    
+                    setTimeout(() => {
+                        performGrabAttempt();
+                    }, 400);
+                }
+            }
+            // 3. RETRACTING State
+            else if (c.state === 'RETRACTING') {
+                c.y -= dropSpeed * 0.8;
+
+                // Carry gripped items
+                for (let item of c.grabbedItems) {
+                    item.x = c.x + (item.offsetX || 0);
+                    item.y = c.y + 30;
+
+                    // Grip check / slip calculation based on upgrades
+                    if (!game.superGripActive) {
+                        const gripPower = 0.5 + (game.upgrades.grip * 0.12);
+                        const slipChance = (item.weight * 0.005) / gripPower;
+                        if (Math.random() < slipChance && Math.abs(c.y - c.homeY) > 50) {
+                            // Item slips with horizontal & vertical physics momentum
+                            item.isGrabbed = false;
+                            item.vy = 1.5;
+                            item.vx = (Math.random() - 0.5) * 2;
+                            c.grabbedItems = c.grabbedItems.filter(i => i !== item);
+                            soundSystem.playFailSound();
+                            showToast('Slipped!', 'fa-face-frown');
+                        }
+                    }
+                }
+
+                if (c.y <= c.homeY) {
+                    c.y = c.homeY;
+                    c.state = 'RETURNING';
+                }
+            }
+            // 4. RETURNING State (Moving to drop chute)
+            else if (c.state === 'RETURNING') {
+                const chuteX = game.dropChute.x + game.dropChute.w / 2;
+                if (c.x > chuteX) {
+                    c.x -= clawSpeed;
+                    for (let item of c.grabbedItems) {
+                        item.x = c.x + (item.offsetX || 0);
+                        item.y = c.y + 30;
+                    }
+                } else {
+                    c.state = 'RELEASING';
+                    c.targetAngle = 0.4; // Open arms to drop item
+                    
+                    setTimeout(() => {
+                        processCaughtItems();
+                    }, 350);
+                }
+            }
+
+            // Smooth arm angle animation
+            c.angle += (c.targetAngle - c.angle) * 0.2;
+        }
+
+        function performGrabAttempt() {
+            const c = game.claw;
+            c.grabbedItems = [];
+            const grabRadius = c.width * 0.65;
+
+            // Find all prizes near the claw head
+            for (let prize of game.prizes) {
+                const dx = prize.x - c.x;
+                const dy = prize.y - (c.y + 25);
+                const dist = Math.hypot(dx, dy);
+
+                if (dist < grabRadius + prize.size / 2) {
+                    prize.isGrabbed = true;
+                    prize.offsetX = dx * 0.3;
+                    c.grabbedItems.push(prize);
+                    if (c.grabbedItems.length >= 2 && !game.superGripActive) break; // Grab max 2 without super grip
+                }
+            }
+
+            c.state = 'RETRACTING';
+        }
+
+        function processCaughtItems() {
+            const c = game.claw;
+            
+            if (c.grabbedItems.length > 0) {
+                soundSystem.playWinSound();
+
+                c.grabbedItems.forEach(item => {
+                    // Score calculation
+                    game.score += item.points;
+                    game.tickets += item.tickets;
+                    game.collection[item.id] = (game.collection[item.id] || 0) + 1;
+
+                    // Spawn score particle effect
+                    spawnFloatingText(`+${item.points} PTS!`, c.x, c.y + 20, '#facc15');
+                    spawnParticles(game.dropChute.x + game.dropChute.w/2, game.dropChute.y + 30, item.color);
+                    
+                    // Remove prize from machine
+                    game.prizes = game.prizes.filter(p => p !== item);
+                });
+
+                showToast(`Wahoo! You won ${c.grabbedItems.length} prize(s)!`, 'fa-champagne-glasses');
+            } else {
+                soundSystem.playFailSound();
+                showToast('Missed! Try again!', 'fa-face-meh');
+            }
+
+            c.grabbedItems = [];
+            game.superGripActive = false;
+            c.state = 'IDLE';
+
+            document.getElementById('clawStatusText').innerText = 'READY';
+            document.getElementById('clawStatusText').className = 'text-xs font-bold text-cyan-400 uppercase tracking-wide';
+
+            updateUI();
+        }
+
+        function updatePrizesPhysics() {
+            const chuteRightEdge = game.dropChute.x + game.dropChute.w;
+            const minX = chuteRightEdge + 35;
+            const maxX = game.width - 25;
+            const floorY = game.height - 35;
+
+            // 1. Apply gravity, friction, and floor/wall bounds
+            for (let i = 0; i < game.prizes.length; i++) {
+                const p = game.prizes[i];
+                if (p.isGrabbed) continue;
+
+                // Gravity
+                p.vy += 0.35;
+                p.vx *= 0.93; // Air friction
+                p.vy *= 0.96;
+
+                p.x += p.vx;
+                p.y += p.vy;
+
+                // Floor collision
+                const targetFloor = floorY - p.size;
+                if (p.y >= targetFloor) {
+                    p.y = targetFloor;
+                    p.vy = -p.vy * 0.15; // Bounce absorption
+                    p.vx *= 0.7; // Floor friction
+                }
+
+                // Chute & Outer Wall bounds (strictly keep away from "WIN HERE" chute)
+                if (p.x - p.size < minX) {
+                    p.x = minX + p.size;
+                    p.vx = Math.abs(p.vx) * 0.5;
+                }
+                if (p.x + p.size > maxX) {
+                    p.x = maxX - p.size;
+                    p.vx = -Math.abs(p.vx) * 0.5;
+                }
+            }
+
+            // 2. Prize-to-Prize Circle Collision (Pushes overlapping prizes into a realistic pile)
+            for (let iter = 0; iter < 3; iter++) {
+                for (let i = 0; i < game.prizes.length; i++) {
+                    const p1 = game.prizes[i];
+                    if (p1.isGrabbed) continue;
+
+                    for (let j = i + 1; j < game.prizes.length; j++) {
+                        const p2 = game.prizes[j];
+                        if (p2.isGrabbed) continue;
+
+                        const dx = p2.x - p1.x;
+                        const dy = p2.y - p1.y;
+                        const dist = Math.hypot(dx, dy);
+                        const minDist = p1.size + p2.size - 2;
+
+                        if (dist < minDist && dist > 0.001) {
+                            const overlap = minDist - dist;
+                            const nx = dx / dist;
+                            const ny = dy / dist;
+
+                            // Separate prizes dynamically
+                            const sepX = nx * overlap * 0.5;
+                            const sepY = ny * overlap * 0.5;
+
+                            p1.x -= sepX;
+                            p1.y -= sepY;
+                            p2.x += sepX;
+                            p2.y += sepY;
+
+                            // Scattering impulse push
+                            p1.vx -= nx * 0.08;
+                            p1.vy -= ny * 0.08;
+                            p2.vx += nx * 0.08;
+                            p2.vy += ny * 0.08;
+                        }
+                    }
+                }
+            }
+        }
+
+        function updateParticles() {
+            for (let i = game.particles.length - 1; i >= 0; i--) {
+                const pt = game.particles[i];
+                pt.x += pt.vx;
+                pt.y += pt.vy;
+                pt.alpha -= 0.02;
+                if (pt.alpha <= 0) game.particles.splice(i, 1);
+            }
+        }
+
+        function spawnParticles(x, y, color) {
+            for (let i = 0; i < 20; i++) {
+                game.particles.push({
+                    x: x,
+                    y: y,
+                    vx: (Math.random() - 0.5) * 6,
+                    vy: (Math.random() - 0.7) * 6,
+                    radius: Math.random() * 4 + 2,
+                    color: color,
+                    alpha: 1.0
+                });
+            }
+        }
+
+        function spawnFloatingText(text, x, y, color) {
+            const container = document.getElementById('floatingPointsContainer');
+            const el = document.createElement('div');
+            el.className = 'absolute font-arcade font-bold text-sm sm:text-base pointer-events-none transition-all duration-1000 transform -translate-x-1/2 -translate-y-1/2';
+            el.style.left = `${x}px`;
+            el.style.top = `${y}px`;
+            el.style.color = color;
+            el.style.textShadow = '0 0 6px rgba(0,0,0,0.8)';
+            el.innerText = text;
+
+            container.appendChild(el);
+
+            setTimeout(() => {
+                el.style.top = `${y - 50}px`;
+                el.style.opacity = '0';
+            }, 50);
+
+            setTimeout(() => {
+                if (el.parentNode) el.parentNode.removeChild(el);
+            }, 1050);
+        }
+
+        function renderCanvas() {
+            const ctx = game.ctx;
+            const w = game.width;
+            const h = game.height;
+
+            ctx.clearRect(0, 0, w, h);
+
+            // 1. Render Arcade Tank Background
+            const bgGradient = ctx.createLinearGradient(0, 0, 0, h);
+            bgGradient.addColorStop(0, '#0f172a');
+            bgGradient.addColorStop(1, '#1e1b4b');
+            ctx.fillStyle = bgGradient;
+            ctx.fillRect(0, 0, w, h);
+
+            // Draw Background Neon Grid Lines
+            ctx.strokeStyle = 'rgba(236, 72, 153, 0.08)';
+            ctx.lineWidth = 1;
+            for (let x = 0; x < w; x += 30) {
+                ctx.beginPath();
+                ctx.moveTo(x, 0);
+                ctx.lineTo(x, h);
+                ctx.stroke();
+            }
+
+            // 2. Render Prize Drop Chute Slot
+            const chute = game.dropChute;
+            ctx.fillStyle = '#090d16';
+            ctx.fillRect(chute.x, chute.y, chute.w, chute.h);
+            ctx.strokeStyle = '#ec4899';
+            ctx.lineWidth = 3;
+            ctx.strokeRect(chute.x, chute.y, chute.w, chute.h);
+
+            // Chute Text Label
+            ctx.fillStyle = '#f472b6';
+            ctx.font = '10px "Press Start 2P"';
+            ctx.textAlign = 'center';
+            ctx.fillText('WIN HERE', chute.x + chute.w/2, chute.y + 25);
+
+            // 3. Render Prizes Pile
+            game.prizes.forEach(p => {
+                ctx.save();
+                ctx.translate(p.x, p.y);
+                ctx.rotate(p.rotation);
+
+                // Toy Background Glow
+                ctx.beginPath();
+                ctx.arc(0, 0, p.size, 0, Math.PI * 2);
+                ctx.fillStyle = p.color;
+                ctx.shadowColor = p.color;
+                ctx.shadowBlur = p.rarity === 'legendary' ? 15 : 6;
+                ctx.fill();
+
+                // Draw Toy Emoji Face
+                ctx.font = `${p.size * 1.2}px serif`;
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText(p.emoji, 0, 2);
+
+                ctx.restore();
+            });
+
+            // 4. Render Claw Motor & Strings
+            const c = game.claw;
+
+            // Rail track at top
+            ctx.fillStyle = '#334155';
+            ctx.fillRect(10, 30, w - 20, 12);
+            ctx.fillStyle = '#64748b';
+            ctx.fillRect(c.x - 25, 26, 50, 20);
+
+            // Cable string
+            ctx.strokeStyle = '#cbd5e1';
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            ctx.moveTo(c.x, 36);
+            ctx.lineTo(c.x, c.y);
+            ctx.stroke();
+
+            // Claw Housing Base
+            ctx.fillStyle = game.superGripActive ? '#eab308' : '#38bdf8';
+            ctx.shadowColor = game.superGripActive ? '#eab308' : '#38bdf8';
+            ctx.shadowBlur = 10;
+            ctx.beginPath();
+            ctx.arc(c.x, c.y, 16, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.shadowBlur = 0;
+
+            // Claw Metallic Arms
+            ctx.strokeStyle = '#94a3b8';
+            ctx.lineWidth = 6;
+            ctx.lineCap = 'round';
+
+            // Left Claw Arm
+            ctx.save();
+            ctx.translate(c.x - 10, c.y + 8);
+            ctx.rotate(c.angle);
+            ctx.beginPath();
+            ctx.moveTo(0, 0);
+            ctx.lineTo(-12, c.armLength);
+            ctx.lineTo(4, c.armLength + 12);
+            ctx.stroke();
+            ctx.restore();
+
+            // Right Claw Arm
+            ctx.save();
+            ctx.translate(c.x + 10, c.y + 8);
+            ctx.rotate(-c.angle);
+            ctx.beginPath();
+            ctx.moveTo(0, 0);
+            ctx.lineTo(12, c.armLength);
+            ctx.lineTo(-4, c.armLength + 12);
+            ctx.stroke();
+            ctx.restore();
+
+            // 5. Render Particle Splashes
+            game.particles.forEach(pt => {
+                ctx.beginPath();
+                ctx.arc(pt.x, pt.y, pt.radius, 0, Math.PI * 2);
+                ctx.fillStyle = pt.color;
+                ctx.globalAlpha = pt.alpha;
+                ctx.fill();
+                ctx.globalAlpha = 1.0;
+            });
+        }
+
+        function updateUI() {
+            document.getElementById('scoreDisplay').innerText = game.score;
+            document.getElementById('ticketDisplay').innerText = game.tickets;
+
+            // Update level numbers in shop
+            document.getElementById('lvlGrip').innerText = `Lv.${game.upgrades.grip}`;
+            document.getElementById('lvlSpeed').innerText = `Lv.${game.upgrades.speed}`;
+            document.getElementById('lvlLuck').innerText = `Lv.${game.upgrades.luck}`;
+            document.getElementById('lvlSize').innerText = `Lv.${game.upgrades.size}`;
+
+            // Super grip button style
+            const pgBtn = document.getElementById('powerGripBtn');
+            if (game.superGripActive) {
+                pgBtn.classList.add('bg-green-500', 'text-white', 'animate-pulse');
+                document.getElementById('powerGripCostText').innerText = 'ACTIVE!';
+            } else {
+                pgBtn.classList.remove('bg-green-500', 'text-white', 'animate-pulse');
+                document.getElementById('powerGripCostText').innerText = '10 TICKETS';
+            }
+        }
+
+        function buyUpgrade(type, baseCost) {
+            const currentLvl = game.upgrades[type];
+            const cost = baseCost * currentLvl;
+
+            if (currentLvl >= 5) {
+                showToast('Max Level Reached!', 'fa-star');
+                return;
+            }
+
+            if (game.tickets >= cost) {
+                game.tickets -= cost;
+                game.upgrades[type]++;
+                updateUI();
+                soundSystem.playWinSound();
+                showToast(`${type.toUpperCase()} upgraded to Lv.${game.upgrades[type]}!`, 'fa-circle-check');
+            } else {
+                showToast('Need more tickets!', 'fa-ticket');
+            }
+        }
+
+        function renderCollectionUI() {
+            const container = document.getElementById('collectionList');
+            container.innerHTML = '';
+
+            PRIZE_CATALOG.forEach(prize => {
+                const count = game.collection[prize.id] || 0;
+                const card = document.createElement('div');
+                card.className = `p-3 rounded-2xl border flex flex-col items-center justify-center text-center ${count > 0 ? 'bg-slate-800/90 border-purple-500/50' : 'bg-slate-900/50 border-slate-800 opacity-50'}`;
+                
+                card.innerHTML = `
+                    <div class="text-3xl mb-1">${prize.emoji}</div>
+                    <div class="font-bold text-xs text-white">${prize.name}</div>
+                    <div class="text-[10px] text-pink-400 font-arcade mt-1">+${prize.points} PTS</div>
+                    <div class="mt-2 text-[10px] px-2 py-0.5 rounded-full font-bold ${count > 0 ? 'bg-purple-500/20 text-purple-300' : 'bg-slate-800 text-slate-500'}">
+                        Caught: ${count}
+                    </div>
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        function toggleSound() {
+            soundSystem.enabled = !soundSystem.enabled;
+            const icon = document.getElementById('soundIcon');
+            icon.className = soundSystem.enabled ? 'fa-solid fa-volume-high' : 'fa-solid fa-volume-xmark';
+            showToast(soundSystem.enabled ? 'Sound On' : 'Sound Muted', soundSystem.enabled ? 'fa-volume-high' : 'fa-volume-xmark');
+        }
+
+        function toggleModal(modalId, show) {
+            const modal = document.getElementById(modalId);
+            if (show) {
+                modal.classList.remove('hidden');
+            } else {
+                modal.classList.add('hidden');
+            }
+        }
+
+        function showToast(message, iconClass = 'fa-circle-info') {
+            const toast = document.getElementById('toast');
+            const toastMsg = document.getElementById('toastMsg');
+            const toastIcon = document.getElementById('toastIcon');
+
+            toastMsg.innerText = message;
+            toastIcon.className = `fa-solid ${iconClass} text-pink-400`;
+
+            toast.classList.remove('opacity-0', 'pointer-events-none', 'translate-y-4');
+            toast.classList.add('opacity-100', 'translate-y-0');
+
+            setTimeout(() => {
+                toast.classList.remove('opacity-100', 'translate-y-0');
+                toast.classList.add('opacity-0', 'pointer-events-none', 'translate-y-4');
+            }, 2200);
+        }
+    </script>
+</body>
+</html>

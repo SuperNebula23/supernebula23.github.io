@@ -9,6 +9,9 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
 
+  <!-- GOOGLE ADSENSE SCRIPT PLACEHOLDER (Uncomment & replace with your client ID when ready) -->
+  <!-- <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-XXXXXXXXXXXXXXXX" crossorigin="anonymous"></script> -->
+
   <style>
     :root {
       --bg-dark: #0b1d28;
@@ -70,7 +73,6 @@
       cursor: pointer;
     }
 
-    /* Account Widget */
     .account-badge {
       background: #152d3e;
       border: 3px solid #000;
@@ -106,7 +108,30 @@
       box-shadow: 0 1px 0 #000;
     }
 
-    /* Controls Bar */
+    /* Ad Container Styling */
+    .ad-banner-wrapper {
+      width: 100%;
+      max-width: 960px;
+      margin: 15px auto;
+      background: rgba(0, 0, 0, 0.3);
+      border: 2px dashed #33556b;
+      border-radius: 8px;
+      padding: 10px;
+      text-align: center;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 90px;
+    }
+
+    .ad-label {
+      font-size: 7px;
+      color: #5b7e96;
+      margin-bottom: 6px;
+      letter-spacing: 1px;
+    }
+
     .controls-bar {
       width: 100%;
       max-width: 960px;
@@ -167,7 +192,6 @@
       color: #fff;
     }
 
-    /* Section Titles */
     .section-heading {
       width: 100%;
       max-width: 960px;
@@ -471,6 +495,16 @@
         <p>Select A Game!</p>
       </div>
 
+      <!-- AD SLOT #1: TOP LEADERBOARD BANNER -->
+      <div class="ad-banner-wrapper">
+        <div class="ad-label">ADVERTISEMENT</div>
+        <ins class="adsbygoogle"
+             style="display:block; width:100%; height:90px;"
+             data-ad-client="ca-pub-XXXXXXXXXXXXXXXX"
+             data-ad-slot="1111111111"
+             data-ad-format="horizontal"></ins>
+      </div>
+
       <!-- Search & Category Filters -->
       <div class="controls-bar">
         <input type="text" id="searchInput" class="search-input" placeholder="SEARCH GAMES..." oninput="handleSearchAndFilter()">
@@ -490,17 +524,26 @@
         </div>
       </div>
 
-      <!-- Recommended Section -->
+      <!-- RECOMMENDED FOR YOU SECTION -->
       <div id="recommended-section" style="display: none; width: 100%;">
         <h2 class="section-heading">🔥 RECOMMENDED FOR YOU</h2>
         <div class="games-grid" id="recommendedGrid"></div>
       </div>
 
-      <!-- Main Section -->
+      <!-- AD SLOT #2: MID-FEED IN-ARTICLE BANNER -->
+      <div class="ad-banner-wrapper">
+        <div class="ad-label">ADVERTISEMENT</div>
+        <ins class="adsbygoogle"
+             style="display:block; width:100%; height:90px;"
+             data-ad-client="ca-pub-XXXXXXXXXXXXXXXX"
+             data-ad-slot="2222222222"
+             data-ad-format="horizontal"></ins>
+      </div>
+
+      <!-- ALL GAMES SECTION -->
       <h2 class="section-heading" id="allGamesHeading">ALL GAMES</h2>
       <div class="games-grid" id="mainGamesGrid">
 
-        <!-- Game Cards -->
         <div class="game-card" data-category="arcade" data-name="flappy bird">
           <span class="card-badge">OG CLASSIC</span>
           <div class="card-icon">🐤</div>
@@ -765,9 +808,6 @@
           </div>
         </div>
 
-        <!-- NEW GREEN GAMES ADDED BELOW -->
-
-        <!-- Game Card 23: Count Masters -->
         <div class="game-card" data-category="arcade" data-name="count masters">
           <span class="card-badge orange">RUNNER</span>
           <div class="card-icon">👥</div>
@@ -780,7 +820,6 @@
           </div>
         </div>
 
-        <!-- Game Card 24: Loot Ledger -->
         <div class="game-card" data-category="strategy" data-name="loot ledger">
           <span class="card-badge gold">STRATEGY</span>
           <div class="card-icon">💰</div>
@@ -793,7 +832,6 @@
           </div>
         </div>
 
-        <!-- Game Card 25: Neon Dash -->
         <div class="game-card" data-category="platformer" data-name="neon dash">
           <span class="card-badge neon">PLATFORMER</span>
           <div class="card-icon">⚡</div>
@@ -806,7 +844,6 @@
           </div>
         </div>
 
-        <!-- Game Card 26: Pocket Companion -->
         <div class="game-card" data-category="simulation" data-name="pocket companion">
           <span class="card-badge">PET SIM</span>
           <div class="card-icon">🐱</div>
@@ -819,7 +856,6 @@
           </div>
         </div>
 
-        <!-- Game Card 27: Sokoban 2048 -->
         <div class="game-card" data-category="puzzle" data-name="sokoban 2048">
           <span class="card-badge purple">PUZZLE</span>
           <div class="card-icon">📦</div>
@@ -833,6 +869,17 @@
         </div>
 
       </div>
+
+      <!-- AD SLOT #3: BOTTOM FOOTER BANNER -->
+      <div class="ad-banner-wrapper">
+        <div class="ad-label">ADVERTISEMENT</div>
+        <ins class="adsbygoogle"
+             style="display:block; width:100%; height:90px;"
+             data-ad-client="ca-pub-XXXXXXXXXXXXXXXX"
+             data-ad-slot="3333333333"
+             data-ad-format="horizontal"></ins>
+      </div>
+
     </section>
   </main>
 
@@ -879,7 +926,7 @@
     function trackPlay(category, baseXP) {
       const acc = getAccount();
       
-      // Track favorite stats for recommendations
+      // Track category preference for recommended section
       if (!acc.categoryStats) acc.categoryStats = {};
       acc.categoryStats[category] = (acc.categoryStats[category] || 0) + 1;
 
@@ -929,9 +976,13 @@
       });
 
       renderRecommendations();
+
+      // Trigger standard AdSense script load if ads are enabled
+      try {
+        (adsbygoogle = window.adsbygoogle || []).push({});
+      } catch (e) {}
     }
 
-    // --- Search & Filter Logic ---
     function handleSearchAndFilter() {
       const searchVal = document.getElementById('searchInput').value.toLowerCase().trim();
       const categoryVal = document.getElementById('categoryFilter').value;
@@ -952,7 +1003,6 @@
       });
     }
 
-    // --- Dynamic Recommendations ---
     function renderRecommendations() {
       const acc = getAccount();
       const recSection = document.getElementById('recommended-section');
@@ -960,7 +1010,6 @@
       
       if (!acc.categoryStats) return;
 
-      // Find top played category
       let topCategory = null;
       let maxCount = 0;
       for (const [cat, count] of Object.entries(acc.categoryStats)) {
@@ -975,7 +1024,6 @@
         return;
       }
 
-      // Collect matching game cards
       const mainCards = document.querySelectorAll('#mainGamesGrid .game-card');
       recGrid.innerHTML = '';
       let count = 0;

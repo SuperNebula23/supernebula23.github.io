@@ -1,0 +1,1672 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Town Defender - Disaster Survival Builder</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&family=Press+Start+2P&display=swap" rel="stylesheet">
+    
+    <style>
+        * {
+            user-select: none;
+            -webkit-user-select: none;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Outfit', sans-serif;
+            background-color: #0f172a;
+            color: #f8fafc;
+            overflow: hidden;
+            margin: 0;
+            padding: 0;
+            height: 100vh;
+            width: 100vw;
+        }
+        .pixel-font {
+            font-family: 'Press Start 2P', cursive;
+        }
+        /* Custom Scrollbar for building panels */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: rgba(15, 23, 42, 0.6);
+        }
+        ::-webkit-scrollbar-thumb {
+            background: rgba(100, 116, 139, 0.5);
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(148, 163, 184, 0.8);
+        }
+        
+        .glass-panel {
+            background: rgba(15, 23, 42, 0.75);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .btn-action {
+            transition: all 0.15s ease-in-out;
+        }
+        .btn-action:hover {
+            transform: translateY(-2px);
+        }
+        .btn-action:active {
+            transform: translateY(1px);
+        }
+
+        /* Pulsing Disaster Banner */
+        @keyframes disasterPulse {
+            0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); }
+            70% { box-shadow: 0 0 0 15px rgba(239, 68, 68, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+        }
+        .disaster-alert {
+            animation: disasterPulse 1.5s infinite;
+        }
+
+        /* Shaking effect on camera/canvas */
+        .shake-screen {
+            animation: shake 0.4s cubic-bezier(.36,.07,.19,.97) both;
+        }
+        @keyframes shake {
+            10%, 90% { transform: translate3d(-2px, 0, 0); }
+            20%, 80% { transform: translate3d(4px, 0, 0); }
+            30%, 50%, 70% { transform: translate3d(-6px, 0, 0); }
+            40%, 60% { transform: translate3d(6px, 0, 0); }
+        }
+
+        canvas {
+            display: block;
+            touch-action: none;
+        }
+    </style>
+</head>
+<body class="relative flex flex-col h-screen w-screen overflow-hidden select-none">
+
+    <header class="absolute top-0 left-0 right-0 z-20 p-2 sm:p-3 flex flex-wrap items-center justify-between glass-panel shadow-lg gap-2 pointer-events-auto">
+        <!-- Town Title & Level -->
+        <div class="flex items-center gap-3">
+            <div class="bg-amber-500/20 p-2 rounded-xl border border-amber-500/40 text-amber-400">
+                <i class="fa-solid me-1 fa-city text-xl"></i>
+            </div>
+            <div>
+                <h1 class="font-bold text-sm sm:text-base leading-tight text-amber-300" id="townName">Aethelgard</h1>
+                <div class="text-xs text-slate-400 flex items-center gap-2">
+                    <span>Day <span id="dayCount" class="text-white font-semibold">1</span></span>
+                    <span>•</span>
+                    <span id="seasonName" class="text-emerald-400 font-medium">Spring</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Resources Stats Bar -->
+        <div class="flex items-center gap-2 sm:gap-4 overflow-x-auto py-1 px-2 rounded-lg bg-slate-900/60 border border-slate-700/50 text-xs sm:text-sm">
+            <!-- Gold -->
+            <div class="flex items-center gap-1.5 px-2 py-1 rounded bg-amber-950/40 border border-amber-800/40 text-amber-300" title="Gold - Earned from taxes and trade">
+                <i class="fa-solid fa-coins text-amber-400"></i>
+                <span id="resGold" class="font-bold">250</span>
+                <span id="resGoldRate" class="text-[10px] text-amber-400/70">(+5/s)</span>
+            </div>
+            <!-- Wood -->
+            <div class="flex items-center gap-1.5 px-2 py-1 rounded bg-emerald-950/40 border border-emerald-800/40 text-emerald-300" title="Wood - Produced by Lumber Mills">
+                <i class="fa-solid fa-tree text-emerald-400"></i>
+                <span id="resWood" class="font-bold">100</span>
+            </div>
+            <!-- Stone -->
+            <div class="flex items-center gap-1.5 px-2 py-1 rounded bg-slate-800/60 border border-slate-600/50 text-slate-200" title="Stone - Produced by Quarries">
+                <i class="fa-solid fa-cubes text-slate-300"></i>
+                <span id="resStone" class="font-bold">50</span>
+            </div>
+            <!-- Food -->
+            <div class="flex items-center gap-1.5 px-2 py-1 rounded bg-orange-950/40 border border-orange-800/40 text-orange-300" title="Food - Grown at Farms to feed population">
+                <i class="fa-solid fa-wheat-awn text-orange-400"></i>
+                <span id="resFood" class="font-bold">80</span>
+            </div>
+            <!-- Population -->
+            <div class="flex items-center gap-1.5 px-2 py-1 rounded bg-blue-950/40 border border-blue-800/40 text-blue-300" title="Population / Capacity">
+                <i class="fa-solid fa-users text-blue-400"></i>
+                <span id="resPop" class="font-bold">5/10</span>
+            </div>
+            <!-- Happiness -->
+            <div class="flex items-center gap-1.5 px-2 py-1 rounded bg-pink-950/40 border border-pink-800/40 text-pink-300" title="Town Happiness">
+                <i class="fa-solid fa-heart text-pink-400"></i>
+                <span id="resHappiness" class="font-bold">90%</span>
+            </div>
+        </div>
+
+        <!-- System Controls & Time Speed -->
+        <div class="flex items-center gap-2">
+            <!-- Home Portal Button -->
+            <a href="https://supernebula23.github.io/games" class="px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-600 transition flex items-center gap-1.5 text-xs font-semibold" title="Return to Games Portal">
+                <i class="fa-solid fa-house text-amber-400"></i>
+                <span class="hidden sm:inline">Home</span>
+            </a>
+            <!-- Sound Toggle -->
+            <button id="btnAudio" class="p-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-600 transition" title="Toggle Audio">
+                <i class="fa-solid fa-volume-high" id="iconAudio"></i>
+            </button>
+            <!-- Game Speed -->
+            <button id="btnSpeed" class="px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold transition flex items-center gap-1 border border-indigo-400">
+                <i class="fa-solid fa-play"></i> <span id="speedTxt">1x</span>
+            </button>
+            <!-- Sound Emergency Siren Button -->
+            <button id="btnEmergency" class="px-3 py-1.5 rounded-lg bg-rose-900/80 hover:bg-rose-700 border border-rose-500 text-rose-200 text-xs font-bold transition flex items-center gap-1.5">
+                <i class="fa-solid fa-bell animate-bounce"></i>
+                <span id="alarmTxt">Shelter Off</span>
+            </button>
+        </div>
+    </header>
+
+    <div id="disasterBanner" class="hidden absolute top-16 left-1/2 -translate-x-1/2 z-30 px-6 py-2.5 rounded-2xl glass-panel border-2 border-red-500 text-white font-bold flex items-center gap-3 shadow-2xl disaster-alert pointer-events-auto">
+        <i class="fa-solid fa-triangle-exclamation text-red-400 text-2xl animate-pulse"></i>
+        <div>
+            <div class="text-xs text-red-300 tracking-wider uppercase font-semibold">INCOMING DISASTER!</div>
+            <div id="disasterDesc" class="text-sm font-extrabold text-white">Tornado approaching from North</div>
+        </div>
+        <div class="ml-4 bg-red-950/80 px-3 py-1 rounded-xl border border-red-600/60 text-red-200 text-xs font-mono">
+            ETA: <span id="disasterTimer" class="text-white text-sm font-bold">15</span>s
+        </div>
+    </div>
+
+    <main id="canvasContainer" class="relative flex-grow w-full h-full cursor-grab active:cursor-grabbing overflow-hidden">
+        <canvas id="gameCanvas" class="w-full h-full"></canvas>
+    </main>
+
+    <footer class="absolute bottom-0 left-0 right-0 z-20 p-2 sm:p-3 glass-panel border-t border-slate-700/60 pointer-events-auto flex flex-col gap-2">
+        <!-- Palette Category Tabs -->
+        <div class="flex items-center justify-between">
+            <div class="flex items-center gap-1.5 overflow-x-auto pb-1">
+                <button class="cat-btn active px-3 py-1 rounded-lg text-xs font-semibold bg-indigo-600 text-white border border-indigo-400" data-cat="housing">
+                    <i class="fa-solid fa-house me-1"></i> Housing
+                </button>
+                <button class="cat-btn px-3 py-1 rounded-lg text-xs font-semibold bg-slate-800 text-slate-300 border border-slate-700 hover:bg-slate-700" data-cat="resource">
+                    <i class="fa-solid fa-wheat-awn me-1"></i> Economy
+                </button>
+                <button class="cat-btn px-3 py-1 rounded-lg text-xs font-semibold bg-slate-800 text-slate-300 border border-slate-700 hover:bg-slate-700" data-cat="defense">
+                    <i class="fa-solid fa-shield-halved me-1"></i> Defenses
+                </button>
+                <button class="cat-btn px-3 py-1 rounded-lg text-xs font-semibold bg-slate-800 text-slate-300 border border-slate-700 hover:bg-slate-700" data-cat="disaster">
+                    <i class="fa-solid fa-fire-extinguisher me-1"></i> Disaster Prep
+                </button>
+                <button class="cat-btn px-3 py-1 rounded-lg text-xs font-semibold bg-slate-800 text-slate-300 border border-slate-700 hover:bg-slate-700" data-cat="powers">
+                    <i class="fa-solid fa-wand-magic-sparkles me-1"></i> God Powers
+                </button>
+                <button id="btnDemolishTool" class="px-3 py-1 rounded-lg text-xs font-semibold bg-rose-900/80 text-rose-200 border border-rose-600 hover:bg-rose-700 transition flex items-center gap-1">
+                    <i class="fa-solid fa-trash-can me-1"></i> Demolish Tool
+                </button>
+            </div>
+
+            <!-- Active Selected Action info -->
+            <div id="activeActionInfo" class="hidden sm:flex items-center gap-2 text-xs text-amber-300 bg-amber-950/40 px-3 py-1 rounded-lg border border-amber-800/50">
+                <span id="selectedActionName">House Selected</span>
+                <button id="btnClearSelection" class="text-slate-400 hover:text-white ml-2" title="Cancel Selection"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+        </div>
+
+        <!-- Buildings / Actions Grid List -->
+        <div id="buildList" class="flex items-center gap-2 overflow-x-auto py-1 min-h-[68px]">
+            <!-- Dynamic building cards populated by JS -->
+        </div>
+    </footer>
+
+    <div id="inspectorPanel" class="hidden absolute top-20 right-4 z-20 w-72 glass-panel rounded-2xl p-4 shadow-2xl border border-slate-600/60 pointer-events-auto">
+        <div class="flex items-center justify-between pb-2 border-b border-slate-700/80 mb-3">
+            <div class="flex items-center gap-2">
+                <div id="inspectorIcon" class="w-8 h-8 rounded-lg bg-indigo-600/30 border border-indigo-400 flex items-center justify-center text-indigo-300">
+                    <i class="fa-solid fa-building"></i>
+                </div>
+                <div>
+                    <h3 id="inspectorTitle" class="font-bold text-sm text-white">Wooden House</h3>
+                    <div id="inspectorSubtitle" class="text-[10px] text-slate-400">Level 1 Residential</div>
+                </div>
+            </div>
+            <button id="btnCloseInspector" class="text-slate-400 hover:text-white p-1"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+
+        <div id="inspectorBody" class="text-xs space-y-2 text-slate-300">
+            <!-- Health Bar -->
+            <div class="space-y-1">
+                <div class="flex justify-between text-[11px]">
+                    <span class="text-slate-400">Structural Durability</span>
+                    <span id="inspectorHp">100 / 100</span>
+                </div>
+                <div class="w-full h-2 bg-slate-800 rounded-full overflow-hidden border border-slate-700">
+                    <div id="inspectorHpBar" class="h-full bg-emerald-500 transition-all" style="width: 100%"></div>
+                </div>
+            </div>
+
+            <!-- Stats grid -->
+            <div id="inspectorStats" class="grid grid-cols-2 gap-2 pt-2">
+                <!-- Stats injected here -->
+            </div>
+        </div>
+
+        <div class="mt-4 pt-3 border-t border-slate-700/80 flex items-center gap-2">
+            <button id="btnUpgrade" class="flex-1 bg-amber-600 hover:bg-amber-500 text-white font-bold py-1.5 px-3 rounded-xl text-xs transition border border-amber-400 flex items-center justify-center gap-1.5">
+                <i class="fa-solid fa-arrow-up"></i> Upgrade (<span id="upgradeCost">50G</span>)
+            </button>
+            <button id="btnRepair" class="bg-emerald-700 hover:bg-emerald-600 text-white p-2 rounded-xl text-xs transition border border-emerald-500" title="Repair Structure">
+                <i class="fa-solid fa-hammer"></i>
+            </button>
+            <button id="btnDemolish" class="bg-rose-900/80 hover:bg-rose-700 text-rose-200 p-2 rounded-xl text-xs transition border border-rose-600" title="Demolish Building">
+                <i class="fa-solid fa-trash-can"></i>
+            </button>
+        </div>
+    </div>
+
+    <div id="eventLog" class="absolute top-20 left-4 z-10 w-64 max-h-40 overflow-y-auto space-y-1 text-xs text-slate-300 pointer-events-none transition-opacity opacity-80 hover:opacity-100">
+        <!-- Messages appended dynamically -->
+    </div>
+
+    <div id="startModal" class="absolute inset-0 z-50 flex items-center justify-center bg-slate-950/85 backdrop-blur-md p-4 pointer-events-auto">
+        <div class="max-w-md w-full glass-panel rounded-3xl p-6 border border-indigo-500/40 text-center shadow-2xl space-y-5">
+            <div class="w-16 h-16 mx-auto rounded-2xl bg-indigo-600/30 border border-indigo-400 flex items-center justify-center text-amber-400 text-3xl">
+                <i class="fa-solid fa-shield-cat"></i>
+            </div>
+            <div>
+                <h2 class="text-2xl font-extrabold text-amber-300">Town Defender</h2>
+                <p class="text-xs text-slate-400 mt-1">Build, manage, and protect your medieval sanctuary from nature's wrath and wild beasts!</p>
+            </div>
+
+            <div class="text-left text-xs text-slate-300 bg-slate-900/80 p-3.5 rounded-2xl border border-slate-700/60 space-y-2">
+                <div class="font-bold text-indigo-300 flex items-center gap-2">
+                    <i class="fa-solid fa-scroll"></i> Mayor's Guide:
+                </div>
+                <ul class="list-disc list-inside space-y-1 text-slate-400 text-[11px]">
+                    <li>Build <span class="text-amber-300">Houses</span> to grow your population and tax revenue.</li>
+                    <li>Construct <span class="text-emerald-300">Farms, Lumber Mills & Quarries</span> for materials.</li>
+                    <li>Build <span class="text-red-300">Fire Stations, Clinics & Shelters</span> to survive natural disasters!</li>
+                    <li>Deploy <span class="text-blue-300">Watchtowers & Lightning Rods</span> against raids and meteor showers.</li>
+                    <li>Use <span class="text-cyan-300">God Powers</span> (Rain Cloud, Repair Beam) directly on the map.</li>
+                </ul>
+            </div>
+
+            <div>
+                <label class="block text-left text-xs text-slate-400 font-medium mb-1">Town Name:</label>
+                <input type="text" id="inputTownName" value="Aethelgard" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-sm text-amber-300 focus:outline-none focus:border-indigo-500 font-bold">
+            </div>
+
+            <button id="btnStartGame" class="w-full bg-gradient-to-r from-amber-500 to-indigo-600 hover:from-amber-400 hover:to-indigo-500 text-white font-extrabold py-3 rounded-2xl text-sm shadow-lg transition transform hover:scale-[1.02] border border-amber-300/40">
+                FOUND YOUR TOWN <i class="fa-solid fa-crown ml-1"></i>
+            </button>
+        </div>
+    </div>
+
+    <div id="gameOverModal" class="hidden absolute inset-0 z-50 flex items-center justify-center bg-slate-950/90 backdrop-blur-md p-4 pointer-events-auto">
+        <div class="max-w-md w-full glass-panel rounded-3xl p-6 border border-rose-500/40 text-center shadow-2xl space-y-5">
+            <div class="w-16 h-16 mx-auto rounded-2xl bg-rose-600/30 border border-rose-400 flex items-center justify-center text-rose-400 text-3xl">
+                <i class="fa-solid fa-skull-crossbones animate-bounce"></i>
+            </div>
+            <div>
+                <h2 class="text-2xl font-extrabold text-rose-400">Town Wiped Out!</h2>
+                <p class="text-xs text-slate-400 mt-1" id="gameOverReason">Your town hall was destroyed by disastrous forces.</p>
+            </div>
+
+            <div class="bg-slate-900/80 p-4 rounded-2xl border border-slate-800 text-xs space-y-2">
+                <div class="flex justify-between"><span class="text-slate-400">Days Survived:</span> <span id="statDays" class="font-bold text-amber-300">0</span></div>
+                <div class="flex justify-between"><span class="text-slate-400">Peak Population:</span> <span id="statPop" class="font-bold text-blue-300">0</span></div>
+                <div class="flex justify-between"><span class="text-slate-400">Disasters Weathered:</span> <span id="statDisasters" class="font-bold text-emerald-300">0</span></div>
+                <div class="flex justify-between border-t border-slate-800 pt-2"><span class="text-slate-400">Final Score:</span> <span id="statScore" class="font-extrabold text-lg text-amber-400">0</span></div>
+            </div>
+
+            <div class="flex gap-2 w-full">
+                <a href="https://supernebula23.github.io/games" class="flex-1 bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold py-3 rounded-2xl text-sm transition border border-slate-600 flex items-center justify-center gap-1.5">
+                    <i class="fa-solid fa-house text-amber-400"></i> HOME
+                </a>
+                <button id="btnRestartGame" class="flex-1 bg-rose-600 hover:bg-rose-500 text-white font-extrabold py-3 rounded-2xl text-sm shadow-lg transition transform hover:scale-[1.02] border border-rose-400">
+                    TRY AGAIN <i class="fa-solid fa-rotate-right ml-1"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        class SoundEngine {
+            constructor() {
+                this.ctx = null;
+                this.muted = false;
+            }
+
+            init() {
+                if (!this.ctx) {
+                    const AudioCtx = window.AudioContext || window.webkitAudioContext;
+                    this.ctx = new AudioCtx();
+                }
+            }
+
+            playBuild() {
+                if (this.muted || !this.ctx) return;
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(220, this.ctx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(880, this.ctx.currentTime + 0.12);
+                gain.gain.setValueAtTime(0.2, this.ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.12);
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                osc.start();
+                osc.stop(this.ctx.currentTime + 0.12);
+            }
+
+            playCoin() {
+                if (this.muted || !this.ctx) return;
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(987.77, this.ctx.currentTime); // B5
+                osc.frequency.setValueAtTime(1318.51, this.ctx.currentTime + 0.08); // E6
+                gain.gain.setValueAtTime(0.15, this.ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.25);
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                osc.start();
+                osc.stop(this.ctx.currentTime + 0.25);
+            }
+
+            playSiren() {
+                if (this.muted || !this.ctx) return;
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(400, this.ctx.currentTime);
+                osc.frequency.linearRampToValueAtTime(800, this.ctx.currentTime + 0.4);
+                osc.frequency.linearRampToValueAtTime(400, this.ctx.currentTime + 0.8);
+                gain.gain.setValueAtTime(0.1, this.ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.8);
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                osc.start();
+                osc.stop(this.ctx.currentTime + 0.8);
+            }
+
+            playExplosion() {
+                if (this.muted || !this.ctx) return;
+                const bufferSize = this.ctx.sampleRate * 0.4;
+                const buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
+                const data = buffer.getChannelData(0);
+                for (let i = 0; i < bufferSize; i++) {
+                    data[i] = Math.random() * 2 - 1;
+                }
+                const noise = this.ctx.createBufferSource();
+                noise.buffer = buffer;
+                const filter = this.ctx.createBiquadFilter();
+                filter.type = 'lowpass';
+                filter.frequency.setValueAtTime(800, this.ctx.currentTime);
+                filter.frequency.exponentialRampToValueAtTime(50, this.ctx.currentTime + 0.4);
+
+                const gain = this.ctx.createGain();
+                gain.gain.setValueAtTime(0.3, this.ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.4);
+
+                noise.connect(filter);
+                filter.connect(gain);
+                gain.connect(this.ctx.destination);
+                noise.start();
+            }
+
+            playRain() {
+                if (this.muted || !this.ctx) return;
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(600, this.ctx.currentTime);
+                osc.frequency.linearRampToValueAtTime(300, this.ctx.currentTime + 0.15);
+                gain.gain.setValueAtTime(0.1, this.ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.15);
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                osc.start();
+                osc.stop(this.ctx.currentTime + 0.15);
+            }
+        }
+
+        const soundFX = new SoundEngine();
+    </script>
+
+    <script>
+        const GRID_SIZE = 22; // 22x22 grid
+        let tileSize = 40;
+
+        // Building definitions table
+        const BUILDINGS = {
+            townhall: {
+                id: 'townhall',
+                name: 'Town Hall',
+                cat: 'housing',
+                cost: { gold: 0, wood: 0, stone: 0 },
+                hp: 1000,
+                maxHp: 1000,
+                icon: 'fa-city',
+                color: '#f59e0b',
+                desc: 'The heart of your town. Protect it at all costs!',
+                popCap: 10,
+                income: 5
+            },
+            house: {
+                id: 'house',
+                name: 'Wooden House',
+                cat: 'housing',
+                cost: { gold: 50, wood: 20, stone: 0 },
+                hp: 120,
+                maxHp: 120,
+                icon: 'fa-house',
+                color: '#38bdf8',
+                desc: '+5 Population capacity. Generates gold tax.',
+                popCap: 5,
+                income: 2
+            },
+            stone_house: {
+                id: 'stone_house',
+                name: 'Stone Manor',
+                cat: 'housing',
+                cost: { gold: 120, wood: 30, stone: 40 },
+                hp: 300,
+                maxHp: 300,
+                icon: 'fa-building-columns',
+                color: '#818cf8',
+                desc: '+12 Population capacity. High durability and tax.',
+                popCap: 12,
+                income: 6
+            },
+            farm: {
+                id: 'farm',
+                name: 'Wheat Farm',
+                cat: 'resource',
+                cost: { gold: 40, wood: 25, stone: 0 },
+                hp: 80,
+                maxHp: 80,
+                icon: 'fa-wheat-awn',
+                color: '#facc15',
+                desc: 'Produces +3 Food/sec to feed your citizens.',
+                foodProd: 3
+            },
+            lumbermill: {
+                id: 'lumbermill',
+                name: 'Lumber Mill',
+                cat: 'resource',
+                cost: { gold: 60, wood: 10, stone: 10 },
+                hp: 100,
+                maxHp: 100,
+                icon: 'fa-tree',
+                color: '#4ade80',
+                desc: 'Gathers +2 Wood/sec from nearby forests.',
+                woodProd: 2
+            },
+            quarry: {
+                id: 'quarry',
+                name: 'Stone Quarry',
+                cat: 'resource',
+                cost: { gold: 80, wood: 30, stone: 0 },
+                hp: 150,
+                maxHp: 150,
+                icon: 'fa-cubes',
+                color: '#94a3b8',
+                desc: 'Mines +2 Stone/sec for sturdy structures.',
+                stoneProd: 2
+            },
+            watchtower: {
+                id: 'watchtower',
+                name: 'Arrow Tower',
+                cat: 'defense',
+                cost: { gold: 100, wood: 40, stone: 20 },
+                hp: 200,
+                maxHp: 200,
+                icon: 'fa-chess-rook',
+                color: '#f87171',
+                desc: 'Shoots arrows at invading dragons and beasts.',
+                range: 4,
+                damage: 25,
+                fireRate: 1.0
+            },
+            wall: {
+                id: 'wall',
+                name: 'Stone Wall',
+                cat: 'defense',
+                cost: { gold: 15, wood: 0, stone: 15 },
+                hp: 400,
+                maxHp: 400,
+                icon: 'fa-shield-halved',
+                color: '#64748b',
+                desc: 'Heavy barricade to block monster pathing.'
+            },
+            firestation: {
+                id: 'firestation',
+                name: 'Water Brigade',
+                cat: 'disaster',
+                cost: { gold: 90, wood: 35, stone: 15 },
+                hp: 150,
+                maxHp: 150,
+                icon: 'fa-fire-extinguisher',
+                color: '#60a5fa',
+                desc: 'Automatically douses fires in a 4-tile radius.',
+                extinguishRange: 4
+            },
+            clinic: {
+                id: 'clinic',
+                name: 'Herbal Clinic',
+                cat: 'disaster',
+                cost: { gold: 110, wood: 40, stone: 20 },
+                hp: 140,
+                maxHp: 140,
+                icon: 'fa-kit-medical',
+                color: '#f43f5e',
+                desc: 'Cures plague outbreaks and keeps happiness high.',
+                healthBonus: 10
+            },
+            shelter: {
+                id: 'shelter',
+                name: 'Bunker Shelter',
+                cat: 'disaster',
+                cost: { gold: 150, wood: 50, stone: 80 },
+                hp: 600,
+                maxHp: 600,
+                icon: 'fa-vault',
+                color: '#a855f7',
+                desc: 'Protects citizens when Emergency Siren is active.',
+                shelterCap: 25
+            },
+            lightningrod: {
+                id: 'lightningrod',
+                name: 'Tesla Attractor',
+                cat: 'defense',
+                cost: { gold: 200, wood: 30, stone: 100 },
+                hp: 250,
+                maxHp: 250,
+                icon: 'fa-bolt',
+                color: '#eab308',
+                desc: 'Absorbs lightning strikes and deflects meteors.',
+                range: 5
+            }
+        };
+
+        // God powers list
+        const GOD_POWERS = {
+            rain: {
+                id: 'rain',
+                name: 'Rain Cloud',
+                cost: { gold: 20 },
+                icon: 'fa-cloud-showers-heavy',
+                desc: 'Douses fires and waters crops in a 3x3 area.'
+            },
+            repair_beam: {
+                id: 'repair_beam',
+                name: 'Aura Repair',
+                cost: { gold: 30 },
+                icon: 'fa-wand-magic-sparkles',
+                desc: 'Instantly restores +100 HP to buildings in target area.'
+            },
+            lightning_strike: {
+                id: 'lightning_strike',
+                name: 'Smite Lightning',
+                cost: { gold: 50 },
+                icon: 'fa-bolt-lightning',
+                desc: 'Strikes targeted monsters with massive electrical damage.'
+            }
+        };
+
+        class GameEngine {
+            constructor() {
+                this.canvas = document.getElementById('gameCanvas');
+                this.ctx = this.canvas.getContext('2d');
+                
+                // Game World State
+                this.grid = []; // 2D grid array
+                this.citizens = [];
+                this.disasters = [];
+                this.monsters = [];
+                this.particles = [];
+                this.projectiles = [];
+
+                // Resources
+                this.resources = {
+                    gold: 250,
+                    wood: 120,
+                    stone: 60,
+                    food: 100,
+                    pop: 5,
+                    popCap: 10,
+                    happiness: 95
+                };
+
+                // Meta stats
+                this.day = 1;
+                this.dayProgress = 0; // 0 to 100
+                this.timeSpeed = 1; // 0 (pause), 1, 2
+                this.emergencySiren = false;
+                this.weather = 'clear'; // clear, rain, storm
+                this.disastersWeathered = 0;
+                this.peakPop = 5;
+                this.isGameOver = false;
+
+                // Upcoming disaster warning
+                this.pendingDisaster = null;
+                this.disasterTimer = 0;
+
+                // Selection & Interaction
+                this.selectedCategory = 'housing';
+                this.selectedBuildingId = 'house';
+                this.isPowerSelected = false;
+                this.isDemolishSelected = false;
+                this.selectedTile = null; // {x, y}
+
+                this.camera = { x: 0, y: 0, zoom: 1 };
+                this.isDragging = false;
+                this.dragStart = { x: 0, y: 0 };
+
+                this.initGrid();
+            }
+
+            initGrid() {
+                for (let x = 0; x < GRID_SIZE; x++) {
+                    this.grid[x] = [];
+                    for (let y = 0; y < GRID_SIZE; y++) {
+                        // Terrain generation: water/river border, forest tiles, rock tiles
+                        let terrain = 'grass';
+                        const distFromCenter = Math.hypot(x - GRID_SIZE / 2, y - GRID_SIZE / 2);
+                        
+                        if (x === 0 || y === 0 || x === GRID_SIZE - 1 || y === GRID_SIZE - 1) {
+                            terrain = (Math.random() > 0.3) ? 'forest' : 'grass';
+                        } else if (Math.random() < 0.08 && distFromCenter > 4) {
+                            terrain = 'forest';
+                        } else if (Math.random() < 0.05 && distFromCenter > 5) {
+                            terrain = 'rock';
+                        }
+
+                        this.grid[x][y] = {
+                            x, y,
+                            terrain,
+                            building: null,
+                            fire: 0, // fire intensity 0 to 100
+                            plague: 0
+                        };
+                    }
+                }
+
+                // Place Townhall at Center
+                const centerX = Math.floor(GRID_SIZE / 2);
+                const centerY = Math.floor(GRID_SIZE / 2);
+                this.grid[centerX][centerY].building = {
+                    ...BUILDINGS.townhall,
+                    x: centerX,
+                    y: centerY,
+                    hp: BUILDINGS.townhall.hp,
+                    maxHp: BUILDINGS.townhall.maxHp,
+                    level: 1
+                };
+
+                // Spawn initial 5 citizens
+                for (let i = 0; i < 5; i++) {
+                    this.citizens.push({
+                        id: Math.random(),
+                        x: centerX + (Math.random() - 0.5) * 2,
+                        y: centerY + (Math.random() - 0.5) * 2,
+                        targetX: centerX,
+                        targetY: centerY,
+                        hp: 100,
+                        state: 'idle', // idle, working, fleeing
+                        speed: 0.03 + Math.random() * 0.02
+                    });
+                }
+            }
+
+            resizeCanvas() {
+                const container = document.getElementById('canvasContainer');
+                this.canvas.width = container.clientWidth;
+                this.canvas.height = container.clientHeight;
+
+                // Center camera on center of grid
+                tileSize = Math.min(this.canvas.width, this.canvas.height) / (GRID_SIZE * 0.75);
+                this.camera.x = (this.canvas.width - GRID_SIZE * tileSize) / 2;
+                this.camera.y = (this.canvas.height - GRID_SIZE * tileSize) / 2;
+            }
+
+            placeBuilding(x, y, bId) {
+                if (x < 0 || y < 0 || x >= GRID_SIZE || y >= GRID_SIZE) return;
+                const cell = this.grid[x][y];
+
+                if (cell.building) {
+                    this.logEvent("Tile already occupied!", "text-rose-400");
+                    return;
+                }
+
+                const bData = BUILDINGS[bId];
+                if (!bData) return;
+
+                // Check Cost
+                if (this.resources.gold < bData.cost.gold ||
+                    this.resources.wood < bData.cost.wood ||
+                    this.resources.stone < bData.cost.stone) {
+                    this.logEvent("Not enough resources to build " + bData.name + "!", "text-amber-400");
+                    return;
+                }
+
+                // Deduct resources
+                this.resources.gold -= bData.cost.gold;
+                this.resources.wood -= bData.cost.wood;
+                this.resources.stone -= bData.cost.stone;
+
+                cell.building = {
+                    ...bData,
+                    x, y,
+                    hp: bData.hp,
+                    maxHp: bData.hp,
+                    level: 1
+                };
+
+                // Spawn construction dust particles
+                for (let i = 0; i < 12; i++) {
+                    this.particles.push({
+                        x: (x + 0.5) * tileSize,
+                        y: (y + 0.5) * tileSize,
+                        vx: (Math.random() - 0.5) * 3,
+                        vy: (Math.random() - 0.5) * 3,
+                        life: 1,
+                        color: '#cbd5e1',
+                        size: Math.random() * 5 + 3
+                    });
+                }
+
+                soundFX.playBuild();
+                this.recalculateStats();
+                this.logEvent("Built " + bData.name, "text-emerald-400");
+            }
+
+            demolishTile(x, y) {
+                if (x < 0 || y < 0 || x >= GRID_SIZE || y >= GRID_SIZE) return;
+                const cell = this.grid[x][y];
+
+                if (cell.building) {
+                    if (cell.building.id === 'townhall') {
+                        this.logEvent("Cannot demolish Town Hall!", "text-rose-400 font-bold");
+                        return;
+                    }
+                    const b = cell.building;
+                    // Refund 50% of building costs
+                    const refundGold = Math.floor((b.cost.gold || 0) * 0.5);
+                    const refundWood = Math.floor((b.cost.wood || 0) * 0.5);
+                    const refundStone = Math.floor((b.cost.stone || 0) * 0.5);
+
+                    this.resources.gold += refundGold;
+                    this.resources.wood += refundWood;
+                    this.resources.stone += refundStone;
+
+                    // Debris Particle Burst FX
+                    for (let i = 0; i < 15; i++) {
+                        this.particles.push({
+                            x: (x + 0.5) * tileSize,
+                            y: (y + 0.5) * tileSize,
+                            vx: (Math.random() - 0.5) * 4,
+                            vy: (Math.random() - 0.5) * 4,
+                            life: 0.8,
+                            color: '#ef4444',
+                            size: Math.random() * 5 + 3
+                        });
+                    }
+
+                    soundFX.playExplosion();
+                    this.logEvent(`Demolished ${b.name} (+${refundGold}G, +${refundWood} Wood refund)`, "text-amber-400");
+                    cell.building = null;
+                    cell.fire = 0;
+                    this.recalculateStats();
+                    this.updateUI();
+                } else if (cell.terrain === 'forest' || cell.terrain === 'rock') {
+                    // Clear terrain obstacle for a small gold cost
+                    if (this.resources.gold >= 10) {
+                        this.resources.gold -= 10;
+                        const clearedName = cell.terrain === 'forest' ? 'Forest' : 'Rocks';
+                        if (cell.terrain === 'forest') this.resources.wood += 10;
+                        cell.terrain = 'grass';
+                        soundFX.playBuild();
+                        this.logEvent(`Cleared ${clearedName}`, "text-emerald-300");
+                    } else {
+                        this.logEvent("Need 10 Gold to clear terrain!", "text-rose-400");
+                    }
+                }
+            }
+
+            applyGodPower(x, y, powerId) {
+                const power = GOD_POWERS[powerId];
+                if (!power) return;
+
+                if (this.resources.gold < power.cost.gold) {
+                    this.logEvent("Need " + power.cost.gold + " Gold for power!", "text-rose-400");
+                    return;
+                }
+
+                this.resources.gold -= power.cost.gold;
+
+                if (powerId === 'rain') {
+                    soundFX.playRain();
+                    for (let dx = -1; dx <= 1; dx++) {
+                        for (let dy = -1; dy <= 1; dy++) {
+                            const nx = x + dx;
+                            const ny = y + dy;
+                            if (nx >= 0 && ny >= 0 && nx < GRID_SIZE && ny < GRID_SIZE) {
+                                this.grid[nx][ny].fire = 0;
+                            }
+                        }
+                    }
+                    // Rain splash particles
+                    for (let i = 0; i < 25; i++) {
+                        this.particles.push({
+                            x: (x + 0.5 + (Math.random() - 0.5) * 2) * tileSize,
+                            y: (y + 0.5 + (Math.random() - 0.5) * 2) * tileSize,
+                            vx: 0,
+                            vy: Math.random() * 3 + 2,
+                            life: 0.8,
+                            color: '#38bdf8',
+                            size: 3
+                        });
+                    }
+                    this.logEvent("Rain Cloud summoned!", "text-cyan-300");
+                } else if (powerId === 'repair_beam') {
+                    soundFX.playBuild();
+                    for (let dx = -1; dx <= 1; dx++) {
+                        for (let dy = -1; dy <= 1; dy++) {
+                            const nx = x + dx;
+                            const ny = y + dy;
+                            if (nx >= 0 && ny >= 0 && nx < GRID_SIZE && ny < GRID_SIZE && this.grid[nx][ny].building) {
+                                const b = this.grid[nx][ny].building;
+                                b.hp = Math.min(b.maxHp, b.hp + 120);
+                            }
+                        }
+                    }
+                    this.logEvent("Aura Repair casted!", "text-emerald-300");
+                } else if (powerId === 'lightning_strike') {
+                    soundFX.playExplosion();
+                    // Damage monsters in area
+                    this.monsters = this.monsters.filter(m => {
+                        const dist = Math.hypot(m.x - x, m.y - y);
+                        if (dist < 2.5) {
+                            m.hp -= 150;
+                            return m.hp > 0;
+                        }
+                        return true;
+                    });
+                    // Lightning effect
+                    for (let i = 0; i < 20; i++) {
+                        this.particles.push({
+                            x: (x + 0.5) * tileSize,
+                            y: (y + 0.5) * tileSize,
+                            vx: (Math.random() - 0.5) * 6,
+                            vy: (Math.random() - 0.5) * 6,
+                            life: 0.5,
+                            color: '#facc15',
+                            size: 4
+                        });
+                    }
+                    this.logEvent("Smite Lightning delivered!", "text-yellow-300");
+                }
+            }
+
+            scheduleDisaster() {
+                if (this.pendingDisaster) return;
+
+                // Random disaster selection
+                const disasterTypes = ['fire', 'tornado', 'earthquake', 'dragon', 'meteor', 'plague'];
+                const chosen = disasterTypes[Math.floor(Math.random() * disasterTypes.length)];
+
+                this.pendingDisaster = {
+                    type: chosen,
+                    eta: Math.max(10, 25 - Math.floor(this.day / 2)) // faster as days progress
+                };
+
+                const banner = document.getElementById('disasterBanner');
+                const desc = document.getElementById('disasterDesc');
+                banner.classList.remove('hidden');
+
+                const titles = {
+                    fire: 'Wildfire Outbreak Warning!',
+                    tornado: 'Violent Tornado approaching!',
+                    earthquake: 'Magnitude 7.0 Seismic Quake!',
+                    dragon: 'Wild Dragon Attack Sighted!',
+                    meteor: 'Fiery Meteor Shower Inbound!',
+                    plague: 'Contagious Plague Contagion!'
+                };
+                desc.textContent = titles[chosen] || 'Unknown Disaster Incoming!';
+                soundFX.playSiren();
+            }
+
+            triggerPendingDisaster() {
+                if (!this.pendingDisaster) return;
+
+                const type = this.pendingDisaster.type;
+                this.pendingDisaster = null;
+                document.getElementById('disasterBanner').classList.add('hidden');
+                this.disastersWeathered++;
+
+                if (type === 'fire') {
+                    // Ignite 2-3 random wooden buildings
+                    let ignited = 0;
+                    for (let i = 0; i < 15; i++) {
+                        const rx = Math.floor(Math.random() * GRID_SIZE);
+                        const ry = Math.floor(Math.random() * GRID_SIZE);
+                        if (this.grid[rx][ry].building && ignited < 3) {
+                            this.grid[rx][ry].fire = 100;
+                            ignited++;
+                        }
+                    }
+                    this.logEvent("Wildfire erupted in town!", "text-red-400 font-bold");
+                } else if (type === 'tornado') {
+                    this.disasters.push({
+                        type: 'tornado',
+                        x: Math.random() < 0.5 ? 0 : GRID_SIZE - 1,
+                        y: Math.random() * GRID_SIZE,
+                        vx: (Math.random() - 0.5) * 0.08,
+                        vy: (Math.random() - 0.5) * 0.08,
+                        life: 400
+                    });
+                    this.logEvent("Tornado tearing through town!", "text-red-400 font-bold");
+                } else if (type === 'earthquake') {
+                    document.body.classList.add('shake-screen');
+                    setTimeout(() => document.body.classList.remove('shake-screen'), 500);
+                    soundFX.playExplosion();
+
+                    // Damage all buildings by 20-40%
+                    for (let x = 0; x < GRID_SIZE; x++) {
+                        for (let y = 0; y < GRID_SIZE; y++) {
+                            const b = this.grid[x][y].building;
+                            if (b) {
+                                b.hp -= Math.floor(b.maxHp * (0.2 + Math.random() * 0.2));
+                            }
+                        }
+                    }
+                    this.logEvent("Earthquake damaged buildings!", "text-orange-400 font-bold");
+                } else if (type === 'dragon') {
+                    this.monsters.push({
+                        type: 'dragon',
+                        x: 0,
+                        y: 0,
+                        targetX: GRID_SIZE / 2,
+                        targetY: GRID_SIZE / 2,
+                        hp: 300,
+                        maxHp: 300,
+                        speed: 0.02
+                    });
+                    this.logEvent("A fierce Dragon has descended!", "text-red-500 font-bold");
+                } else if (type === 'meteor') {
+                    // Spawn 4 meteors hitting random grid tiles
+                    for (let i = 0; i < 4; i++) {
+                        const targetX = Math.floor(Math.random() * GRID_SIZE);
+                        const targetY = Math.floor(Math.random() * GRID_SIZE);
+                        setTimeout(() => {
+                            soundFX.playExplosion();
+                            const b = this.grid[targetX][targetY].building;
+                            if (b) b.hp -= 200;
+                            this.grid[targetX][targetY].fire = 80;
+                            // Meteor explosion particle burst
+                            for (let p = 0; p < 20; p++) {
+                                this.particles.push({
+                                    x: (targetX + 0.5) * tileSize,
+                                    y: (targetY + 0.5) * tileSize,
+                                    vx: (Math.random() - 0.5) * 5,
+                                    vy: (Math.random() - 0.5) * 5,
+                                    life: 1,
+                                    color: '#f97316',
+                                    size: 5
+                                });
+                            }
+                        }, i * 800);
+                    }
+                    this.logEvent("Meteor shower raining fire!", "text-red-400 font-bold");
+                } else if (type === 'plague') {
+                    for (let x = 0; x < GRID_SIZE; x++) {
+                        for (let y = 0; y < GRID_SIZE; y++) {
+                            if (this.grid[x][y].building && Math.random() < 0.2) {
+                                this.grid[x][y].plague = 100;
+                            }
+                        }
+                    }
+                    this.logEvent("Plague spreading through districts!", "text-purple-400 font-bold");
+                }
+            }
+
+            recalculateStats() {
+                let popCap = 0;
+                let goldIncome = 0;
+
+                for (let x = 0; x < GRID_SIZE; x++) {
+                    for (let y = 0; y < GRID_SIZE; y++) {
+                        const b = this.grid[x][y].building;
+                        if (b) {
+                            if (b.popCap) popCap += b.popCap;
+                            if (b.income) goldIncome += b.income;
+                        }
+                    }
+                }
+
+                this.resources.popCap = popCap;
+                document.getElementById('resGoldRate').textContent = `(+${goldIncome}/s)`;
+            }
+
+            update(dt) {
+                if (this.timeSpeed === 0 || this.isGameOver) return;
+
+                const effectiveDt = dt * this.timeSpeed;
+
+                // Day progression
+                this.dayProgress += effectiveDt * 3;
+                if (this.dayProgress >= 100) {
+                    this.dayProgress = 0;
+                    this.day++;
+                    document.getElementById('dayCount').textContent = this.day;
+
+                    // Daily growth/spawn
+                    if (this.resources.pop < this.resources.popCap && this.resources.food > 10) {
+                        this.resources.pop++;
+                        const centerX = Math.floor(GRID_SIZE / 2);
+                        this.citizens.push({
+                            id: Math.random(),
+                            x: centerX + (Math.random() - 0.5) * 2,
+                            y: centerX + (Math.random() - 0.5) * 2,
+                            targetX: centerX,
+                            targetY: centerX,
+                            hp: 100,
+                            state: 'idle',
+                            speed: 0.03 + Math.random() * 0.02
+                        });
+                        this.logEvent("A new citizen joined your town!", "text-blue-300");
+                    }
+                }
+
+                // Disaster Warning Timer
+                if (this.pendingDisaster) {
+                    this.pendingDisaster.eta -= effectiveDt;
+                    document.getElementById('disasterTimer').textContent = Math.max(0, Math.ceil(this.pendingDisaster.eta));
+                    if (this.pendingDisaster.eta <= 0) {
+                        this.triggerPendingDisaster();
+                    }
+                } else if (Math.random() < 0.003 * effectiveDt) {
+                    this.scheduleDisaster();
+                }
+
+                // Building Production ticks
+                let totalGold = 0, totalWood = 0, totalStone = 0, totalFood = 0;
+
+                for (let x = 0; x < GRID_SIZE; x++) {
+                    for (let y = 0; y < GRID_SIZE; y++) {
+                        const cell = this.grid[x][y];
+                        const b = cell.building;
+
+                        if (b) {
+                            // Collect resources
+                            if (b.income) totalGold += (b.income / 60) * effectiveDt;
+                            if (b.woodProd) totalWood += (b.woodProd / 60) * effectiveDt;
+                            if (b.stoneProd) totalStone += (b.stoneProd / 60) * effectiveDt;
+                            if (b.foodProd) totalFood += (b.foodProd / 60) * effectiveDt;
+
+                            // Fire spreading / damage
+                            if (cell.fire > 0) {
+                                b.hp -= 0.15 * effectiveDt;
+                                if (Math.random() < 0.02) {
+                                    // Spread fire to adjacent tiles
+                                    const adjX = x + (Math.floor(Math.random() * 3) - 1);
+                                    const adjY = y + (Math.floor(Math.random() * 3) - 1);
+                                    if (adjX >= 0 && adjY >= 0 && adjX < GRID_SIZE && adjY < GRID_SIZE) {
+                                        this.grid[adjX][adjY].fire = Math.min(100, this.grid[adjX][adjY].fire + 30);
+                                    }
+                                }
+                            }
+
+                            // Fire Station auto extinguish
+                            if (b.id === 'firestation') {
+                                for (let dx = -b.extinguishRange; dx <= b.extinguishRange; dx++) {
+                                    for (let dy = -b.extinguishRange; dy <= b.extinguishRange; dy++) {
+                                        const nx = x + dx;
+                                        const ny = y + dy;
+                                        if (nx >= 0 && ny >= 0 && nx < GRID_SIZE && ny < GRID_SIZE) {
+                                            if (this.grid[nx][ny].fire > 0) {
+                                                this.grid[nx][ny].fire = Math.max(0, this.grid[nx][ny].fire - 1 * effectiveDt);
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+
+                            // Watchtower shooting monsters
+                            if (b.id === 'watchtower') {
+                                this.monsters.forEach(m => {
+                                    const dist = Math.hypot(m.x - x, m.y - y);
+                                    if (dist <= b.range) {
+                                        m.hp -= (b.damage / 60) * effectiveDt;
+                                        // Spawn arrow projectile
+                                        if (Math.random() < 0.1) {
+                                            this.projectiles.push({
+                                                x: (x + 0.5) * tileSize,
+                                                y: (y + 0.5) * tileSize,
+                                                targetX: (m.x + 0.5) * tileSize,
+                                                targetY: (m.y + 0.5) * tileSize,
+                                                progress: 0
+                                            });
+                                        }
+                                    }
+                                });
+                            }
+
+                            // Destroyed building check
+                            if (b.hp <= 0) {
+                                soundFX.playExplosion();
+                                this.logEvent(b.name + " collapsed!", "text-rose-500 font-bold");
+                                
+                                // Townhall destruction -> Game Over
+                                if (b.id === 'townhall') {
+                                    this.triggerGameOver("Your Town Hall was reduced to rubble!");
+                                }
+                                cell.building = null;
+                                cell.fire = 0;
+                                this.recalculateStats();
+                            }
+                        }
+                    }
+                }
+
+                // Resource updates
+                this.resources.gold += totalGold;
+                this.resources.wood += totalWood;
+                this.resources.stone += totalStone;
+                this.resources.food += totalFood;
+
+                // Citizens consumption
+                this.resources.food = Math.max(0, this.resources.food - (this.resources.pop * 0.02) * effectiveDt);
+
+                // Monsters AI & logic
+                this.monsters = this.monsters.filter(m => {
+                    const dx = m.targetX - m.x;
+                    const dy = m.targetY - m.y;
+                    const dist = Math.hypot(dx, dy);
+
+                    if (dist > 0.2) {
+                        m.x += (dx / dist) * m.speed * effectiveDt;
+                        m.y += (dy / dist) * m.speed * effectiveDt;
+                    } else {
+                        // Attack nearest structure
+                        const gridX = Math.floor(m.x);
+                        const gridY = Math.floor(m.y);
+                        if (this.grid[gridX] && this.grid[gridX][gridY] && this.grid[gridX][gridY].building) {
+                            this.grid[gridX][gridY].building.hp -= 0.5 * effectiveDt;
+                        }
+                    }
+
+                    return m.hp > 0;
+                });
+
+                // Disaster Entities (Tornado, etc.)
+                this.disasters = this.disasters.filter(d => {
+                    d.x += d.vx * effectiveDt;
+                    d.y += d.vy * effectiveDt;
+                    d.life -= effectiveDt;
+
+                    const gx = Math.floor(d.x);
+                    const gy = Math.floor(d.y);
+
+                    if (gx >= 0 && gy >= 0 && gx < GRID_SIZE && gy < GRID_SIZE) {
+                        const cell = this.grid[gx][gy];
+                        if (cell.building) {
+                            cell.building.hp -= 0.4 * effectiveDt;
+                        }
+                    }
+
+                    return d.life > 0 && d.x >= 0 && d.x < GRID_SIZE && d.y >= 0 && d.y < GRID_SIZE;
+                });
+
+                // Update Projectiles
+                this.projectiles = this.projectiles.filter(p => {
+                    p.progress += 0.08 * effectiveDt;
+                    return p.progress < 1;
+                });
+
+                // Update Particles
+                this.particles = this.particles.filter(p => {
+                    p.x += p.vx;
+                    p.y += p.vy;
+                    p.life -= 0.02 * effectiveDt;
+                    return p.life > 0;
+                });
+
+                // Citizen Movement AI
+                this.citizens.forEach(c => {
+                    if (Math.random() < 0.02) {
+                        c.targetX = Math.floor(GRID_SIZE / 2) + (Math.random() - 0.5) * 8;
+                        c.targetY = Math.floor(GRID_SIZE / 2) + (Math.random() - 0.5) * 8;
+                    }
+
+                    const cdx = c.targetX - c.x;
+                    const cdy = c.targetY - c.y;
+                    const cDist = Math.hypot(cdx, cdy);
+
+                    if (cDist > 0.1) {
+                        c.x += (cdx / cDist) * c.speed * effectiveDt;
+                        c.y += (cdy / cDist) * c.speed * effectiveDt;
+                    }
+                });
+
+                if (this.resources.pop > this.peakPop) {
+                    this.peakPop = this.resources.pop;
+                }
+
+                this.updateUI();
+            }
+
+            render() {
+                this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+
+                this.ctx.save();
+                this.ctx.translate(this.camera.x, this.camera.y);
+
+                // Draw Grid Tiles
+                for (let x = 0; x < GRID_SIZE; x++) {
+                    for (let y = 0; y < GRID_SIZE; y++) {
+                        const cell = this.grid[x][y];
+                        const px = x * tileSize;
+                        const py = y * tileSize;
+
+                        // Base Terrain Color
+                        if (cell.terrain === 'forest') {
+                            this.ctx.fillStyle = '#1e3a29';
+                        } else if (cell.terrain === 'rock') {
+                            this.ctx.fillStyle = '#334155';
+                        } else {
+                            // Grass grid pattern
+                            this.ctx.fillStyle = (x + y) % 2 === 0 ? '#1e293b' : '#0f172a';
+                        }
+                        this.ctx.fillRect(px, py, tileSize, tileSize);
+
+                        // Tile Border lines
+                        this.ctx.strokeStyle = 'rgba(255, 255, 255, 0.04)';
+                        this.ctx.strokeRect(px, py, tileSize, tileSize);
+
+                        // Highlight selected tile
+                        if (this.selectedTile && this.selectedTile.x === x && this.selectedTile.y === y) {
+                            if (this.isDemolishSelected) {
+                                this.ctx.fillStyle = 'rgba(239, 68, 68, 0.35)';
+                                this.ctx.fillRect(px, py, tileSize, tileSize);
+                                this.ctx.strokeStyle = '#ef4444';
+                            } else {
+                                this.ctx.fillStyle = 'rgba(251, 191, 36, 0.25)';
+                                this.ctx.fillRect(px, py, tileSize, tileSize);
+                                this.ctx.strokeStyle = '#f59e0b';
+                            }
+                            this.ctx.lineWidth = 2;
+                            this.ctx.strokeRect(px, py, tileSize, tileSize);
+                            this.ctx.lineWidth = 1;
+                        }
+
+                        // Fire visual overlay
+                        if (cell.fire > 0) {
+                            this.ctx.fillStyle = `rgba(239, 68, 68, ${cell.fire / 150})`;
+                            this.ctx.fillRect(px, py, tileSize, tileSize);
+                        }
+
+                        // Render Building structure
+                        if (cell.building) {
+                            const b = cell.building;
+                            this.ctx.fillStyle = b.color || '#38bdf8';
+
+                            // Building Box
+                            const pad = 4;
+                            this.ctx.beginPath();
+                            this.ctx.roundRect(px + pad, py + pad, tileSize - pad * 2, tileSize - pad * 2, 6);
+                            this.ctx.fill();
+
+                            // Building Icon symbol (simplified rendering)
+                            this.ctx.fillStyle = '#ffffff';
+                            this.ctx.font = `${tileSize * 0.4}px FontAwesome`;
+                            this.ctx.textAlign = 'center';
+                            this.ctx.textBaseline = 'middle';
+                            this.ctx.fillText(getBuildingUnicode(b.icon), px + tileSize / 2, py + tileSize / 2);
+
+                            // Health bar if damaged
+                            if (b.hp < b.maxHp) {
+                                const hpPercent = Math.max(0, b.hp / b.maxHp);
+                                this.ctx.fillStyle = 'rgba(0,0,0,0.6)';
+                                this.ctx.fillRect(px + 4, py + tileSize - 8, tileSize - 8, 4);
+                                this.ctx.fillStyle = hpPercent > 0.5 ? '#22c55e' : '#ef4444';
+                                this.ctx.fillRect(px + 4, py + tileSize - 8, (tileSize - 8) * hpPercent, 4);
+                            }
+                        }
+                    }
+                }
+
+                // Render Citizens
+                this.citizens.forEach(c => {
+                    const cx = (c.x + 0.5) * tileSize;
+                    const cy = (c.y + 0.5) * tileSize;
+
+                    this.ctx.fillStyle = '#60a5fa';
+                    this.ctx.beginPath();
+                    this.ctx.arc(cx, cy, 4, 0, Math.PI * 2);
+                    this.ctx.fill();
+                });
+
+                // Render Monsters / Dragons
+                this.monsters.forEach(m => {
+                    const mx = (m.x + 0.5) * tileSize;
+                    const my = (m.y + 0.5) * tileSize;
+
+                    this.ctx.fillStyle = '#dc2626';
+                    this.ctx.beginPath();
+                    this.ctx.arc(mx, my, 10, 0, Math.PI * 2);
+                    this.ctx.fill();
+
+                    // Dragon wing visual detail
+                    this.ctx.fillStyle = '#b91c1c';
+                    this.ctx.fillRect(mx - 14, my - 3, 28, 6);
+                });
+
+                // Render Disasters (Tornadoes, Meteors)
+                this.disasters.forEach(d => {
+                    if (d.type === 'tornado') {
+                        const tx = (d.x + 0.5) * tileSize;
+                        const ty = (d.y + 0.5) * tileSize;
+
+                        this.ctx.fillStyle = 'rgba(148, 163, 184, 0.7)';
+                        this.ctx.beginPath();
+                        this.ctx.arc(tx, ty, 18, 0, Math.PI * 2);
+                        this.ctx.fill();
+                    }
+                });
+
+                // Render Projectiles
+                this.projectiles.forEach(p => {
+                    const currX = p.x + (p.targetX - p.x) * p.progress;
+                    const currY = p.y + (p.targetY - p.y) * p.progress;
+
+                    this.ctx.fillStyle = '#facc15';
+                    this.ctx.beginPath();
+                    this.ctx.arc(currX, currY, 3, 0, Math.PI * 2);
+                    this.ctx.fill();
+                });
+
+                // Render Particles
+                this.particles.forEach(p => {
+                    this.ctx.fillStyle = p.color;
+                    this.ctx.beginPath();
+                    this.ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+                    this.ctx.fill();
+                });
+
+                this.ctx.restore();
+            }
+
+            updateUI() {
+                document.getElementById('resGold').textContent = Math.floor(this.resources.gold);
+                document.getElementById('resWood').textContent = Math.floor(this.resources.wood);
+                document.getElementById('resStone').textContent = Math.floor(this.resources.stone);
+                document.getElementById('resFood').textContent = Math.floor(this.resources.food);
+                document.getElementById('resPop').textContent = `${this.resources.pop}/${this.resources.popCap}`;
+
+                // Update Inspector panel if active
+                if (this.selectedTile) {
+                    const cell = this.grid[this.selectedTile.x][this.selectedTile.y];
+                    if (cell.building) {
+                        const b = cell.building;
+                        document.getElementById('inspectorPanel').classList.remove('hidden');
+                        document.getElementById('inspectorTitle').textContent = b.name;
+                        document.getElementById('inspectorHp').textContent = `${Math.ceil(b.hp)} / ${b.maxHp}`;
+                        
+                        const percent = Math.max(0, (b.hp / b.maxHp) * 100);
+                        document.getElementById('inspectorHpBar').style.width = `${percent}%`;
+                        document.getElementById('upgradeCost').textContent = `${b.cost.gold || 50}G`;
+                    }
+                }
+            }
+
+            logEvent(msg, colorClass = "text-slate-300") {
+                const log = document.getElementById('eventLog');
+                const entry = document.createElement('div');
+                entry.className = `p-1.5 rounded bg-slate-900/80 border border-slate-800 ${colorClass}`;
+                entry.textContent = `[Day ${this.day}] ${msg}`;
+                log.prepend(entry);
+
+                if (log.children.length > 8) {
+                    log.removeChild(log.lastChild);
+                }
+            }
+
+            triggerGameOver(reason) {
+                this.isGameOver = true;
+                document.getElementById('gameOverReason').textContent = reason;
+                document.getElementById('statDays').textContent = this.day;
+                document.getElementById('statPop').textContent = this.peakPop;
+                document.getElementById('statDisasters').textContent = this.disastersWeathered;
+                document.getElementById('statScore').textContent = (this.day * 100) + (this.peakPop * 50) + (this.disastersWeathered * 200);
+                document.getElementById('gameOverModal').classList.remove('hidden');
+            }
+        }
+
+        // Helper to convert FontAwesome icon class to unicode
+        function getBuildingUnicode(iconClass) {
+            const map = {
+                'fa-city': '\uf64f',
+                'fa-house': '\uf015',
+                'fa-building-columns': '\uf19c',
+                'fa-wheat-awn': '\ufe2d',
+                'fa-tree': '\uf1bb',
+                'fa-cubes': '\uf1b9',
+                'fa-chess-rook': '\uf447',
+                'fa-shield-halved': '\uf3ed',
+                'fa-fire-extinguisher': '\uf134',
+                'fa-kit-medical': '\uf479',
+                'fa-vault': '\ue2c5',
+                'fa-bolt': '\uf0e7'
+            };
+            return map[iconClass] || '\uf015';
+        }
+
+        let game = null;
+
+        window.onload = function() {
+            game = new GameEngine();
+            game.resizeCanvas();
+            window.addEventListener('resize', () => game.resizeCanvas());
+
+            setupUIEvents();
+            renderBuildPalette('housing');
+
+            // Start Animation Loop
+            let lastTime = performance.now();
+            function loop(now) {
+                const dt = (now - lastTime) / 1000;
+                lastTime = now;
+
+                game.update(dt);
+                game.render();
+
+                requestAnimationFrame(loop);
+            }
+            requestAnimationFrame(loop);
+        };
+
+        function setupUIEvents() {
+            // Start Game Button
+            document.getElementById('btnStartGame').addEventListener('click', () => {
+                soundFX.init();
+                const name = document.getElementById('inputTownName').value.trim();
+                if (name) document.getElementById('townName').textContent = name;
+                document.getElementById('startModal').classList.add('hidden');
+            });
+
+            // Restart Game Button
+            document.getElementById('btnRestartGame').addEventListener('click', () => {
+                location.reload();
+            });
+
+            // Audio Toggle
+            document.getElementById('btnAudio').addEventListener('click', () => {
+                soundFX.muted = !soundFX.muted;
+                const icon = document.getElementById('iconAudio');
+                icon.className = soundFX.muted ? "fa-solid fa-volume-xmark text-rose-400" : "fa-solid fa-volume-high";
+            });
+
+            // Speed Toggle
+            document.getElementById('btnSpeed').addEventListener('click', () => {
+                if (game.timeSpeed === 1) game.timeSpeed = 2;
+                else if (game.timeSpeed === 2) game.timeSpeed = 0;
+                else game.timeSpeed = 1;
+
+                const txt = document.getElementById('speedTxt');
+                txt.textContent = game.timeSpeed === 0 ? "Pause" : `${game.timeSpeed}x`;
+            });
+
+            // Emergency Alarm Toggle
+            document.getElementById('btnEmergency').addEventListener('click', () => {
+                game.emergencySiren = !game.emergencySiren;
+                const txt = document.getElementById('alarmTxt');
+                txt.textContent = game.emergencySiren ? "Shelter ON" : "Shelter Off";
+                if (game.emergencySiren) soundFX.playSiren();
+            });
+
+            // Category Tab Buttons
+            document.querySelectorAll('.cat-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    document.querySelectorAll('.cat-btn').forEach(b => {
+                        b.classList.remove('bg-indigo-600', 'text-white');
+                        b.classList.add('bg-slate-800', 'text-slate-300');
+                    });
+                    btn.classList.remove('bg-slate-800', 'text-slate-300');
+                    btn.classList.add('bg-indigo-600', 'text-white');
+
+                    const cat = btn.getAttribute('data-cat');
+                    game.selectedCategory = cat;
+                    renderBuildPalette(cat);
+                });
+            });
+
+            // Inspector Panel buttons
+            document.getElementById('btnCloseInspector').addEventListener('click', () => {
+                document.getElementById('inspectorPanel').classList.add('hidden');
+                game.selectedTile = null;
+            });
+
+            document.getElementById('btnRepair').addEventListener('click', () => {
+                if (game.selectedTile) {
+                    const b = game.grid[game.selectedTile.x][game.selectedTile.y].building;
+                    if (b && game.resources.gold >= 15) {
+                        game.resources.gold -= 15;
+                        b.hp = b.maxHp;
+                        soundFX.playBuild();
+                    }
+                }
+            });
+
+            document.getElementById('btnDemolish').addEventListener('click', () => {
+                if (game.selectedTile) {
+                    game.demolishTile(game.selectedTile.x, game.selectedTile.y);
+                    document.getElementById('inspectorPanel').classList.add('hidden');
+                    game.selectedTile = null;
+                }
+            });
+
+            document.getElementById('btnDemolishTool').addEventListener('click', () => {
+                game.isDemolishSelected = true;
+                game.isPowerSelected = false;
+                game.selectedBuildingId = null;
+
+                document.querySelectorAll('.cat-btn').forEach(b => {
+                    b.classList.remove('bg-indigo-600', 'text-white');
+                    b.classList.add('bg-slate-800', 'text-slate-300');
+                });
+
+                document.getElementById('activeActionInfo').classList.remove('hidden');
+                document.getElementById('selectedActionName').innerHTML = `<i class="fa-solid fa-trash-can text-rose-400 me-1"></i> Demolish Tool Active`;
+            });
+
+            document.getElementById('btnClearSelection').addEventListener('click', () => {
+                game.isDemolishSelected = false;
+                game.isPowerSelected = false;
+                document.getElementById('activeActionInfo').classList.add('hidden');
+            });
+
+            // Canvas Pointer Interaction (Click/Touch to build or delete)
+            const canvas = document.getElementById('gameCanvas');
+
+            canvas.addEventListener('pointerdown', (e) => {
+                const rect = canvas.getBoundingClientRect();
+                const clickX = e.clientX - rect.left - game.camera.x;
+                const clickY = e.clientY - rect.top - game.camera.y;
+
+                const tileX = Math.floor(clickX / tileSize);
+                const tileY = Math.floor(clickY / tileSize);
+
+                if (tileX >= 0 && tileY >= 0 && tileX < GRID_SIZE && tileY < GRID_SIZE) {
+                    game.selectedTile = { x: tileX, y: tileY };
+
+                    if (game.isDemolishSelected) {
+                        game.demolishTile(tileX, tileY);
+                    } else if (game.isPowerSelected) {
+                        game.applyGodPower(tileX, tileY, game.selectedPowerId);
+                    } else if (game.selectedBuildingId) {
+                        game.placeBuilding(tileX, tileY, game.selectedBuildingId);
+                    }
+                }
+            });
+        }
+
+        function renderBuildPalette(category) {
+            const container = document.getElementById('buildList');
+            container.innerHTML = '';
+
+            if (category === 'powers') {
+                Object.values(GOD_POWERS).forEach(power => {
+                    const card = document.createElement('button');
+                    card.className = `flex-shrink-0 flex items-center gap-2 px-3 py-2 rounded-xl bg-slate-900 border border-slate-700 hover:border-indigo-400 text-left transition btn-action`;
+                    card.innerHTML = `
+                        <div class="w-8 h-8 rounded-lg bg-cyan-600/30 border border-cyan-400 flex items-center justify-center text-cyan-300">
+                            <i class="fa-solid ${power.icon}"></i>
+                        </div>
+                        <div>
+                            <div class="text-xs font-bold text-white">${power.name}</div>
+                            <div class="text-[10px] text-amber-300"><i class="fa-solid fa-coins me-1"></i>${power.cost.gold}G</div>
+                        </div>
+                    `;
+                    card.addEventListener('click', () => {
+                        game.isDemolishSelected = false;
+                        game.isPowerSelected = true;
+                        game.selectedPowerId = power.id;
+                        document.getElementById('activeActionInfo').classList.remove('hidden');
+                        document.getElementById('selectedActionName').textContent = `${power.name} Selected`;
+                    });
+                    container.appendChild(card);
+                });
+                return;
+            }
+
+            Object.values(BUILDINGS).filter(b => b.cat === category).forEach(b => {
+                const card = document.createElement('button');
+                card.className = `flex-shrink-0 flex items-center gap-2 px-3 py-2 rounded-xl bg-slate-900 border border-slate-700 hover:border-amber-400 text-left transition btn-action`;
+                card.innerHTML = `
+                    <div class="w-8 h-8 rounded-lg bg-amber-500/20 border border-amber-400 flex items-center justify-center text-amber-300">
+                        <i class="fa-solid ${b.icon}"></i>
+                    </div>
+                    <div>
+                        <div class="text-xs font-bold text-white">${b.name}</div>
+                        <div class="text-[10px] text-slate-300 flex items-center gap-2">
+                            <span><i class="fa-solid fa-coins text-amber-400 me-0.5"></i>${b.cost.gold}</span>
+                            <span><i class="fa-solid fa-tree text-emerald-400 me-0.5"></i>${b.cost.wood}</span>
+                            ${b.cost.stone ? `<span><i class="fa-solid fa-cubes text-slate-300 me-0.5"></i>${b.cost.stone}</span>` : ''}
+                        </div>
+                    </div>
+                `;
+                card.addEventListener('click', () => {
+                    game.isDemolishSelected = false;
+                    game.isPowerSelected = false;
+                    game.selectedBuildingId = b.id;
+                    document.getElementById('activeActionInfo').classList.remove('hidden');
+                    document.getElementById('selectedActionName').textContent = `${b.name} Selected`;
+                });
+                container.appendChild(card);
+            });
+        }
+    </script>
+</body>
+</html>

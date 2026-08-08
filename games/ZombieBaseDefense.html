@@ -1,0 +1,1641 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Outpost Zero: Zombie Base Defense</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts & Font Awesome Icons -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;800;900&family=Rajdhani:wght@500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        orbitron: ['Orbitron', 'sans-serif'],
+                        rajdhani: ['Rajdhani', 'sans-serif']
+                    },
+                    colors: {
+                        cyber: {
+                            dark: '#0a0d14',
+                            panel: '#121824',
+                            border: '#1e293b',
+                            accent: '#00f0ff',
+                            danger: '#ff0055',
+                            warning: '#ffb700',
+                            success: '#00ff66',
+                            purple: '#9d00ff'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            font-family: 'Rajdhani', sans-serif;
+            background-color: #06080d;
+            color: #e2e8f0;
+            user-select: none;
+            overflow: hidden;
+        }
+        .font-orbitron { font-family: 'Orbitron', sans-serif; }
+        
+        /* Custom scrollbars */
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: #0a0d14; }
+        ::-webkit-scrollbar-thumb { background: #1e293b; border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: #00f0ff; }
+
+        /* Neon Glow Effects */
+        .glow-cyan { box-shadow: 0 0 15px rgba(0, 240, 255, 0.4); }
+        .glow-red { box-shadow: 0 0 15px rgba(255, 0, 85, 0.4); }
+        .glow-purple { box-shadow: 0 0 15px rgba(157, 0, 255, 0.4); }
+        .text-glow-cyan { text-shadow: 0 0 8px rgba(0, 240, 255, 0.6); }
+        .text-glow-red { text-shadow: 0 0 8px rgba(255, 0, 85, 0.6); }
+
+        /* Scanline Overlay Effect */
+        .scanlines {
+            background: linear-gradient(
+                rgba(18, 16, 16, 0) 50%, 
+                rgba(0, 0, 0, 0.25) 50%
+            );
+            background-size: 100% 4px;
+        }
+
+        /* Active Tool Selection Pulse */
+        .tool-selected {
+            border-color: #00f0ff !important;
+            background-color: rgba(0, 240, 255, 0.15) !important;
+            box-shadow: 0 0 12px rgba(0, 240, 255, 0.3);
+        }
+
+        /* Pulse animation for wave alert */
+        @keyframes wavePulse {
+            0% { transform: scale(0.95); opacity: 0.8; }
+            50% { transform: scale(1.05); opacity: 1; }
+            100% { transform: scale(0.95); opacity: 0.8; }
+        }
+        .animate-wave { animation: wavePulse 2s infinite ease-in-out; }
+    </style>
+</head>
+<body class="h-screen w-screen flex flex-col justify-between overflow-hidden select-none">
+
+    <!-- Top HUD Bar -->
+    <header class="h-16 bg-cyber-panel/90 border-b border-cyber-border/80 px-4 flex items-center justify-between z-20 backdrop-blur-md relative">
+        <div class="flex items-center space-x-4">
+            <div class="flex items-center space-x-2">
+                <i class="fa-solid fa-shield-halved text-cyber-accent text-2xl"></i>
+                <span class="font-orbitron font-bold text-lg tracking-wider text-white hidden sm:inline">OUTPOST <span class="text-cyber-accent">ZERO</span></span>
+            </div>
+            
+            <!-- Base Core HP Bar -->
+            <div class="flex items-center space-x-2 bg-black/50 px-3 py-1.5 rounded-lg border border-slate-700">
+                <i class="fa-solid fa-heart-pulse text-cyber-danger text-lg animate-pulse"></i>
+                <div class="w-28 sm:w-36 bg-slate-800 h-3.5 rounded-full overflow-hidden p-0.5 border border-slate-700">
+                    <div id="hp-bar" class="bg-gradient-to-r from-red-600 to-cyber-danger h-full rounded-full transition-all duration-300" style="width: 100%;"></div>
+                </div>
+                <span id="hp-text" class="text-xs font-mono font-bold w-12 text-right">1000/1000</span>
+            </div>
+        </div>
+
+        <!-- Resources & Wave Stats -->
+        <div class="flex items-center space-x-3 sm:space-x-6 font-orbitron">
+            <!-- Credits / Scrap -->
+            <div class="flex items-center space-x-2 bg-black/50 px-3 py-1.5 rounded-lg border border-amber-500/30">
+                <i class="fa-solid fa-coins text-amber-400 text-base"></i>
+                <span id="credits-val" class="text-amber-400 font-bold text-base sm:text-lg">500</span>
+            </div>
+
+            <!-- Energy / Tech -->
+            <div class="flex items-center space-x-2 bg-black/50 px-3 py-1.5 rounded-lg border border-cyber-accent/30">
+                <i class="fa-solid fa-bolt text-cyber-accent text-base"></i>
+                <span id="energy-val" class="text-cyber-accent font-bold text-base sm:text-lg">100/100</span>
+            </div>
+
+            <!-- Wave Badge -->
+            <div class="flex items-center space-x-2 bg-purple-950/60 px-3.5 py-1.5 rounded-lg border border-cyber-purple/50">
+                <i class="fa-solid fa-skull text-cyber-purple text-base"></i>
+                <div class="flex flex-col text-left">
+                    <span class="text-[10px] text-slate-400 leading-none">WAVE</span>
+                    <span id="wave-val" class="text-white font-bold text-sm leading-tight">1</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Controls / Audio & Menu -->
+        <div class="flex items-center space-x-2">
+            <a href="https://supernebula23.github.io/games" id="btn-home" class="w-10 h-10 bg-slate-800/80 hover:bg-slate-700 rounded-lg flex items-center justify-center border border-slate-600 transition text-slate-300 hover:text-white" title="Home Games Hub">
+                <i class="fa-solid fa-house"></i>
+            </a>
+            <button id="btn-audio" onclick="toggleAudio()" class="w-10 h-10 bg-slate-800/80 hover:bg-slate-700 rounded-lg flex items-center justify-center border border-slate-600 transition text-slate-300 hover:text-white">
+                <i id="audio-icon" class="fa-solid fa-volume-high"></i>
+            </button>
+            <button id="btn-pause" onclick="togglePause()" class="w-10 h-10 bg-slate-800/80 hover:bg-slate-700 rounded-lg flex items-center justify-center border border-slate-600 transition text-slate-300 hover:text-white">
+                <i id="pause-icon" class="fa-solid fa-pause"></i>
+            </button>
+        </div>
+    </header>
+
+    <!-- Main Game Workspace -->
+    <main class="relative flex-1 w-full h-full overflow-hidden bg-black flex justify-center items-center">
+        <!-- HTML5 Canvas Engine -->
+        <canvas id="gameCanvas" class="cursor-crosshair block w-full h-full"></canvas>
+
+        <!-- CRT Scanline overlay effect -->
+        <div class="absolute inset-0 scanlines pointer-events-none opacity-40"></div>
+
+        <!-- Wave Start Overlay Banner -->
+        <div id="wave-banner" class="absolute inset-0 flex flex-col items-center justify-center pointer-events-none opacity-0 transition-opacity duration-500 z-10 bg-black/40 backdrop-blur-xs">
+            <div class="bg-cyber-panel/90 border-y-2 border-cyber-accent px-12 py-6 text-center shadow-2xl">
+                <h2 id="banner-title" class="text-3xl sm:text-5xl font-orbitron font-extrabold text-cyber-accent tracking-widest text-glow-cyan">WAVE 1 PREPARATION</h2>
+                <p id="banner-subtitle" class="text-slate-300 mt-2 font-medium">Build defenses & prepare for the incoming swarm!</p>
+            </div>
+        </div>
+
+        <!-- Floating Info Tooltip -->
+        <div id="tooltip" class="absolute hidden bg-cyber-panel/95 border border-cyber-accent/50 p-3 rounded-lg shadow-xl text-xs z-30 pointer-events-none max-w-xs">
+            <div id="tt-title" class="font-orbitron font-bold text-cyber-accent text-sm mb-1">Turret Name</div>
+            <div id="tt-desc" class="text-slate-300 mb-2">Turret description and specs.</div>
+            <div id="tt-stats" class="grid grid-cols-2 gap-x-2 gap-y-1 font-mono text-[11px] text-slate-400 border-t border-slate-700/60 pt-1"></div>
+        </div>
+
+        <!-- Game Pause Modal -->
+        <div id="pause-modal" class="absolute inset-0 bg-black/80 backdrop-blur-md hidden flex flex-col items-center justify-center z-40">
+            <div class="bg-cyber-panel border border-slate-700 p-8 rounded-xl max-w-sm w-full text-center shadow-2xl">
+                <h2 class="font-orbitron text-2xl font-bold text-white mb-4">TACTICAL PAUSE</h2>
+                <p class="text-slate-400 text-sm mb-6">Take a moment to analyze your defense strategy.</p>
+                <div class="space-y-3">
+                    <button onclick="togglePause()" class="w-full py-3 bg-cyber-accent text-black font-orbitron font-bold rounded-lg hover:bg-cyan-400 transition shadow-lg glow-cyan">RESUME MISSION</button>
+                    <button onclick="restartGame()" class="w-full py-2.5 bg-slate-800 text-slate-300 font-orbitron font-semibold rounded-lg hover:bg-slate-700 transition border border-slate-600">RESTART GAME</button>
+                    <a href="https://supernebula23.github.io/games" class="block w-full py-2.5 bg-slate-900 text-slate-400 font-orbitron font-semibold rounded-lg hover:bg-slate-800 transition border border-slate-700 hover:text-white">EXIT TO GAMES HOME</a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Game Over Modal -->
+        <div id="gameover-modal" class="absolute inset-0 bg-black/90 backdrop-blur-md hidden flex flex-col items-center justify-center z-50 p-4">
+            <div class="bg-cyber-panel border-2 border-cyber-danger p-6 sm:p-8 rounded-xl max-w-md w-full text-center shadow-2xl glow-red">
+                <i class="fa-solid fa-skull-crossbones text-5xl text-cyber-danger mb-3 animate-bounce"></i>
+                <h2 class="font-orbitron text-3xl font-extrabold text-cyber-danger tracking-wider mb-1">BASE OVERRUN</h2>
+                <p class="text-slate-400 text-sm mb-6">The cyber core was destroyed by the undead horde.</p>
+                
+                <div class="bg-black/50 p-4 rounded-lg border border-slate-800 space-y-2 mb-6 font-mono text-sm">
+                    <div class="flex justify-between"><span class="text-slate-500">WAVES SURVIVED:</span> <span id="final-waves" class="text-amber-400 font-bold">0</span></div>
+                    <div class="flex justify-between"><span class="text-slate-500">ZOMBIES ELIMINATED:</span> <span id="final-kills" class="text-cyber-accent font-bold">0</span></div>
+                    <div class="flex justify-between"><span class="text-slate-500">FINAL SCORE:</span> <span id="final-score" class="text-cyber-success font-bold text-base">0</span></div>
+                </div>
+
+                <button onclick="restartGame()" class="w-full py-3.5 bg-gradient-to-r from-cyber-danger to-rose-600 text-white font-orbitron font-bold rounded-lg hover:brightness-110 transition shadow-lg glow-red tracking-wider mb-2">
+                    REDEPLOY DEFENSES
+                </button>
+                <a href="https://supernebula23.github.io/games" class="block w-full py-2.5 bg-slate-800 text-slate-300 font-orbitron font-semibold rounded-lg hover:bg-slate-700 transition border border-slate-600">
+                    RETURN TO GAMES HUB
+                </a>
+            </div>
+        </div>
+    </main>
+
+    <!-- Bottom Defense & Command Panel -->
+    <footer class="bg-cyber-panel/95 border-t border-cyber-border/80 p-2 sm:p-3 z-20 backdrop-blur-md">
+        <div class="max-w-6xl mx-auto flex flex-col md:flex-row items-center justify-between gap-3">
+            
+            <!-- Defense Selection Buttons -->
+            <div class="flex items-center justify-center gap-2 overflow-x-auto w-full md:w-auto pb-1 md:pb-0">
+                
+                <!-- Gatling Turret -->
+                <button onclick="selectBuildTool('sentry')" id="btn-tool-sentry" class="tool-btn tool-selected flex-shrink-0 flex flex-col items-center justify-center w-16 h-16 sm:w-20 sm:h-20 bg-slate-900/90 rounded-xl border border-slate-700 hover:border-cyber-accent transition p-1 relative group">
+                    <i class="fa-solid fa-gun text-cyber-accent text-lg sm:text-xl mb-1"></i>
+                    <span class="font-orbitron text-[10px] sm:text-xs font-bold text-slate-200">SENTRY</span>
+                    <span class="text-[10px] font-mono text-amber-400">$100</span>
+                    <div class="absolute -top-1 -right-1 bg-cyber-accent text-black font-mono text-[9px] font-bold px-1 rounded">1</div>
+                </button>
+
+                <!-- Shotgun Turret -->
+                <button onclick="selectBuildTool('shotgun')" id="btn-tool-shotgun" class="tool-btn flex-shrink-0 flex flex-col items-center justify-center w-16 h-16 sm:w-20 sm:h-20 bg-slate-900/90 rounded-xl border border-slate-700 hover:border-cyber-accent transition p-1 relative group">
+                    <i class="fa-solid fa-burst text-amber-400 text-lg sm:text-xl mb-1"></i>
+                    <span class="font-orbitron text-[10px] sm:text-xs font-bold text-slate-200">SCATTER</span>
+                    <span class="text-[10px] font-mono text-amber-400">$175</span>
+                    <div class="absolute -top-1 -right-1 bg-slate-700 text-slate-300 font-mono text-[9px] font-bold px-1 rounded">2</div>
+                </button>
+
+                <!-- Sniper Turret -->
+                <button onclick="selectBuildTool('sniper')" id="btn-tool-sniper" class="tool-btn flex-shrink-0 flex flex-col items-center justify-center w-16 h-16 sm:w-20 sm:h-20 bg-slate-900/90 rounded-xl border border-slate-700 hover:border-cyber-accent transition p-1 relative group">
+                    <i class="fa-solid fa-crosshair text-rose-400 text-lg sm:text-xl mb-1"></i>
+                    <span class="font-orbitron text-[10px] sm:text-xs font-bold text-slate-200">SNIPER</span>
+                    <span class="text-[10px] font-mono text-amber-400">$250</span>
+                    <div class="absolute -top-1 -right-1 bg-slate-700 text-slate-300 font-mono text-[9px] font-bold px-1 rounded">3</div>
+                </button>
+
+                <!-- Plasma Cannon -->
+                <button onclick="selectBuildTool('plasma')" id="btn-tool-plasma" class="tool-btn flex-shrink-0 flex flex-col items-center justify-center w-16 h-16 sm:w-20 sm:h-20 bg-slate-900/90 rounded-xl border border-slate-700 hover:border-cyber-accent transition p-1 relative group">
+                    <i class="fa-solid fa-atom text-purple-400 text-lg sm:text-xl mb-1"></i>
+                    <span class="font-orbitron text-[10px] sm:text-xs font-bold text-slate-200">PLASMA</span>
+                    <span class="text-[10px] font-mono text-amber-400">$350</span>
+                    <div class="absolute -top-1 -right-1 bg-slate-700 text-slate-300 font-mono text-[9px] font-bold px-1 rounded">4</div>
+                </button>
+
+                <!-- Cryo Frost Spire -->
+                <button onclick="selectBuildTool('cryo')" id="btn-tool-cryo" class="tool-btn flex-shrink-0 flex flex-col items-center justify-center w-16 h-16 sm:w-20 sm:h-20 bg-slate-900/90 rounded-xl border border-slate-700 hover:border-cyber-accent transition p-1 relative group">
+                    <i class="fa-solid fa-snowflake text-sky-300 text-lg sm:text-xl mb-1"></i>
+                    <span class="font-orbitron text-[10px] sm:text-xs font-bold text-slate-200">FROST</span>
+                    <span class="text-[10px] font-mono text-amber-400">$200</span>
+                    <div class="absolute -top-1 -right-1 bg-slate-700 text-slate-300 font-mono text-[9px] font-bold px-1 rounded">5</div>
+                </button>
+
+                <!-- Tesla Coil -->
+                <button onclick="selectBuildTool('tesla')" id="btn-tool-tesla" class="tool-btn flex-shrink-0 flex flex-col items-center justify-center w-16 h-16 sm:w-20 sm:h-20 bg-slate-900/90 rounded-xl border border-slate-700 hover:border-cyber-accent transition p-1 relative group">
+                    <i class="fa-solid fa-bolt-lightning text-yellow-300 text-lg sm:text-xl mb-1"></i>
+                    <span class="font-orbitron text-[10px] sm:text-xs font-bold text-slate-200">TESLA</span>
+                    <span class="text-[10px] font-mono text-amber-400">$400</span>
+                    <div class="absolute -top-1 -right-1 bg-slate-700 text-slate-300 font-mono text-[9px] font-bold px-1 rounded">6</div>
+                </button>
+
+                <!-- Barricade Wall -->
+                <button onclick="selectBuildTool('wall')" id="btn-tool-wall" class="tool-btn flex-shrink-0 flex flex-col items-center justify-center w-16 h-16 sm:w-20 sm:h-20 bg-slate-900/90 rounded-xl border border-slate-700 hover:border-cyber-accent transition p-1 relative group">
+                    <i class="fa-solid fa-border-all text-slate-400 text-lg sm:text-xl mb-1"></i>
+                    <span class="font-orbitron text-[10px] sm:text-xs font-bold text-slate-200">WALL</span>
+                    <span class="text-[10px] font-mono text-amber-400">$50</span>
+                    <div class="absolute -top-1 -right-1 bg-slate-700 text-slate-300 font-mono text-[9px] font-bold px-1 rounded">7</div>
+                </button>
+
+                <!-- Repair/Demolish Tool -->
+                <button onclick="selectBuildTool('repair')" id="btn-tool-repair" class="tool-btn flex-shrink-0 flex flex-col items-center justify-center w-16 h-16 sm:w-20 sm:h-20 bg-slate-900/90 rounded-xl border border-slate-700 hover:border-cyber-accent transition p-1 relative group">
+                    <i class="fa-solid fa-wrench text-emerald-400 text-lg sm:text-xl mb-1"></i>
+                    <span class="font-orbitron text-[10px] sm:text-xs font-bold text-slate-200">REPAIR</span>
+                    <span class="text-[10px] font-mono text-amber-400">$25</span>
+                    <div class="absolute -top-1 -right-1 bg-slate-700 text-slate-300 font-mono text-[9px] font-bold px-1 rounded">R</div>
+                </button>
+
+                <!-- Sell / Demolish Tool -->
+                <button onclick="selectBuildTool('sell')" id="btn-tool-sell" class="tool-btn flex-shrink-0 flex flex-col items-center justify-center w-16 h-16 sm:w-20 sm:h-20 bg-slate-900/90 rounded-xl border border-slate-700 hover:border-cyber-accent transition p-1 relative group">
+                    <i class="fa-solid fa-trash-can text-rose-400 text-lg sm:text-xl mb-1"></i>
+                    <span class="font-orbitron text-[10px] sm:text-xs font-bold text-slate-200">SELL</span>
+                    <span class="text-[10px] font-mono text-emerald-400">+70%</span>
+                    <div class="absolute -top-1 -right-1 bg-slate-700 text-slate-300 font-mono text-[9px] font-bold px-1 rounded">X</div>
+                </button>
+            </div>
+
+            <!-- Active Abilities & Wave Call Button -->
+            <div class="flex items-center gap-2 w-full md:w-auto justify-between md:justify-end border-t md:border-t-0 border-slate-800 pt-2 md:pt-0">
+                <!-- Orbital Strike Ability -->
+                <button onclick="triggerOrbitalStrike()" id="btn-ability-strike" class="flex flex-col items-center justify-center px-3 py-2 bg-rose-950/40 hover:bg-rose-900/60 border border-rose-600/50 rounded-xl transition group">
+                    <div class="flex items-center space-x-1">
+                        <i class="fa-solid fa-satellite text-rose-500 text-sm"></i>
+                        <span class="font-orbitron text-xs font-bold text-rose-200">STRIKE</span>
+                    </div>
+                    <span class="text-[10px] font-mono text-cyber-accent">75 Energy</span>
+                </button>
+
+                <!-- Core Overcharge Repair Ability -->
+                <button onclick="triggerCoreRepair()" id="btn-ability-repair" class="flex flex-col items-center justify-center px-3 py-2 bg-emerald-950/40 hover:bg-emerald-900/60 border border-emerald-600/50 rounded-xl transition group">
+                    <div class="flex items-center space-x-1">
+                        <i class="fa-solid fa-circle-radiation text-emerald-400 text-sm"></i>
+                        <span class="font-orbitron text-xs font-bold text-emerald-200">OVERCHARGE</span>
+                    </div>
+                    <span class="text-[10px] font-mono text-cyber-accent">50 Energy</span>
+                </button>
+
+                <!-- Start Wave Early Button -->
+                <button id="btn-start-wave" onclick="startNextWaveEarly()" class="px-5 py-3 bg-gradient-to-r from-cyber-accent to-blue-600 hover:brightness-110 text-black font-orbitron font-extrabold rounded-xl transition shadow-lg glow-cyan flex items-center space-x-2">
+                    <i class="fa-solid fa-play text-sm"></i>
+                    <span id="start-wave-text" class="tracking-wider">START WAVE</span>
+                </button>
+            </div>
+
+        </div>
+    </footer>
+
+    <!-- JavaScript Game Engine -->
+    <script>
+        // Audio Synthesizer Engine using Web Audio API
+        class SoundFX {
+            constructor() {
+                this.ctx = null;
+                this.enabled = true;
+            }
+
+            init() {
+                if (!this.ctx) {
+                    const AudioContext = window.AudioContext || window.webkitAudioContext;
+                    this.ctx = new AudioContext();
+                }
+                if (this.ctx.state === 'suspended') {
+                    this.ctx.resume();
+                }
+            }
+
+            playShoot(pitch = 1) {
+                if (!this.enabled || !this.ctx) return;
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(600 * pitch, this.ctx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(80, this.ctx.currentTime + 0.12);
+                gain.gain.setValueAtTime(0.15, this.ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.12);
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                osc.start();
+                osc.stop(this.ctx.currentTime + 0.12);
+            }
+
+            playLaser() {
+                if (!this.enabled || !this.ctx) return;
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(1200, this.ctx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(200, this.ctx.currentTime + 0.25);
+                gain.gain.setValueAtTime(0.2, this.ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.25);
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                osc.start();
+                osc.stop(this.ctx.currentTime + 0.25);
+            }
+
+            playExplosion() {
+                if (!this.enabled || !this.ctx) return;
+                const bufferSize = this.ctx.sampleRate * 0.3;
+                const buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
+                const data = buffer.getChannelData(0);
+                for (let i = 0; i < bufferSize; i++) {
+                    data[i] = Math.random() * 2 - 1;
+                }
+                const noise = this.ctx.createBufferSource();
+                noise.buffer = buffer;
+
+                const filter = this.ctx.createBiquadFilter();
+                filter.type = 'lowpass';
+                filter.frequency.setValueAtTime(800, this.ctx.currentTime);
+                filter.frequency.linearRampToValueAtTime(50, this.ctx.currentTime + 0.3);
+
+                const gain = this.ctx.createGain();
+                gain.gain.setValueAtTime(0.3, this.ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.3);
+
+                noise.connect(filter);
+                filter.connect(gain);
+                gain.connect(this.ctx.destination);
+                noise.start();
+            }
+
+            playZap() {
+                if (!this.enabled || !this.ctx) return;
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.type = 'square';
+                osc.frequency.setValueAtTime(400, this.ctx.currentTime);
+                osc.frequency.linearRampToValueAtTime(800, this.ctx.currentTime + 0.08);
+                gain.gain.setValueAtTime(0.12, this.ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.08);
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                osc.start();
+                osc.stop(this.ctx.currentTime + 0.08);
+            }
+
+            playBuild() {
+                if (!this.enabled || !this.ctx) return;
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(300, this.ctx.currentTime);
+                osc.frequency.linearRampToValueAtTime(600, this.ctx.currentTime + 0.15);
+                gain.gain.setValueAtTime(0.2, this.ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.15);
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                osc.start();
+                osc.stop(this.ctx.currentTime + 0.15);
+            }
+
+            playAlarm() {
+                if (!this.enabled || !this.ctx) return;
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(800, this.ctx.currentTime);
+                osc.frequency.linearRampToValueAtTime(400, this.ctx.currentTime + 0.3);
+                gain.gain.setValueAtTime(0.15, this.ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.3);
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                osc.start();
+                osc.stop(this.ctx.currentTime + 0.3);
+            }
+        }
+
+        const audio = new SoundFX();
+
+        // Configuration and Constants
+        const GRID_COLS = 28;
+        const GRID_ROWS = 18;
+        let CELL_SIZE = 40;
+
+        const TURRET_TYPES = {
+            sentry: { name: 'Gatling Sentry', cost: 100, range: 3.5, damage: 16, fireRate: 0.15, type: 'bullet', desc: 'Rapid fire turret targeting single zombies.' },
+            shotgun: { name: 'Scatter Cannon', cost: 175, range: 2.8, damage: 35, fireRate: 0.7, type: 'spread', desc: 'Fires close-range spread pellets with knockback.' },
+            sniper: { name: 'Laser Sniper', cost: 250, range: 7.5, damage: 180, fireRate: 1.8, type: 'sniper', desc: 'High precision heavy armor piercer.' },
+            plasma: { name: 'Plasma Launcher', cost: 350, range: 5.0, damage: 110, fireRate: 1.4, type: 'aoe', desc: 'Fires explosive energy balls dealing area splash damage.' },
+            cryo: { name: 'Frost Emitter', cost: 200, range: 3.2, damage: 4, fireRate: 0.1, type: 'freeze', desc: 'Emits cryogenic gas that slows down all surrounding zombies.' },
+            tesla: { name: 'Tesla Coil', cost: 400, range: 4.0, damage: 45, fireRate: 0.8, type: 'lightning', desc: 'Arcs electricity across multiple chained targets.' },
+            wall: { name: 'Barricade Wall', cost: 50, maxHp: 600, type: 'wall', desc: 'Heavy armored barrier blocking zombie paths.' },
+            repair: { name: 'Repair / Upgrade', cost: 25, desc: 'Repairs damaged structures or upgrades existing turrets.' },
+            sell: { name: 'Sell / Demolish', desc: 'Demolishes existing turret or wall and refunds 70% value.' }
+        };
+
+        const ZOMBIE_TYPES = {
+            walker: { name: 'Walker', hp: 90, speed: 10.0, damage: 12, reward: 15, radius: 10, color: '#4ade80' },
+            runner: { name: 'Feral Runner', hp: 55, speed: 18.0, damage: 8, reward: 20, radius: 8, color: '#facc15' },
+            tank: { name: 'Zombie Brute', hp: 420, speed: 6.0, damage: 35, reward: 55, radius: 15, color: '#f87171' },
+            spitter: { name: 'Toxic Spitter', hp: 110, speed: 8.5, damage: 18, reward: 30, radius: 10, color: '#a855f7', ranged: true, range: 3.8 },
+            exploder: { name: 'Boomer', hp: 80, speed: 14.0, damage: 180, reward: 35, radius: 11, color: '#fb923c', explode: true },
+            boss: { name: 'Titan Leviathan', hp: 2200, speed: 4.5, damage: 90, reward: 350, radius: 22, color: '#ef4444' }
+        };
+
+        // Game State Engine Variables
+        let canvas, ctx;
+        let isPaused = false;
+        let gameOver = false;
+        let gameTime = 0;
+        let selectedTool = 'sentry';
+
+        // Base Core
+        const baseCore = {
+            x: Math.floor(GRID_COLS / 2),
+            y: Math.floor(GRID_ROWS / 2),
+            hp: 1000,
+            maxHp: 1000,
+            radius: 1.4
+        };
+
+        // Player Stats
+        let credits = 450;
+        let energy = 100;
+        let maxEnergy = 100;
+        let wave = 1;
+        let waveState = 'prep'; // 'prep' | 'active' | 'completed'
+        let prepTimer = 15; // seconds
+        let zombiesToSpawn = [];
+        let spawnInterval = 0;
+        let lastSpawnTime = 0;
+        let kills = 0;
+        let totalScore = 0;
+
+        // Entities Arrays
+        let grid = []; // 2D array for turrets & walls
+        let zombies = [];
+        let projectiles = [];
+        let particles = [];
+        let floatingTexts = [];
+
+        // Mouse Mouse/Touch Input
+        const mouse = { x: 0, y: 0, gridX: 0, gridY: 0, isHovering: false, isMouseDown: false };
+
+        class Zombie {
+            constructor(typeKey, spawnX, spawnY) {
+                const template = ZOMBIE_TYPES[typeKey];
+                this.typeKey = typeKey;
+                this.name = template.name;
+                this.maxHp = template.hp * (1 + (wave - 1) * 0.18);
+                this.hp = this.maxHp;
+                this.speed = template.speed * (0.9 + Math.random() * 0.2);
+                this.baseSpeed = this.speed;
+                this.damage = template.damage;
+                this.reward = Math.round(template.reward * (1 + wave * 0.05));
+                this.radius = template.radius;
+                this.color = template.color;
+                this.ranged = template.ranged || false;
+                this.attackRange = (template.range || 0.6) * CELL_SIZE;
+                this.explode = template.explode || false;
+
+                // Position in pixels
+                this.x = spawnX;
+                this.y = spawnY;
+                
+                this.slowTimer = 0;
+                this.attackCooldown = 0;
+                this.targetWall = null;
+            }
+
+            update(dt) {
+                // Handle Cryo Slowdown
+                if (this.slowTimer > 0) {
+                    this.slowTimer -= dt;
+                    this.speed = this.baseSpeed * 0.45;
+                } else {
+                    this.speed = this.baseSpeed;
+                }
+
+                if (this.attackCooldown > 0) {
+                    this.attackCooldown -= dt;
+                }
+
+                // Core Target Position
+                const targetPixelX = (baseCore.x + 0.5) * CELL_SIZE;
+                const targetPixelY = (baseCore.y + 0.5) * CELL_SIZE;
+
+                // Check collision with walls or HQ
+                const gx = Math.floor(this.x / CELL_SIZE);
+                const gy = Math.floor(this.y / CELL_SIZE);
+
+                // Look for barricade blocking path nearby
+                let blocked = false;
+                if (grid[gy] && grid[gy][gx] && grid[gy][gx].type === 'wall') {
+                    const wall = grid[gy][gx];
+                    this.attackStructure(wall, dt);
+                    blocked = true;
+                }
+
+                if (!blocked) {
+                    // Distance to HQ Core
+                    const dx = targetPixelX - this.x;
+                    const dy = targetPixelY - this.y;
+                    const distToCore = Math.hypot(dx, dy);
+
+                    const stopDist = this.ranged ? this.attackRange : (baseCore.radius * CELL_SIZE);
+
+                    if (distToCore <= stopDist) {
+                        // Attack Core Base directly
+                        this.attackCore(dt);
+                    } else {
+                        // Move toward Core Base
+                        const angle = Math.atan2(dy, dx);
+                        this.x += Math.cos(angle) * this.speed * CELL_SIZE * dt * 0.04;
+                        this.y += Math.sin(angle) * this.speed * CELL_SIZE * dt * 0.04;
+                    }
+                }
+            }
+
+            attackStructure(wall, dt) {
+                if (this.explode) {
+                    wall.hp -= this.damage;
+                    this.hp = 0; // Suicidal explosion
+                    audio.playExplosion();
+                    createExplosionParticles(this.x, this.y, '#f97316', 20);
+                    return;
+                }
+
+                if (this.attackCooldown <= 0) {
+                    wall.hp -= this.damage;
+                    this.attackCooldown = 1.0;
+                    createHitParticles(this.x, this.y, '#94a3b8');
+                    audio.playShoot(0.4);
+                }
+            }
+
+            attackCore(dt) {
+                if (this.explode) {
+                    baseCore.hp -= this.damage;
+                    this.hp = 0;
+                    audio.playExplosion();
+                    createExplosionParticles(this.x, this.y, '#ef4444', 30);
+                    return;
+                }
+
+                if (this.attackCooldown <= 0) {
+                    baseCore.hp -= this.damage;
+                    this.attackCooldown = 0.8;
+                    audio.playAlarm();
+                    createHitParticles(this.x, this.y, '#ff0055');
+                    addFloatingText(`-${Math.round(this.damage)}`, this.x, this.y - 10, '#ff0055');
+                    if (baseCore.hp <= 0) triggerGameOver();
+                }
+            }
+
+            draw() {
+                ctx.save();
+                ctx.translate(this.x, this.y);
+
+                // Body Outer Ring
+                ctx.beginPath();
+                ctx.arc(0, 0, this.radius, 0, Math.PI * 2);
+                ctx.fillStyle = this.slowTimer > 0 ? '#38bdf8' : this.color;
+                ctx.fill();
+                ctx.strokeStyle = '#000';
+                ctx.lineWidth = 1.5;
+                ctx.stroke();
+
+                // Eyes / Cyber glow detail
+                ctx.fillStyle = '#ff0000';
+                ctx.beginPath();
+                ctx.arc(-this.radius * 0.3, -this.radius * 0.3, this.radius * 0.25, 0, Math.PI * 2);
+                ctx.arc(this.radius * 0.3, -this.radius * 0.3, this.radius * 0.25, 0, Math.PI * 2);
+                ctx.fill();
+
+                // Health Bar Overhead
+                if (this.hp < this.maxHp) {
+                    const barW = this.radius * 2.2;
+                    const barH = 4;
+                    const hpRatio = Math.max(0, this.hp / this.maxHp);
+                    ctx.fillStyle = '#1e293b';
+                    ctx.fillRect(-barW / 2, -this.radius - 8, barW, barH);
+                    ctx.fillStyle = hpRatio > 0.5 ? '#22c55e' : (hpRatio > 0.25 ? '#eab308' : '#ef4444');
+                    ctx.fillRect(-barW / 2, -this.radius - 8, barW * hpRatio, barH);
+                }
+
+                ctx.restore();
+            }
+        }
+
+        class Turret {
+            constructor(gx, gy, typeKey) {
+                this.gx = gx;
+                this.gy = gy;
+                this.typeKey = typeKey;
+                const stats = TURRET_TYPES[typeKey];
+
+                this.name = stats.name;
+                this.cost = stats.cost;
+                this.range = stats.range * CELL_SIZE;
+                this.damage = stats.damage;
+                this.fireRate = stats.fireRate; // Cooldown in seconds
+                this.type = stats.type;
+
+                this.level = 1;
+                this.cooldown = 0;
+                this.angle = 0;
+                this.target = null;
+
+                // Position in center of cell
+                this.x = (gx + 0.5) * CELL_SIZE;
+                this.y = (gy + 0.5) * CELL_SIZE;
+
+                // Wall specific properties
+                if (typeKey === 'wall') {
+                    this.maxHp = stats.maxHp;
+                    this.hp = stats.maxHp;
+                }
+            }
+
+            upgrade() {
+                const upgradeCost = Math.round(this.cost * 1.2);
+                if (credits >= upgradeCost) {
+                    credits -= upgradeCost;
+                    this.level++;
+                    this.damage = Math.round(this.damage * 1.45);
+                    this.range *= 1.1;
+                    audio.playBuild();
+                    addFloatingText(`LVL ${this.level} UPGRADE!`, this.x, this.y - 15, '#00f0ff');
+                    updateHUD();
+                } else {
+                    addFloatingText(`NEED $${upgradeCost}`, this.x, this.y - 15, '#ff0055');
+                }
+            }
+
+            update(dt) {
+                if (this.typeKey === 'wall') return;
+
+                if (this.cooldown > 0) {
+                    this.cooldown -= dt;
+                }
+
+                // Find closest target in range
+                this.findTarget();
+
+                if (this.target) {
+                    const dx = this.target.x - this.x;
+                    const dy = this.target.y - this.y;
+                    this.angle = Math.atan2(dy, dx);
+
+                    if (this.cooldown <= 0) {
+                        this.shoot();
+                        this.cooldown = this.fireRate;
+                    }
+                }
+            }
+
+            findTarget() {
+                let closest = null;
+                let minDist = this.range;
+
+                for (let z of zombies) {
+                    const dist = Math.hypot(z.x - this.x, z.y - this.y);
+                    if (dist <= minDist) {
+                        minDist = dist;
+                        closest = z;
+                    }
+                }
+                this.target = closest;
+            }
+
+            shoot() {
+                if (!this.target) return;
+
+                if (this.type === 'bullet') {
+                    projectiles.push(new Projectile(this.x, this.y, this.target, this.damage, 'bullet'));
+                    audio.playShoot(1.2);
+                } else if (this.type === 'spread') {
+                    for (let i = -2; i <= 2; i++) {
+                        const spreadAngle = this.angle + (i * 0.12);
+                        projectiles.push(new SpreadPellet(this.x, this.y, spreadAngle, this.damage * 0.35, this.range));
+                    }
+                    audio.playShoot(0.7);
+                } else if (this.type === 'sniper') {
+                    // Instant hit laser ray
+                    this.target.hp -= this.damage;
+                    createBeamParticles(this.x, this.y, this.target.x, this.target.y, '#ef4444');
+                    audio.playLaser();
+                    addFloatingText(`-${Math.round(this.damage)}`, this.target.x, this.target.y - 10, '#ef4444');
+                } else if (this.type === 'aoe') {
+                    projectiles.push(new Projectile(this.x, this.y, this.target, this.damage, 'plasma'));
+                    audio.playShoot(0.5);
+                } else if (this.type === 'freeze') {
+                    // AoE frost burst slowing all nearby zombies
+                    for (let z of zombies) {
+                        if (Math.hypot(z.x - this.x, z.y - this.y) <= this.range) {
+                            z.slowTimer = 2.5; // 2.5s slow
+                            z.hp -= this.damage;
+                        }
+                    }
+                    createFrostRing(this.x, this.y, this.range);
+                    audio.playZap();
+                } else if (this.type === 'lightning') {
+                    // Chain lightning to up to 4 zombies
+                    let targets = zombies.filter(z => Math.hypot(z.x - this.x, z.y - this.y) <= this.range);
+                    targets = targets.slice(0, 4); // max 4 chains
+                    let lastPt = { x: this.x, y: this.y };
+                    for (let t of targets) {
+                        t.hp -= this.damage;
+                        createLightningArc(lastPt.x, lastPt.y, t.x, t.y);
+                        addFloatingText(`-${Math.round(this.damage)}`, t.x, t.y - 10, '#facc15');
+                        lastPt = { x: t.x, y: t.y };
+                    }
+                    if (targets.length > 0) audio.playZap();
+                }
+            }
+
+            draw() {
+                ctx.save();
+                ctx.translate(this.x, this.y);
+
+                if (this.typeKey === 'wall') {
+                    // Draw Barricade Wall
+                    ctx.fillStyle = '#334155';
+                    ctx.fillRect(-CELL_SIZE * 0.45, -CELL_SIZE * 0.45, CELL_SIZE * 0.9, CELL_SIZE * 0.9);
+                    ctx.strokeStyle = '#64748b';
+                    ctx.lineWidth = 2;
+                    ctx.strokeRect(-CELL_SIZE * 0.45, -CELL_SIZE * 0.45, CELL_SIZE * 0.9, CELL_SIZE * 0.9);
+
+                    // Health Bar
+                    if (this.hp < this.maxHp) {
+                        const ratio = Math.max(0, this.hp / this.maxHp);
+                        ctx.fillStyle = '#000';
+                        ctx.fillRect(-15, -18, 30, 4);
+                        ctx.fillStyle = '#22c55e';
+                        ctx.fillRect(-15, -18, 30 * ratio, 4);
+                    }
+                    ctx.restore();
+                    return;
+                }
+
+                // Turret Base
+                ctx.beginPath();
+                ctx.arc(0, 0, CELL_SIZE * 0.38, 0, Math.PI * 2);
+                ctx.fillStyle = '#1e293b';
+                ctx.fill();
+                ctx.strokeStyle = '#00f0ff';
+                ctx.lineWidth = 1.5;
+                ctx.stroke();
+
+                // Rotate Turret Barrel
+                ctx.rotate(this.angle);
+
+                // Draw Barrel according to turret type
+                ctx.fillStyle = this.getTurretColor();
+                if (this.typeKey === 'sentry') {
+                    ctx.fillRect(0, -3, CELL_SIZE * 0.45, 6);
+                } else if (this.typeKey === 'shotgun') {
+                    ctx.fillRect(0, -6, CELL_SIZE * 0.4, 12);
+                } else if (this.typeKey === 'sniper') {
+                    ctx.fillRect(-2, -2, CELL_SIZE * 0.6, 4);
+                } else if (this.typeKey === 'plasma') {
+                    ctx.beginPath();
+                    ctx.arc(6, 0, 8, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.fillRect(0, -4, 10, 8);
+                } else if (this.typeKey === 'cryo' || this.typeKey === 'tesla') {
+                    ctx.beginPath();
+                    ctx.arc(0, 0, 10, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+
+                ctx.restore();
+
+                // Draw Level Badge
+                if (this.level > 1) {
+                    ctx.fillStyle = '#00f0ff';
+                    ctx.font = 'bold 10px Orbitron';
+                    ctx.fillText(`L${this.level}`, this.x - 6, this.y + 16);
+                }
+            }
+
+            getTurretColor() {
+                switch (this.typeKey) {
+                    case 'sentry': return '#00f0ff';
+                    case 'shotgun': return '#f59e0b';
+                    case 'sniper': return '#f43f5e';
+                    case 'plasma': return '#a855f7';
+                    case 'cryo': return '#38bdf8';
+                    case 'tesla': return '#eab308';
+                    default: return '#94a3b8';
+                }
+            }
+        }
+
+        // Projectiles Class
+        class Projectile {
+            constructor(x, y, target, damage, pType) {
+                this.x = x;
+                this.y = y;
+                this.target = target;
+                this.damage = damage;
+                this.pType = pType;
+                this.speed = pType === 'plasma' ? 380 : 650; // px/sec
+                this.alive = true;
+
+                const dx = target.x - x;
+                const dy = target.y - y;
+                const dist = Math.hypot(dx, dy);
+                this.vx = (dx / dist) * this.speed;
+                this.vy = (dy / dist) * this.speed;
+            }
+
+            update(dt) {
+                this.x += this.vx * dt;
+                this.y += this.vy * dt;
+
+                // Target hit test
+                const dist = Math.hypot(this.target.x - this.x, this.target.y - this.y);
+                if (dist <= this.target.radius + 5) {
+                    this.hit();
+                } else if (this.x < 0 || this.x > canvas.width || this.y < 0 || this.y > canvas.height) {
+                    this.alive = false;
+                }
+            }
+
+            hit() {
+                this.alive = false;
+                if (this.pType === 'plasma') {
+                    // AoE Plasma Explosion
+                    for (let z of zombies) {
+                        if (Math.hypot(z.x - this.x, z.y - this.y) <= 75) {
+                            z.hp -= this.damage;
+                            addFloatingText(`-${Math.round(this.damage)}`, z.x, z.y - 10, '#a855f7');
+                        }
+                    }
+                    createExplosionParticles(this.x, this.y, '#a855f7', 25);
+                    audio.playExplosion();
+                } else {
+                    this.target.hp -= this.damage;
+                    createHitParticles(this.x, this.y, '#00f0ff');
+                    addFloatingText(`-${Math.round(this.damage)}`, this.target.x, this.target.y - 10, '#00f0ff');
+                }
+            }
+
+            draw() {
+                ctx.save();
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.pType === 'plasma' ? 6 : 3, 0, Math.PI * 2);
+                ctx.fillStyle = this.pType === 'plasma' ? '#a855f7' : '#00f0ff';
+                ctx.shadowColor = ctx.fillStyle;
+                ctx.shadowBlur = 8;
+                ctx.fill();
+                ctx.restore();
+            }
+        }
+
+        // Spread Pellet Projectile
+        class SpreadPellet {
+            constructor(x, y, angle, damage, range) {
+                this.x = x;
+                this.y = y;
+                this.damage = damage;
+                this.speed = 550;
+                this.vx = Math.cos(angle) * this.speed;
+                this.vy = Math.sin(angle) * this.speed;
+                this.distanceTraveled = 0;
+                this.maxRange = range;
+                this.alive = true;
+            }
+
+            update(dt) {
+                const step = this.speed * dt;
+                this.x += this.vx * dt;
+                this.y += this.vy * dt;
+                this.distanceTraveled += step;
+
+                if (this.distanceTraveled >= this.maxRange) {
+                    this.alive = false;
+                    return;
+                }
+
+                // Check collision with zombies
+                for (let z of zombies) {
+                    if (Math.hypot(z.x - this.x, z.y - this.y) <= z.radius + 4) {
+                        z.hp -= this.damage;
+                        // Knockback
+                        z.x += (this.vx / this.speed) * 8;
+                        z.y += (this.vy / this.speed) * 8;
+                        createHitParticles(this.x, this.y, '#f59e0b');
+                        this.alive = false;
+                        break;
+                    }
+                }
+            }
+
+            draw() {
+                ctx.fillStyle = '#f59e0b';
+                ctx.fillRect(this.x - 2, this.y - 2, 4, 4);
+            }
+        }
+
+        function createHitParticles(x, y, color) {
+            for (let i = 0; i < 6; i++) {
+                particles.push({
+                    x, y,
+                    vx: (Math.random() - 0.5) * 120,
+                    vy: (Math.random() - 0.5) * 120,
+                    life: 0.2,
+                    maxLife: 0.2,
+                    color,
+                    size: Math.random() * 3 + 1
+                });
+            }
+        }
+
+        function createExplosionParticles(x, y, color, count = 20) {
+            for (let i = 0; i < count; i++) {
+                const angle = Math.random() * Math.PI * 2;
+                const speed = Math.random() * 200 + 50;
+                particles.push({
+                    x, y,
+                    vx: Math.cos(angle) * speed,
+                    vy: Math.sin(angle) * speed,
+                    life: 0.5,
+                    maxLife: 0.5,
+                    color,
+                    size: Math.random() * 5 + 2
+                });
+            }
+        }
+
+        function createBeamParticles(x1, y1, x2, y2, color) {
+            particles.push({
+                type: 'beam',
+                x1, y1, x2, y2,
+                color,
+                life: 0.15,
+                maxLife: 0.15
+            });
+        }
+
+        function createLightningArc(x1, y1, x2, y2) {
+            particles.push({
+                type: 'lightning',
+                x1, y1, x2, y2,
+                color: '#facc15',
+                life: 0.12,
+                maxLife: 0.12
+            });
+        }
+
+        function createFrostRing(x, y, radius) {
+            particles.push({
+                type: 'ring',
+                x, y,
+                radius,
+                color: '#38bdf8',
+                life: 0.3,
+                maxLife: 0.3
+            });
+        }
+
+        function addFloatingText(text, x, y, color) {
+            floatingTexts.push({
+                text, x, y, color,
+                vy: -35,
+                life: 0.8,
+                maxLife: 0.8
+            });
+        }
+
+        function startWave() {
+            waveState = 'active';
+            zombiesToSpawn = generateWaveComposition(wave);
+            spawnInterval = Math.max(0.3, 2.0 - (wave * 0.1));
+            lastSpawnTime = performance.now();
+
+            showBanner(`WAVE ${wave} COMMENCING`, 'Eliminate all infected bio-entities!');
+            audio.playAlarm();
+            updateHUD();
+        }
+
+        function generateWaveComposition(waveNum) {
+            let list = [];
+            const count = 10 + waveNum * 6;
+
+            for (let i = 0; i < count; i++) {
+                const rand = Math.random();
+                if (waveNum >= 5 && rand < 0.08) {
+                    list.push('boss');
+                } else if (waveNum >= 3 && rand < 0.22) {
+                    list.push('exploder');
+                } else if (waveNum >= 2 && rand < 0.35) {
+                    list.push('spitter');
+                } else if (rand < 0.55) {
+                    list.push('runner');
+                } else if (rand < 0.80) {
+                    list.push('walker');
+                } else {
+                    list.push('tank');
+                }
+            }
+            return list;
+        }
+
+        function spawnZombie() {
+            if (zombiesToSpawn.length === 0) return;
+            const typeKey = zombiesToSpawn.pop();
+
+            // Random edge spawn (Top, Bottom, Left, Right)
+            let spawnX, spawnY;
+            const edge = Math.floor(Math.random() * 4);
+            if (edge === 0) { // Top
+                spawnX = Math.random() * canvas.width;
+                spawnY = -20;
+            } else if (edge === 1) { // Right
+                spawnX = canvas.width + 20;
+                spawnY = Math.random() * canvas.height;
+            } else if (edge === 2) { // Bottom
+                spawnX = Math.random() * canvas.width;
+                spawnY = canvas.height + 20;
+            } else { // Left
+                spawnX = -20;
+                spawnY = Math.random() * canvas.height;
+            }
+
+            zombies.push(new Zombie(typeKey, spawnX, spawnY));
+        }
+
+        function checkWaveCompletion() {
+            if (waveState === 'active' && zombiesToSpawn.length === 0 && zombies.length === 0) {
+                waveState = 'prep';
+                prepTimer = 15;
+                const bonus = 100 + wave * 40;
+                credits += bonus;
+                wave++;
+                audio.playBuild();
+                showBanner(`WAVE COMPLETED!`, `Bonus reward awarded: +$${bonus}`);
+                updateHUD();
+            }
+        }
+
+        function setupInputListeners() {
+            window.addEventListener('resize', resizeCanvas);
+
+            canvas.addEventListener('mousemove', (e) => {
+                const rect = canvas.getBoundingClientRect();
+                mouse.x = e.clientX - rect.left;
+                mouse.y = e.clientY - rect.top;
+                mouse.gridX = Math.floor(mouse.x / CELL_SIZE);
+                mouse.gridY = Math.floor(mouse.y / CELL_SIZE);
+                mouse.isHovering = true;
+                updateTooltip();
+            });
+
+            canvas.addEventListener('mouseleave', () => {
+                mouse.isHovering = false;
+                hideTooltip();
+            });
+
+            canvas.addEventListener('click', () => {
+                audio.init();
+                handleGridClick(mouse.gridX, mouse.gridY);
+            });
+
+            // Keyboard Shortcuts
+            window.addEventListener('keydown', (e) => {
+                if (e.key === '1') selectBuildTool('sentry');
+                if (e.key === '2') selectBuildTool('shotgun');
+                if (e.key === '3') selectBuildTool('sniper');
+                if (e.key === '4') selectBuildTool('plasma');
+                if (e.key === '5') selectBuildTool('cryo');
+                if (e.key === '6') selectBuildTool('tesla');
+                if (e.key === '7') selectBuildTool('wall');
+                if (e.key.toLowerCase() === 'r') selectBuildTool('repair');
+                if (e.key.toLowerCase() === 'x') selectBuildTool('sell');
+                if (e.key === ' ') togglePause();
+            });
+        }
+
+        function selectBuildTool(tool) {
+            selectedTool = tool;
+            document.querySelectorAll('.tool-btn').forEach(btn => btn.classList.remove('tool-selected'));
+            const targetBtn = document.getElementById(`btn-tool-${tool}`);
+            if (targetBtn) targetBtn.classList.add('tool-selected');
+            audio.init();
+            audio.playZap();
+        }
+
+        function handleGridClick(gx, gy) {
+            if (gx < 0 || gx >= GRID_COLS || gy < 0 || gy >= GRID_ROWS) return;
+
+            // Cannot build directly on Base HQ Core
+            if (Math.abs(gx - baseCore.x) <= 1 && Math.abs(gy - baseCore.y) <= 1) {
+                addFloatingText('PROTECTED CORE ZONE', mouse.x, mouse.y, '#ff0055');
+                audio.playAlarm();
+                return;
+            }
+
+            const existing = grid[gy][gx];
+
+            if (selectedTool === 'sell') {
+                if (existing) {
+                    let refund = 0;
+                    if (existing.typeKey === 'wall') {
+                        refund = Math.round(existing.cost * 0.7 * (existing.hp / existing.maxHp));
+                    } else {
+                        const totalSpent = existing.cost * Math.pow(1.2, existing.level - 1);
+                        refund = Math.round(totalSpent * 0.7);
+                    }
+                    credits += refund;
+                    createExplosionParticles(existing.x, existing.y, '#f43f5e', 15);
+                    audio.playExplosion();
+                    addFloatingText(`+$${refund} SOLD`, existing.x, existing.y, '#00ff66');
+                    grid[gy][gx] = null;
+                    updateHUD();
+                } else {
+                    addFloatingText('NO TURRET TO SELL', mouse.x, mouse.y, '#ff0055');
+                }
+                return;
+            }
+
+            if (selectedTool === 'repair') {
+                if (existing) {
+                    if (existing.typeKey === 'wall' && existing.hp < existing.maxHp) {
+                        // Repair Wall
+                        if (credits >= 25) {
+                            credits -= 25;
+                            existing.hp = existing.maxHp;
+                            audio.playBuild();
+                            addFloatingText('REPAIRED!', existing.x, existing.y, '#00ff66');
+                        }
+                    } else if (existing.typeKey !== 'wall') {
+                        // Upgrade existing Turret
+                        existing.upgrade();
+                    }
+                }
+                updateHUD();
+                return;
+            }
+
+            // Build new Turret or Wall
+            const toolStats = TURRET_TYPES[selectedTool];
+            if (!toolStats) return;
+
+            if (existing) {
+                // If clicking on existing turret with same type, upgrade it
+                if (existing.typeKey === selectedTool && selectedTool !== 'wall') {
+                    existing.upgrade();
+                } else {
+                    addFloatingText('TILE OCCUPIED', mouse.x, mouse.y, '#ff0055');
+                }
+                return;
+            }
+
+            if (credits >= toolStats.cost) {
+                credits -= toolStats.cost;
+                grid[gy][gx] = new Turret(gx, gy, selectedTool);
+                audio.playBuild();
+                createExplosionParticles((gx + 0.5) * CELL_SIZE, (gy + 0.5) * CELL_SIZE, '#00f0ff', 12);
+                updateHUD();
+            } else {
+                audio.playAlarm();
+                addFloatingText('INSUFFICIENT CREDITS', mouse.x, mouse.y, '#ff0055');
+            }
+        }
+
+        // Active Ability: Orbital Laser Strike
+        function triggerOrbitalStrike() {
+            if (energy >= 75) {
+                energy -= 75;
+                audio.playExplosion();
+                // Deal massive damage to all zombies
+                for (let z of zombies) {
+                    z.hp -= 500;
+                    addFloatingText('-500 ORBITAL', z.x, z.y, '#ff0055');
+                }
+                createExplosionParticles(canvas.width / 2, canvas.height / 2, '#ff0055', 80);
+                showBanner('ORBITAL STRIKE EXECUTED', 'Heavy tactical laser pulse delivered.');
+                updateHUD();
+            } else {
+                addFloatingText('LOW ENERGY', canvas.width / 2, canvas.height / 2, '#ff0055');
+            }
+        }
+
+        // Active Ability: Core Nano Repair
+        function triggerCoreRepair() {
+            if (energy >= 50) {
+                energy -= 50;
+                baseCore.hp = Math.min(baseCore.maxHp, baseCore.hp + 350);
+                audio.playBuild();
+                addFloatingText('+350 CORE HP', (baseCore.x + 0.5) * CELL_SIZE, (baseCore.y + 0.5) * CELL_SIZE, '#00ff66');
+                updateHUD();
+            } else {
+                addFloatingText('LOW ENERGY', canvas.width / 2, canvas.height / 2, '#ff0055');
+            }
+        }
+
+        function startNextWaveEarly() {
+            if (waveState === 'prep') {
+                const earlyBonus = Math.round(prepTimer * 8);
+                credits += earlyBonus;
+                addFloatingText(`+$${earlyBonus} EARLY BONUS!`, canvas.width / 2, 80, '#facc15');
+                prepTimer = 0;
+                startWave();
+            }
+        }
+
+        function resizeCanvas() {
+            const container = canvas.parentElement;
+            canvas.width = container.clientWidth;
+            canvas.height = container.clientHeight;
+
+            CELL_SIZE = Math.min(canvas.width / GRID_COLS, canvas.height / GRID_ROWS);
+        }
+
+        function updateHUD() {
+            document.getElementById('hp-text').innerText = `${Math.max(0, Math.round(baseCore.hp))}/${baseCore.maxHp}`;
+            document.getElementById('hp-bar').style.width = `${Math.max(0, (baseCore.hp / baseCore.maxHp) * 100)}%`;
+            document.getElementById('credits-val').innerText = credits;
+            document.getElementById('energy-val').innerText = `${Math.round(energy)}/${maxEnergy}`;
+            document.getElementById('wave-val').innerText = wave;
+
+            // Start wave button state
+            const startBtnText = document.getElementById('start-wave-text');
+            if (waveState === 'prep') {
+                startBtnText.innerText = `START WAVE (${Math.ceil(prepTimer)}s)`;
+            } else {
+                startBtnText.innerText = `WAVE IN PROGRESS`;
+            }
+        }
+
+        function updateTooltip() {
+            const tt = document.getElementById('tooltip');
+            const toolStats = TURRET_TYPES[selectedTool];
+
+            if (!toolStats || !mouse.isHovering) {
+                tt.classList.add('hidden');
+                return;
+            }
+
+            tt.classList.remove('hidden');
+            tt.style.left = `${Math.min(canvas.width - 180, mouse.x + 15)}px`;
+            tt.style.top = `${Math.min(canvas.height - 120, mouse.y + 15)}px`;
+
+            document.getElementById('tt-title').innerText = toolStats.name;
+            document.getElementById('tt-desc').innerText = toolStats.desc;
+
+            let statsHtml = '';
+            if (toolStats.cost) statsHtml += `<div>Cost: <span class="text-amber-400">$${toolStats.cost}</span></div>`;
+            if (toolStats.damage) statsHtml += `<div>DMG: <span class="text-cyber-accent">${toolStats.damage}</span></div>`;
+            if (toolStats.range) statsHtml += `<div>Range: <span class="text-cyber-accent">${toolStats.range} tiles</span></div>`;
+            
+            // Show refund info when hovering over built items with Sell tool
+            if (selectedTool === 'sell' && grid[mouse.gridY] && grid[mouse.gridY][mouse.gridX]) {
+                const existing = grid[mouse.gridY][mouse.gridX];
+                let refund = 0;
+                if (existing.typeKey === 'wall') {
+                    refund = Math.round(existing.cost * 0.7 * (existing.hp / existing.maxHp));
+                } else {
+                    const totalSpent = existing.cost * Math.pow(1.2, existing.level - 1);
+                    refund = Math.round(totalSpent * 0.7);
+                }
+                statsHtml = `<div class="text-emerald-400 font-bold">Sell Value: +$${refund}</div>`;
+            }
+
+            document.getElementById('tt-stats').innerHTML = statsHtml;
+        }
+
+        function hideTooltip() {
+            document.getElementById('tooltip').classList.add('hidden');
+        }
+
+        function showBanner(title, subtitle) {
+            const banner = document.getElementById('wave-banner');
+            document.getElementById('banner-title').innerText = title;
+            document.getElementById('banner-subtitle').innerText = subtitle;
+
+            banner.classList.remove('opacity-0');
+            banner.classList.add('opacity-100');
+
+            setTimeout(() => {
+                banner.classList.remove('opacity-100');
+                banner.classList.add('opacity-0');
+            }, 2500);
+        }
+
+        function initGrid() {
+            grid = [];
+            for (let r = 0; r < GRID_ROWS; r++) {
+                let row = [];
+                for (let c = 0; c < GRID_COLS; c++) {
+                    row.push(null);
+                }
+                grid.push(row);
+            }
+        }
+
+        function gameLoop(time) {
+            const dt = Math.min(0.1, (time - gameTime) / 1000);
+            gameTime = time;
+
+            if (!isPaused && !gameOver) {
+                update(dt);
+            }
+
+            render();
+            requestAnimationFrame(gameLoop);
+        }
+
+        function update(dt) {
+            // Passive Energy Regeneration
+            if (energy < maxEnergy) {
+                energy = Math.min(maxEnergy, energy + dt * 2.5);
+            }
+
+            // Prep Phase Countdown
+            if (waveState === 'prep') {
+                prepTimer -= dt;
+                if (prepTimer <= 0) {
+                    startWave();
+                }
+            } else if (waveState === 'active') {
+                // Wave Spawner
+                if (zombiesToSpawn.length > 0 && performance.now() - lastSpawnTime > spawnInterval * 1000) {
+                    spawnZombie();
+                    lastSpawnTime = performance.now();
+                }
+                checkWaveCompletion();
+            }
+
+            // Update Turrets
+            for (let r = 0; r < GRID_ROWS; r++) {
+                for (let c = 0; c < GRID_COLS; c++) {
+                    if (grid[r][c]) {
+                        grid[r][c].update(dt);
+                        if (grid[r][c].hp <= 0) {
+                            grid[r][c] = null; // Wall destroyed
+                        }
+                    }
+                }
+            }
+
+            // Update Zombies
+            for (let i = zombies.length - 1; i >= 0; i--) {
+                const z = zombies[i];
+                z.update(dt);
+
+                if (z.hp <= 0) {
+                    kills++;
+                    credits += z.reward;
+                    totalScore += z.reward * 10;
+                    createExplosionParticles(z.x, z.y, z.color, 12);
+                    addFloatingText(`+$${z.reward}`, z.x, z.y, '#facc15');
+                    zombies.splice(i, 1);
+                }
+            }
+
+            // Update Projectiles
+            for (let i = projectiles.length - 1; i >= 0; i--) {
+                const p = projectiles[i];
+                p.update(dt);
+                if (!p.alive) projectiles.splice(i, 1);
+            }
+
+            // Update Particles
+            for (let i = particles.length - 1; i >= 0; i--) {
+                const part = particles[i];
+                part.life -= dt;
+                if (part.life <= 0) {
+                    particles.splice(i, 1);
+                } else {
+                    if (part.vx) part.x += part.vx * dt;
+                    if (part.vy) part.y += part.vy * dt;
+                }
+            }
+
+            // Update Floating Texts
+            for (let i = floatingTexts.length - 1; i >= 0; i--) {
+                const ft = floatingTexts[i];
+                ft.life -= dt;
+                ft.y += ft.vy * dt;
+                if (ft.life <= 0) floatingTexts.splice(i, 1);
+            }
+
+            updateHUD();
+        }
+
+        function render() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // Draw Cyber Grid Lines
+            ctx.strokeStyle = 'rgba(30, 41, 59, 0.4)';
+            ctx.lineWidth = 1;
+            for (let c = 0; c <= GRID_COLS; c++) {
+                ctx.beginPath();
+                ctx.moveTo(c * CELL_SIZE, 0);
+                ctx.lineTo(c * CELL_SIZE, GRID_ROWS * CELL_SIZE);
+                ctx.stroke();
+            }
+            for (let r = 0; r <= GRID_ROWS; r++) {
+                ctx.beginPath();
+                ctx.moveTo(0, r * CELL_SIZE);
+                ctx.lineTo(GRID_COLS * CELL_SIZE, r * CELL_SIZE);
+                ctx.stroke();
+            }
+
+            // Draw Base Core HQ
+            const corePx = (baseCore.x + 0.5) * CELL_SIZE;
+            const corePy = (baseCore.y + 0.5) * CELL_SIZE;
+
+            ctx.save();
+            ctx.beginPath();
+            ctx.arc(corePx, corePy, CELL_SIZE * baseCore.radius, 0, Math.PI * 2);
+            ctx.fillStyle = '#0284c7';
+            ctx.shadowColor = '#00f0ff';
+            ctx.shadowBlur = 20;
+            ctx.fill();
+            ctx.strokeStyle = '#00f0ff';
+            ctx.lineWidth = 3;
+            ctx.stroke();
+
+            // Core Symbol Inner Ring
+            ctx.beginPath();
+            ctx.arc(corePx, corePy, CELL_SIZE * 0.6, 0, Math.PI * 2);
+            ctx.fillStyle = '#38bdf8';
+            ctx.fill();
+            ctx.restore();
+
+            // Draw Turrets and Structures
+            for (let r = 0; r < GRID_ROWS; r++) {
+                for (let c = 0; c < GRID_COLS; c++) {
+                    if (grid[r][c]) {
+                        grid[r][c].draw();
+                    }
+                }
+            }
+
+            // Draw Mouse Grid Cursor Hover
+            if (mouse.isHovering) {
+                const hx = mouse.gridX * CELL_SIZE;
+                const hy = mouse.gridY * CELL_SIZE;
+                ctx.strokeStyle = '#00f0ff';
+                ctx.lineWidth = 2;
+                ctx.strokeRect(hx + 2, hy + 2, CELL_SIZE - 4, CELL_SIZE - 4);
+
+                // Range Circle Preview
+                const stats = TURRET_TYPES[selectedTool];
+                if (stats && stats.range) {
+                    ctx.beginPath();
+                    ctx.arc(hx + CELL_SIZE / 2, hy + CELL_SIZE / 2, stats.range * CELL_SIZE, 0, Math.PI * 2);
+                    ctx.fillStyle = 'rgba(0, 240, 255, 0.08)';
+                    ctx.fill();
+                    ctx.strokeStyle = 'rgba(0, 240, 255, 0.3)';
+                    ctx.stroke();
+                }
+            }
+
+            // Draw Zombies
+            for (let z of zombies) {
+                z.draw();
+            }
+
+            // Draw Projectiles
+            for (let p of projectiles) {
+                p.draw();
+            }
+
+            // Draw Particles
+            for (let part of particles) {
+                ctx.save();
+                const alpha = Math.max(0, part.life / part.maxLife);
+                if (part.type === 'beam') {
+                    ctx.strokeStyle = part.color;
+                    ctx.lineWidth = 3;
+                    ctx.globalAlpha = alpha;
+                    ctx.beginPath();
+                    ctx.moveTo(part.x1, part.y1);
+                    ctx.lineTo(part.x2, part.y2);
+                    ctx.stroke();
+                } else if (part.type === 'lightning') {
+                    ctx.strokeStyle = part.color;
+                    ctx.lineWidth = 2;
+                    ctx.globalAlpha = alpha;
+                    ctx.beginPath();
+                    ctx.moveTo(part.x1, part.y1);
+                    ctx.lineTo(part.x2, part.y2);
+                    ctx.stroke();
+                } else if (part.type === 'ring') {
+                    ctx.strokeStyle = part.color;
+                    ctx.lineWidth = 2;
+                    ctx.globalAlpha = alpha;
+                    ctx.beginPath();
+                    ctx.arc(part.x, part.y, part.radius * (1 - alpha), 0, Math.PI * 2);
+                    ctx.stroke();
+                } else {
+                    ctx.fillStyle = part.color;
+                    ctx.globalAlpha = alpha;
+                    ctx.beginPath();
+                    ctx.arc(part.x, part.y, part.size, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+                ctx.restore();
+            }
+
+            // Draw Floating Texts
+            for (let ft of floatingTexts) {
+                ctx.save();
+                ctx.font = 'bold 12px Orbitron';
+                ctx.fillStyle = ft.color;
+                ctx.globalAlpha = Math.max(0, ft.life / ft.maxLife);
+                ctx.fillText(ft.text, ft.x, ft.y);
+                ctx.restore();
+            }
+        }
+
+        function togglePause() {
+            isPaused = !isPaused;
+            const modal = document.getElementById('pause-modal');
+            const icon = document.getElementById('pause-icon');
+            if (isPaused) {
+                modal.classList.remove('hidden');
+                icon.className = 'fa-solid fa-play';
+            } else {
+                modal.classList.add('hidden');
+                icon.className = 'fa-solid fa-pause';
+            }
+        }
+
+        function toggleAudio() {
+            audio.enabled = !audio.enabled;
+            const icon = document.getElementById('audio-icon');
+            icon.className = audio.enabled ? 'fa-solid fa-volume-high' : 'fa-solid fa-volume-xmark';
+        }
+
+        function triggerGameOver() {
+            gameOver = true;
+            document.getElementById('final-waves').innerText = wave - 1;
+            document.getElementById('final-kills').innerText = kills;
+            document.getElementById('final-score').innerText = totalScore;
+            document.getElementById('gameover-modal').classList.remove('hidden');
+        }
+
+        function restartGame() {
+            gameOver = false;
+            isPaused = false;
+            baseCore.hp = baseCore.maxHp;
+            credits = 450;
+            energy = 100;
+            wave = 1;
+            kills = 0;
+            totalScore = 0;
+            waveState = 'prep';
+            prepTimer = 15;
+            zombies = [];
+            projectiles = [];
+            particles = [];
+            floatingTexts = [];
+            
+            initGrid();
+            document.getElementById('pause-modal').classList.add('hidden');
+            document.getElementById('gameover-modal').classList.add('hidden');
+            document.getElementById('pause-icon').className = 'fa-solid fa-pause';
+            
+            showBanner('DEFENSE MISSION RESET', 'Build up your defenses before wave 1 begins!');
+            updateHUD();
+        }
+
+        // Initialize Game Engine on Load
+        window.onload = function() {
+            canvas = document.getElementById('gameCanvas');
+            ctx = canvas.getContext('2d');
+
+            resizeCanvas();
+            initGrid();
+            setupInputListeners();
+
+            gameTime = performance.now();
+            requestAnimationFrame(gameLoop);
+            updateHUD();
+        };
+    </script>
+</body>
+</html>

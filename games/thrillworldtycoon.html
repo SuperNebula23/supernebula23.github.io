@@ -1,0 +1,1150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Thrill World: Theme Park Tycoon</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Canvas Confetti -->
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <!-- FontAwesome icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts: Plus Jakarta Sans & Space Grotesk -->
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Plus Jakarta Sans', 'sans-serif'],
+                        display: ['Space Grotesk', 'sans-serif'],
+                    },
+                    colors: {
+                        thrill: {
+                            dark: '#0f172a',
+                            card: '#1e293b',
+                            accent: '#6366f1',
+                            cyan: '#06b6d4',
+                            emerald: '#10b981',
+                            amber: '#f59e0b',
+                            rose: '#f43f5e',
+                            purple: '#a855f7'
+                        }
+                    },
+                    animation: {
+                        'pulse-glow': 'pulseGlow 2s infinite',
+                        'spin-slow': 'spin 12s linear infinite',
+                    },
+                    keyframes: {
+                        pulseGlow: {
+                            '0%, 100%': { filter: 'drop-shadow(0 0 10px rgba(99, 102, 241, 0.4))' },
+                            '50%': { filter: 'drop-shadow(0 0 20px rgba(6, 182, 212, 0.7))' },
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        body {
+            background-color: #0b0f19;
+            background-image: 
+                radial-gradient(at 10% 10%, rgba(99, 102, 241, 0.15) 0px, transparent 50%),
+                radial-gradient(at 90% 90%, rgba(6, 182, 212, 0.12) 0px, transparent 50%),
+                radial-gradient(at 50% 50%, rgba(168, 85, 247, 0.08) 0px, transparent 50%);
+            min-height: 100vh;
+            color: #f8fafc;
+            user-select: none;
+            overflow-x: hidden;
+        }
+
+        /* Custom Modern Scrollbars */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #0f172a;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #334155;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #475569;
+        }
+
+        .glass-panel {
+            background: rgba(30, 41, 59, 0.75);
+            backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.5);
+        }
+
+        .glass-panel-active {
+            background: rgba(30, 41, 59, 0.9);
+            border: 1px solid rgba(99, 102, 241, 0.5);
+            box-shadow: 0 0 25px rgba(99, 102, 241, 0.2);
+        }
+
+        .tab-btn {
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .tab-btn.active {
+            background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
+            color: #ffffff;
+            box-shadow: 0 4px 15px rgba(99, 102, 241, 0.4);
+        }
+
+        .pop-text {
+            position: absolute;
+            pointer-events: none;
+            animation: popAndFloat 0.8s forwards cubic-bezier(0.16, 1, 0.3, 1);
+            font-weight: 800;
+            font-family: 'Space Grotesk', sans-serif;
+            z-index: 100;
+            text-shadow: 0 2px 8px rgba(0,0,0,0.8);
+        }
+
+        @keyframes popAndFloat {
+            0% {
+                opacity: 0;
+                transform: scale(0.5) translateY(0);
+            }
+            20% {
+                opacity: 1;
+                transform: scale(1.1) translateY(-10px);
+            }
+            100% {
+                opacity: 0;
+                transform: scale(1) translateY(-50px);
+            }
+        }
+    </style>
+</head>
+<body class="font-sans flex flex-col min-h-screen justify-between">
+
+    <!-- Top Header & Stats -->
+    <header class="glass-panel sticky top-0 z-40 px-4 py-3 border-b border-slate-800">
+        <div class="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-4">
+            
+            <!-- Brand & Navigation Portal -->
+            <div class="flex items-center space-x-3">
+                <a href="https://supernebula23.github.io/games" class="w-10 h-10 rounded-xl bg-slate-800/80 border border-slate-700/80 flex items-center justify-center text-slate-300 hover:text-white hover:bg-indigo-600 hover:border-indigo-500 hover:scale-105 active:scale-95 transition-all shadow-md group" title="Return to Games Hub">
+                    <i class="fa-solid fa-house text-lg group-hover:scale-110 transition-transform"></i>
+                </a>
+
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 via-cyan-500 to-purple-600 flex items-center justify-center text-white text-xl shadow-lg shadow-indigo-500/20">
+                    <i class="fa-solid fa-rocket"></i>
+                </div>
+
+                <div>
+                    <h1 class="text-xl font-display font-bold tracking-tight bg-gradient-to-r from-white via-slate-200 to-slate-400 bg-clip-text text-transparent">
+                        THRILL WORLD
+                    </h1>
+                    <p class="text-xs font-semibold text-indigo-400" id="park-rating-title">⭐ Park Rank: 1.0 (Local Attraction)</p>
+                </div>
+            </div>
+
+            <!-- Currency & Resources Dashboard -->
+            <div class="flex flex-wrap items-center gap-3">
+                
+                <!-- Cash Balance -->
+                <div class="flex items-center space-x-2.5 bg-slate-900/80 border border-slate-800 px-3.5 py-1.5 rounded-xl">
+                    <span class="text-emerald-400 text-base font-bold">$</span>
+                    <div>
+                        <div class="text-[9px] uppercase font-bold text-slate-400 tracking-wider">Park Capital</div>
+                        <div class="text-base font-display font-bold text-emerald-400" id="stat-money">$0</div>
+                    </div>
+                </div>
+
+                <!-- Park Hype Points -->
+                <div class="flex items-center space-x-2.5 bg-slate-900/80 border border-slate-800 px-3.5 py-1.5 rounded-xl">
+                    <span class="text-amber-400 text-sm"><i class="fa-solid fa-bolt"></i></span>
+                    <div>
+                        <div class="text-[9px] uppercase font-bold text-slate-400 tracking-wider">Park Hype</div>
+                        <div class="text-base font-display font-bold text-amber-400" id="stat-hype">0 HP</div>
+                    </div>
+                </div>
+
+                <!-- Golden Passes (Prestige Currency) -->
+                <div class="flex items-center space-x-2.5 bg-slate-900/80 border border-slate-800 px-3.5 py-1.5 rounded-xl hidden sm:flex">
+                    <span class="text-indigo-400 text-sm"><i class="fa-solid fa-ticket"></i></span>
+                    <div>
+                        <div class="text-[9px] uppercase font-bold text-slate-400 tracking-wider">Golden Passes</div>
+                        <div class="text-base font-display font-bold text-indigo-400" id="stat-passes">0 GP</div>
+                    </div>
+                </div>
+
+                <!-- Quick Action Buttons -->
+                <div class="flex items-center space-x-2">
+                    <button onclick="game.triggerFireworks()" class="w-10 h-10 rounded-xl bg-gradient-to-r from-amber-500 to-rose-500 text-white flex items-center justify-center text-sm shadow-md hover:scale-105 active:scale-95 transition" title="Launch Fireworks Show!">
+                        <i class="fa-solid fa-fire"></i>
+                    </button>
+                    <button id="btn-audio" onclick="game.toggleAudio()" class="w-10 h-10 rounded-xl bg-slate-800/80 border border-slate-700 text-slate-300 flex items-center justify-center text-sm hover:text-white hover:bg-slate-700 transition" title="Toggle Sound Effects">
+                        <i class="fa-solid fa-volume-high" id="icon-audio"></i>
+                    </button>
+                    <button onclick="game.openModal('modal-settings')" class="w-10 h-10 rounded-xl bg-slate-800/80 border border-slate-700 text-slate-300 flex items-center justify-center text-sm hover:text-white hover:bg-slate-700 transition" title="Settings & Save">
+                        <i class="fa-solid fa-gear"></i>
+                    </button>
+                </div>
+
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Interactive Dashboard -->
+    <main class="max-w-7xl w-full mx-auto p-3 sm:p-5 flex-grow grid grid-cols-1 lg:grid-cols-12 gap-5">
+
+        <!-- Left Column: Dynamic Animated Park Canvas & Tap Engine (Cols 1 to 5) -->
+        <section class="lg:col-span-5 flex flex-col gap-4">
+            
+            <!-- Dynamic 2D Park Visual Canvas -->
+            <div class="glass-panel rounded-2xl p-4 flex flex-col relative overflow-hidden border border-slate-800">
+                <div class="flex justify-between items-center mb-3">
+                    <h2 class="text-sm font-display font-bold text-slate-200 flex items-center gap-2">
+                        <i class="fa-solid fa-eye text-indigo-400"></i> Park Live View
+                    </h2>
+                    <span class="bg-indigo-950/80 border border-indigo-800/60 text-indigo-300 px-2.5 py-0.5 rounded-full text-xs font-semibold" id="park-level-badge">Level 1 Park</span>
+                </div>
+
+                <!-- Canvas Display Container -->
+                <div class="relative w-full h-64 bg-slate-950 rounded-xl border border-slate-800 overflow-hidden shadow-inner group" id="canvas-container">
+                    <canvas id="parkCanvas" class="w-full h-full block cursor-pointer"></canvas>
+                    
+                    <div class="absolute top-2 right-2 bg-slate-900/90 border border-slate-800 px-3 py-1 rounded-lg text-xs font-medium text-slate-300 flex items-center gap-2 shadow-lg backdrop-blur">
+                        <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                        <span id="visitor-count-badge">0 Guests in Park</span>
+                    </div>
+
+                    <div class="absolute bottom-2 left-2 bg-slate-900/90 border border-slate-800 px-3 py-1 rounded-lg text-xs font-medium text-slate-400 backdrop-blur">
+                        <span id="park-weather"><i class="fa-solid fa-sun text-amber-400"></i> Sunny & Hot</span>
+                    </div>
+                </div>
+
+                <!-- Active Tap Generator Button -->
+                <div class="mt-4 flex flex-col items-center">
+                    <button id="main-tap-btn" class="w-full py-4 px-6 rounded-xl bg-gradient-to-r from-indigo-600 via-indigo-500 to-cyan-500 text-white font-display font-bold text-base tracking-wide shadow-lg shadow-indigo-500/20 hover:shadow-indigo-500/40 hover:scale-[1.01] active:scale-98 transition-all flex items-center justify-center gap-3 group">
+                        <i class="fa-solid fa-ticket text-xl group-hover:rotate-12 transition-transform"></i>
+                        <span>SELL ADMISSION TICKETS</span>
+                        <span class="bg-white/20 border border-white/30 px-2.5 py-0.5 rounded-lg text-xs font-mono font-bold" id="click-val-badge">+$1</span>
+                    </button>
+                    <p class="text-xs text-slate-400 mt-2 font-medium">Click to actively sell entry passes & boost park hype!</p>
+                </div>
+            </div>
+
+            <!-- Park Metrics Overview -->
+            <div class="glass-panel rounded-2xl p-4 grid grid-cols-2 gap-3">
+                <div class="bg-slate-900/60 p-3 rounded-xl border border-slate-800/80">
+                    <div class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Ticket Price</div>
+                    <div class="text-base font-display font-bold text-emerald-400 mt-0.5" id="stat-tap-power">$1</div>
+                </div>
+                <div class="bg-slate-900/60 p-3 rounded-xl border border-slate-800/80">
+                    <div class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Revenue / Sec</div>
+                    <div class="text-base font-display font-bold text-cyan-400 mt-0.5" id="stat-income">$0/s</div>
+                </div>
+                <div class="bg-slate-900/60 p-3 rounded-xl border border-slate-800/80">
+                    <div class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Park Staff</div>
+                    <div class="text-base font-display font-bold text-purple-400 mt-0.5" id="stat-staff-count">0 Employed</div>
+                </div>
+                <div class="bg-slate-900/60 p-3 rounded-xl border border-slate-800/80">
+                    <div class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Profit Boost</div>
+                    <div class="text-base font-display font-bold text-amber-400 mt-0.5" id="stat-multiplier">1.0x</div>
+                </div>
+            </div>
+
+        </section>
+
+        <!-- Right Column: Park Management Modules (Cols 6 to 12) -->
+        <section class="lg:col-span-7 flex flex-col">
+
+            <!-- Category Tabs -->
+            <div class="flex border-b border-slate-800 mb-4 overflow-x-auto no-scrollbar gap-2 pb-2 font-medium">
+                <button class="tab-btn px-4 py-2.5 rounded-xl bg-slate-800/60 text-slate-300 text-xs font-bold flex items-center gap-2 whitespace-nowrap active" onclick="game.switchTab('rides')">
+                    <i class="fa-solid fa-vr-cardboard text-indigo-400"></i> Attractions & Rides
+                </button>
+                <button class="tab-btn px-4 py-2.5 rounded-xl bg-slate-800/60 text-slate-300 text-xs font-bold flex items-center gap-2 whitespace-nowrap" onclick="game.switchTab('staff')">
+                    <i class="fa-solid fa-user-gear text-cyan-400"></i> Staff & Ops
+                </button>
+                <button class="tab-btn px-4 py-2.5 rounded-xl bg-slate-800/60 text-slate-300 text-xs font-bold flex items-center gap-2 whitespace-nowrap" onclick="game.switchTab('marketing')">
+                    <i class="fa-solid fa-bullhorn text-amber-400"></i> Upgrades & Tech
+                </button>
+                <button class="tab-btn px-4 py-2.5 rounded-xl bg-slate-800/60 text-slate-300 text-xs font-bold flex items-center gap-2 whitespace-nowrap" onclick="game.switchTab('franchise')">
+                    <i class="fa-solid fa-globe text-emerald-400"></i> Franchise Expansion
+                </button>
+            </div>
+
+            <!-- Tab Content 1: Rides & Attractions -->
+            <div id="tab-rides" class="tab-content flex-grow flex flex-col gap-3">
+                <div class="flex justify-between items-center text-xs font-medium text-slate-400 px-1">
+                    <span>Construct high-thrill attractions to drive continuous passenger income</span>
+                    <div class="flex gap-1 bg-slate-900/80 p-1 rounded-xl border border-slate-800">
+                        <button onclick="game.setBuyMultiplier(1)" id="buy-x1" class="px-2.5 py-1 rounded-lg bg-indigo-600 text-white font-bold text-[11px]">x1</button>
+                        <button onclick="game.setBuyMultiplier(10)" id="buy-x10" class="px-2.5 py-1 rounded-lg text-slate-400 hover:text-white font-bold text-[11px]">x10</button>
+                        <button onclick="game.setBuyMultiplier(100)" id="buy-x100" class="px-2.5 py-1 rounded-lg text-slate-400 hover:text-white font-bold text-[11px]">x100</button>
+                    </div>
+                </div>
+                <div id="rides-list" class="space-y-3">
+                    <!-- Dynamic Rides Injected by JS -->
+                </div>
+            </div>
+
+            <!-- Tab Content 2: Staff & Operations -->
+            <div id="tab-staff" class="tab-content hidden flex-grow flex flex-col gap-3">
+                <div class="text-xs font-medium text-slate-400 px-1">Hire specialized engineers, technicians, and marketers to automate and generate Park Hype!</div>
+                <div id="staff-list" class="space-y-3">
+                    <!-- Dynamic Staff Injected by JS -->
+                </div>
+            </div>
+
+            <!-- Tab Content 3: Marketing & Tech Upgrades -->
+            <div id="tab-marketing" class="tab-content hidden flex-grow flex flex-col gap-3">
+                <div class="text-xs font-medium text-slate-400 px-1">Invest Park Hype (HP) into permanent park upgrades, safety tech, and marketing campaigns!</div>
+                <div id="upgrades-list" class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    <!-- Dynamic Upgrades Injected by JS -->
+                </div>
+            </div>
+
+            <!-- Tab Content 4: Franchise Expansion (Prestige System) -->
+            <div id="tab-franchise" class="tab-content hidden flex-grow flex flex-col gap-4">
+                <div class="glass-panel p-6 rounded-2xl text-center flex flex-col items-center border border-slate-800">
+                    <div class="w-16 h-16 rounded-2xl bg-gradient-to-tr from-emerald-500 to-cyan-500 flex items-center justify-center text-white text-3xl mb-3 shadow-lg shadow-emerald-500/20">
+                        <i class="fa-solid fa-earth-americas"></i>
+                    </div>
+                    <h3 class="text-xl font-display font-bold text-white mb-1">Launch a New Franchise Location</h3>
+                    <p class="text-xs text-slate-300 max-w-md mb-5 leading-relaxed">
+                        Reinvest your current attractions into a brand new luxury park resort to earn <span class="text-indigo-400 font-bold">Golden Passes 🎟️</span>. 
+                        Each Golden Pass provides a permanent <span class="text-emerald-400 font-bold">+5% global revenue multiplier</span> for all future developments.
+                    </p>
+
+                    <div class="bg-slate-900/80 border border-slate-800 rounded-xl p-4 w-full max-w-sm mb-5 grid grid-cols-2 gap-3 text-center">
+                        <div>
+                            <span class="text-[10px] font-bold text-slate-400 block uppercase">Current Golden Passes</span>
+                            <span class="text-xl font-display font-bold text-indigo-400" id="franchise-current-passes">0 GP</span>
+                        </div>
+                        <div>
+                            <span class="text-[10px] font-bold text-slate-400 block uppercase">Earn On Reinvestment</span>
+                            <span class="text-xl font-display font-bold text-emerald-400" id="franchise-pending-passes">+0 GP</span>
+                        </div>
+                    </div>
+
+                    <button onclick="game.executePrestige()" id="btn-prestige" class="px-8 py-3.5 rounded-xl bg-gradient-to-r from-emerald-500 via-teal-500 to-cyan-500 text-white font-display font-bold text-sm shadow-lg hover:scale-105 active:scale-95 transition disabled:opacity-40 disabled:cursor-not-allowed">
+                        <i class="fa-solid fa-building-flag mr-2"></i> OPEN NEW FRANCHISE RESORT
+                    </button>
+                    <span class="text-xs text-slate-400 mt-2" id="prestige-req-text">Requires at least $100,000 total lifetime park earnings!</span>
+                </div>
+            </div>
+
+        </section>
+
+    </main>
+
+    <!-- Modal: Settings & Configuration -->
+    <div id="modal-settings" class="fixed inset-0 z-50 bg-black/70 backdrop-blur-md flex items-center justify-center p-4 hidden">
+        <div class="glass-panel w-full max-w-md rounded-2xl p-6 border border-slate-700 relative">
+            <button onclick="game.closeModal('modal-settings')" class="absolute top-4 right-4 w-8 h-8 rounded-lg bg-slate-800 text-slate-400 hover:text-white flex items-center justify-center transition">
+                ✕
+            </button>
+            <h3 class="text-lg font-display font-bold text-white mb-4 flex items-center gap-2">
+                <i class="fa-solid fa-sliders text-indigo-400"></i> Park Settings
+            </h3>
+            <div class="space-y-4 font-medium">
+                <div>
+                    <label class="text-xs text-slate-400 block mb-1">Park Name</label>
+                    <input type="text" id="setting-park-name" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2 text-sm text-white focus:outline-none focus:border-indigo-500" value="Thrill World Resort">
+                </div>
+                <div class="grid grid-cols-2 gap-3 pt-2">
+                    <button onclick="game.manualSave()" class="py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs rounded-xl transition flex items-center justify-center gap-2 shadow-md">
+                        <i class="fa-solid fa-floppy-disk"></i> Save Game
+                    </button>
+                    <button onclick="game.exportSave()" class="py-2.5 bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 font-bold text-xs rounded-xl transition flex items-center justify-center gap-2">
+                        <i class="fa-solid fa-copy"></i> Export Save
+                    </button>
+                </div>
+                <div class="pt-3 border-t border-slate-800">
+                    <button onclick="game.hardReset()" class="w-full py-2.5 bg-rose-950/40 border border-rose-800/60 hover:bg-rose-900/50 text-rose-300 font-bold text-xs rounded-xl transition flex items-center justify-center gap-2">
+                        <i class="fa-solid fa-trash"></i> Reset Park Progress
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Notification Toast System -->
+    <div id="toast-container" class="fixed bottom-5 right-5 z-50 flex flex-col gap-2 pointer-events-none"></div>
+
+    <!-- Footer -->
+    <footer class="py-3 px-4 border-t border-slate-800/60 text-center text-xs font-medium text-slate-400">
+        Thrill World Tycoon &bull; Theme Park Simulation Engine
+    </footer>
+
+    <script>
+        /**
+         * Web Audio Synthesizer Engine
+         */
+        class ThrillAudioEngine {
+            constructor() {
+                this.ctx = null;
+                this.enabled = true;
+            }
+
+            init() {
+                if (!this.ctx) {
+                    const AudioContext = window.AudioContext || window.webkitAudioContext;
+                    if (AudioContext) this.ctx = new AudioContext();
+                }
+            }
+
+            playClick() {
+                if (!this.enabled) return;
+                this.init();
+                if (!this.ctx) return;
+                
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(520, this.ctx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(880, this.ctx.currentTime + 0.05);
+                
+                gain.gain.setValueAtTime(0.15, this.ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + 0.05);
+
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                osc.start();
+                osc.stop(this.ctx.currentTime + 0.05);
+            }
+
+            playCash() {
+                if (!this.enabled) return;
+                this.init();
+                if (!this.ctx) return;
+
+                const now = this.ctx.currentTime;
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(987.77, now); // B5
+                osc.frequency.setValueAtTime(1318.51, now + 0.08); // E6
+
+                gain.gain.setValueAtTime(0.15, now);
+                gain.gain.exponentialRampToValueAtTime(0.001, now + 0.2);
+
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                osc.start();
+                osc.stop(now + 0.2);
+            }
+
+            playUpgrade() {
+                if (!this.enabled) return;
+                this.init();
+                if (!this.ctx) return;
+
+                const notes = [440, 554.37, 659.25, 880];
+                notes.forEach((freq, idx) => {
+                    const osc = this.ctx.createOscillator();
+                    const gain = this.ctx.createGain();
+                    const now = this.ctx.currentTime + (idx * 0.06);
+
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(freq, now);
+
+                    gain.gain.setValueAtTime(0.12, now);
+                    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.25);
+
+                    osc.connect(gain);
+                    gain.connect(this.ctx.destination);
+                    osc.start(now);
+                    osc.stop(now + 0.25);
+                });
+            }
+        }
+
+        const audio = new ThrillAudioEngine();
+
+        /**
+         * Main Theme Park Tycoon Engine
+         */
+        class ThrillParkTycoon {
+            constructor() {
+                this.money = 25;
+                this.totalMoneyEarned = 25;
+                this.hype = 0;
+                this.goldenPasses = 0;
+                this.parkName = "Thrill World Resort";
+                this.buyMultiplier = 1;
+                this.lastTick = Date.now();
+
+                // Rides & Attractions definitions
+                this.rides = [
+                    { id: 'r1', name: 'Arcade Gaming Center', baseCost: 15, baseYield: 1, count: 0, growth: 1.15, icon: 'fa-gamepad', color: 'text-indigo-400' },
+                    { id: 'r2', name: 'Bumper Car Arena', baseCost: 100, baseYield: 8, count: 0, growth: 1.15, icon: 'fa-car-burst', color: 'text-cyan-400' },
+                    { id: 'r3', name: 'Giant Ferris Wheel', baseCost: 1100, baseYield: 48, count: 0, growth: 1.15, icon: 'fa-dharmachakra', color: 'text-emerald-400' },
+                    { id: 'r4', name: 'Water Splash Ride', baseCost: 12000, baseYield: 280, count: 0, growth: 1.15, icon: 'fa-water', color: 'text-blue-400' },
+                    { id: 'r5', name: 'Gravity Drop Tower', baseCost: 130000, baseYield: 1500, count: 0, growth: 1.15, icon: 'fa-arrow-down-up-lock', color: 'text-amber-400' },
+                    { id: 'r6', name: 'Kraken Inverted Coaster', baseCost: 1400000, baseYield: 9200, count: 0, growth: 1.15, icon: 'fa-volcano', color: 'text-rose-400' },
+                    { id: 'r7', name: 'Hyper-Loop G-Force Coaster', baseCost: 20000000, baseYield: 65000, count: 0, growth: 1.15, icon: 'fa-atom', color: 'text-purple-400' }
+                ];
+
+                // Staff & Operations definitions
+                this.staff = [
+                    { id: 's1', name: 'Ride Maintenance Tech', cost: 50, count: 0, boost: 0.1, hypeYield: 0.2, icon: 'fa-wrench' },
+                    { id: 's2', name: 'Park Street Performer', cost: 500, count: 0, boost: 0.5, hypeYield: 1.2, icon: 'fa-masks-theater' },
+                    { id: 's3', name: 'Safety Engineer', cost: 4000, count: 0, boost: 2.0, hypeYield: 3.5, icon: 'fa-user-shield' },
+                    { id: 's4', name: 'Social Media Director', cost: 35000, count: 0, boost: 10.0, hypeYield: 15.0, icon: 'fa-hashtag' }
+                ];
+
+                // Marketing & Tech Upgrades definitions
+                this.upgrades = [
+                    { id: 'u1', name: 'VIP Fast Pass Gates', costHype: 15, bought: false, desc: 'Doubles revenue per ticket sale!', effect: () => this.tapMult *= 2 },
+                    { id: 'u2', name: 'LED Night Lighting', costHype: 75, bought: false, desc: 'Increases all attraction yields by +25%.', effect: () => this.globalIncomeMult *= 1.25 },
+                    { id: 'u3', name: 'High-Speed Coaster Motors', costHype: 300, bought: false, desc: 'Increases ride turnover rate by +30%.', effect: () => this.globalIncomeMult *= 1.3 },
+                    { id: 'u4', name: 'National TV Campaign', costHype: 1500, bought: false, desc: 'Boosts all park revenue by +50%.', effect: () => this.globalIncomeMult *= 1.5 }
+                ];
+
+                this.tapMult = 1;
+                this.globalIncomeMult = 1;
+
+                // Canvas rendering properties
+                this.canvas = null;
+                this.ctx = null;
+                this.guests = [];
+                this.coasters = [];
+                this.wheelAngle = 0;
+            }
+
+            init() {
+                this.loadSave();
+                this.initCanvas();
+                this.bindEvents();
+
+                // Start main game loop
+                requestAnimationFrame((t) => this.loop(t));
+
+                // Auto-save every 10 seconds
+                setInterval(() => this.saveGame(), 10000);
+
+                this.updateUI();
+                this.showToast('Welcome to Thrill World! 🎢', 'info');
+            }
+
+            initCanvas() {
+                this.canvas = document.getElementById('parkCanvas');
+                if (!this.canvas) return;
+                this.ctx = this.canvas.getContext('2d');
+                this.resizeCanvas();
+                window.addEventListener('resize', () => this.resizeCanvas());
+
+                // Generate roaming guests
+                for (let i = 0; i < 15; i++) {
+                    this.guests.push({
+                        x: Math.random() * (this.canvas.width - 20) + 10,
+                        y: Math.random() * (this.canvas.height - 40) + 20,
+                        targetX: Math.random() * (this.canvas.width - 20) + 10,
+                        targetY: Math.random() * (this.canvas.height - 40) + 20,
+                        color: ['#6366f1', '#06b6d4', '#10b981', '#f59e0b', '#f43f5e', '#a855f7'][Math.floor(Math.random() * 6)],
+                        speed: 0.5 + Math.random() * 0.7
+                    });
+                }
+
+                // Coaster cart simulation points
+                this.coasters = [
+                    { progress: 0, speed: 0.008, color: '#f43f5e' },
+                    { progress: 0.5, speed: 0.008, color: '#06b6d4' }
+                ];
+            }
+
+            resizeCanvas() {
+                if (!this.canvas) return;
+                const parent = this.canvas.parentElement;
+                this.canvas.width = parent.clientWidth;
+                this.canvas.height = parent.clientHeight;
+            }
+
+            drawCanvas() {
+                if (!this.ctx) return;
+                const w = this.canvas.width;
+                const h = this.canvas.height;
+
+                // Background Park Grid (Dark Theme)
+                this.ctx.fillStyle = '#0a0e17';
+                this.ctx.fillRect(0, 0, w, h);
+
+                // Grid paths
+                this.ctx.strokeStyle = 'rgba(255, 255, 255, 0.04)';
+                this.ctx.lineWidth = 1;
+                const gridSize = 24;
+                for (let x = 0; x < w; x += gridSize) {
+                    this.ctx.beginPath();
+                    this.ctx.moveTo(x, 0);
+                    this.ctx.lineTo(x, h);
+                    this.ctx.stroke();
+                }
+                for (let y = 0; y < h; y += gridSize) {
+                    this.ctx.beginPath();
+                    this.ctx.moveTo(0, y);
+                    this.ctx.lineTo(w, y);
+                    this.ctx.stroke();
+                }
+
+                // Draw Ferris Wheel graphic (Top Right)
+                const fwX = w - 50;
+                const fwY = 50;
+                const fwRadius = 30;
+                this.wheelAngle += 0.015;
+
+                this.ctx.strokeStyle = '#6366f1';
+                this.ctx.lineWidth = 2;
+                this.ctx.beginPath();
+                this.ctx.arc(fwX, fwY, fwRadius, 0, Math.PI * 2);
+                this.ctx.stroke();
+
+                // Ferris wheel spokes
+                for (let i = 0; i < 6; i++) {
+                    const angle = this.wheelAngle + (i * Math.PI / 3);
+                    this.ctx.beginPath();
+                    this.ctx.moveTo(fwX, fwY);
+                    this.ctx.lineTo(fwX + Math.cos(angle) * fwRadius, fwY + Math.sin(angle) * fwRadius);
+                    this.ctx.stroke();
+                }
+
+                // Draw Roller Coaster Loop Track (Center / Left)
+                this.ctx.strokeStyle = 'rgba(99, 102, 241, 0.3)';
+                this.ctx.lineWidth = 4;
+                this.ctx.beginPath();
+                this.ctx.moveTo(30, h - 40);
+                this.ctx.bezierCurveTo(80, 20, 160, 20, 210, h - 40);
+                this.ctx.bezierCurveTo(240, h - 100, 120, h - 120, 150, h - 40);
+                this.ctx.stroke();
+
+                // Render Animated Coaster Carts
+                this.coasters.forEach(c => {
+                    c.progress = (c.progress + c.speed) % 1;
+                    const p = c.progress;
+                    
+                    // Bezier interpolation for cart positioning
+                    let cx, cy;
+                    if (p < 0.6) {
+                        const t = p / 0.6;
+                        cx = Math.pow(1 - t, 3) * 30 + 3 * Math.pow(1 - t, 2) * t * 80 + 3 * (1 - t) * Math.pow(t, 2) * 160 + Math.pow(t, 3) * 210;
+                        cy = Math.pow(1 - t, 3) * (h - 40) + 3 * Math.pow(1 - t, 2) * t * 20 + 3 * (1 - t) * Math.pow(t, 2) * 20 + Math.pow(t, 3) * (h - 40);
+                    } else {
+                        const t = (p - 0.6) / 0.4;
+                        cx = Math.pow(1 - t, 3) * 210 + 3 * Math.pow(1 - t, 2) * t * 240 + 3 * (1 - t) * Math.pow(t, 2) * 120 + Math.pow(t, 3) * 150;
+                        cy = Math.pow(1 - t, 3) * (h - 40) + 3 * Math.pow(1 - t, 2) * t * (h - 100) + 3 * (1 - t) * Math.pow(t, 2) * (h - 120) + Math.pow(t, 3) * (h - 40);
+                    }
+
+                    this.ctx.fillStyle = c.color;
+                    this.ctx.beginPath();
+                    this.ctx.arc(cx, cy, 5, 0, Math.PI * 2);
+                    this.ctx.fill();
+
+                    // Glow effect
+                    this.ctx.fillStyle = c.color + '44';
+                    this.ctx.beginPath();
+                    this.ctx.arc(cx, cy, 9, 0, Math.PI * 2);
+                    this.ctx.fill();
+                });
+
+                // Render Roaming Guests
+                this.guests.forEach(g => {
+                    const dx = g.targetX - g.x;
+                    const dy = g.targetY - g.y;
+                    const dist = Math.sqrt(dx * dx + dy * dy);
+
+                    if (dist < 3) {
+                        g.targetX = Math.random() * (w - 20) + 10;
+                        g.targetY = Math.random() * (h - 40) + 20;
+                    } else {
+                        g.x += (dx / dist) * g.speed;
+                        g.y += (dy / dist) * g.speed;
+                    }
+
+                    this.ctx.fillStyle = g.color;
+                    this.ctx.beginPath();
+                    this.ctx.arc(g.x, g.y, 3, 0, Math.PI * 2);
+                    this.ctx.fill();
+                });
+            }
+
+            // Formulas & Calculations
+            getTapPower() {
+                let passBonus = 1 + (this.goldenPasses * 0.05);
+                return Math.floor(1 * this.tapMult * passBonus);
+            }
+
+            getRideYield(ride) {
+                let passBonus = 1 + (this.goldenPasses * 0.05);
+                let staffBonus = 1 + this.staff.reduce((acc, s) => acc + (s.count * s.boost * 0.02), 0);
+                return ride.baseYield * ride.count * this.globalIncomeMult * passBonus * staffBonus;
+            }
+
+            getPassiveIncomePerSec() {
+                return this.rides.reduce((acc, r) => acc + this.getRideYield(r), 0);
+            }
+
+            getHypePerSec() {
+                return this.staff.reduce((acc, s) => acc + (s.count * s.hypeYield), 0);
+            }
+
+            // Interactions & Click Handlers
+            handleTap(e) {
+                audio.playClick();
+                const earned = this.getTapPower();
+                this.money += earned;
+                this.totalMoneyEarned += earned;
+
+                // 15% chance to gain Hype Point on ticket sell
+                if (Math.random() < 0.15) {
+                    this.hype += 1;
+                }
+
+                if (e) {
+                    this.spawnPopText(e.clientX, e.clientY, `+$${this.formatNum(earned)}`);
+                }
+
+                this.updateUI();
+            }
+
+            spawnPopText(x, y, text) {
+                const el = document.createElement('div');
+                el.className = 'pop-text text-emerald-400 text-lg';
+                el.innerText = text;
+                el.style.left = `${x - 20}px`;
+                el.style.top = `${y - 20}px`;
+                document.body.appendChild(el);
+                setTimeout(() => el.remove(), 800);
+            }
+
+            getRideCost(ride, qty = 1) {
+                let total = 0;
+                let current = ride.baseCost * Math.pow(ride.growth, ride.count);
+                for (let i = 0; i < qty; i++) {
+                    total += current;
+                    current *= ride.growth;
+                }
+                return Math.floor(total);
+            }
+
+            buyRide(rideId) {
+                const r = this.rides.find(x => x.id === rideId);
+                if (!r) return;
+
+                const cost = this.getRideCost(r, this.buyMultiplier);
+                if (this.money >= cost) {
+                    this.money -= cost;
+                    r.count += this.buyMultiplier;
+                    audio.playCash();
+                    this.showToast(`Constructed ${this.buyMultiplier}x ${r.name}!`, 'success');
+                    this.updateUI();
+                } else {
+                    this.showToast('Insufficient capital!', 'error');
+                }
+            }
+
+            buyStaff(staffId) {
+                const st = this.staff.find(s => s.id === staffId);
+                if (!st) return;
+
+                const cost = Math.floor(st.cost * Math.pow(1.25, st.count));
+                if (this.money >= cost) {
+                    this.money -= cost;
+                    st.count++;
+                    audio.playCash();
+                    this.showToast(`Hired ${st.name}!`, 'success');
+                    this.updateUI();
+                } else {
+                    this.showToast('Insufficient capital!', 'error');
+                }
+            }
+
+            buyUpgrade(upgradeId) {
+                const up = this.upgrades.find(u => u.id === upgradeId);
+                if (!up || up.bought) return;
+
+                if (this.hype >= up.costHype) {
+                    this.hype -= up.costHype;
+                    up.bought = true;
+                    up.effect();
+                    audio.playUpgrade();
+                    this.showToast(`Unlocked: ${up.name}! 🚀`, 'success');
+                    this.updateUI();
+                } else {
+                    this.showToast('Need more Park Hype Points!', 'error');
+                }
+            }
+
+            setBuyMultiplier(mult) {
+                this.buyMultiplier = mult;
+                ['buy-x1', 'buy-x10', 'buy-x100'].forEach(id => {
+                    const btn = document.getElementById(id);
+                    if (btn) btn.className = 'px-2.5 py-1 rounded-lg text-slate-400 hover:text-white font-bold text-[11px]';
+                });
+                const activeBtn = document.getElementById(`buy-x${mult}`);
+                if (activeBtn) activeBtn.className = 'px-2.5 py-1 rounded-lg bg-indigo-600 text-white font-bold text-[11px]';
+                this.updateRidesTab();
+            }
+
+            triggerFireworks() {
+                confetti({
+                    particleCount: 80,
+                    spread: 80,
+                    origin: { y: 0.6 }
+                });
+                audio.playUpgrade();
+                this.showToast('🎇 Fireworks show launched! Park Hype increased!', 'info');
+                this.hype += 5;
+                this.updateHeaderStats();
+            }
+
+            // Prestige System
+            calculatePendingPasses() {
+                if (this.totalMoneyEarned < 100000) return 0;
+                return Math.floor(Math.sqrt(this.totalMoneyEarned / 100000));
+            }
+
+            executePrestige() {
+                const pending = this.calculatePendingPasses();
+                if (pending <= 0) {
+                    this.showToast('Requires at least $100,000 total lifetime earnings!', 'error');
+                    return;
+                }
+
+                this.goldenPasses += pending;
+                this.money = 25;
+                this.hype = 0;
+
+                this.rides.forEach(r => r.count = 0);
+                this.staff.forEach(s => s.count = 0);
+
+                confetti({ particleCount: 150, spread: 100, origin: { y: 0.5 } });
+                audio.playUpgrade();
+
+                this.showToast(`🎉 New Franchise location opened! Claimed +${pending} Golden Passes!`, 'success');
+                this.updateUI();
+            }
+
+            // Game Loop
+            loop(timestamp) {
+                const delta = (timestamp - this.lastTick) / 1000;
+                this.lastTick = timestamp;
+
+                if (delta > 0) {
+                    const passiveCoins = this.getPassiveIncomePerSec() * delta;
+                    const passiveHype = this.getHypePerSec() * delta;
+
+                    this.money += passiveCoins;
+                    this.totalMoneyEarned += passiveCoins;
+                    this.hype += passiveHype;
+                }
+
+                this.drawCanvas();
+                this.updateHeaderStats();
+
+                requestAnimationFrame((t) => this.loop(t));
+            }
+
+            updateUI() {
+                this.updateHeaderStats();
+                this.updateRidesTab();
+                this.updateStaffTab();
+                this.updateUpgradesTab();
+                this.updateFranchiseTab();
+            }
+
+            updateHeaderStats() {
+                document.getElementById('stat-money').innerText = `$${this.formatNum(this.money)}`;
+                document.getElementById('stat-hype').innerText = `${this.formatNum(this.hype)} HP`;
+                document.getElementById('stat-passes').innerText = `${this.goldenPasses} GP`;
+
+                document.getElementById('stat-tap-power').innerText = `$${this.formatNum(this.getTapPower())}`;
+                document.getElementById('stat-income').innerText = `$${this.formatNum(this.getPassiveIncomePerSec())}/s`;
+                document.getElementById('stat-staff-count').innerText = `${this.staff.reduce((a, b) => a + b.count, 0)} Employed`;
+                document.getElementById('stat-multiplier').innerText = `${(1 + this.goldenPasses * 0.05).toFixed(2)}x`;
+
+                document.getElementById('click-val-badge').innerText = `+$${this.formatNum(this.getTapPower())}`;
+
+                const totalAttractions = this.rides.reduce((a, b) => a + b.count, 0);
+                let rankText = "⭐ Park Rank: 1.0 (Local Attraction)";
+                if (totalAttractions >= 50) rankText = "⭐ Park Rank: 5.0 (Global Mega Resort)";
+                else if (totalAttractions >= 25) rankText = "⭐ Park Rank: 4.0 (International Destination)";
+                else if (totalAttractions >= 10) rankText = "⭐ Park Rank: 2.5 (Regional Thrill Hub)";
+
+                document.getElementById('park-rating-title').innerText = rankText;
+                document.getElementById('park-level-badge').innerText = `Tier ${Math.floor(totalAttractions / 10) + 1} Park`;
+                document.getElementById('visitor-count-badge').innerText = `${Math.floor(15 + totalAttractions * 3)} Guests in Park`;
+            }
+
+            updateRidesTab() {
+                const container = document.getElementById('rides-list');
+                if (!container) return;
+
+                container.innerHTML = this.rides.map(r => {
+                    const cost = this.getRideCost(r, this.buyMultiplier);
+                    const canAfford = this.money >= cost;
+                    const yieldVal = this.getRideYield(r);
+
+                    return `
+                    <div class="glass-panel p-3.5 rounded-xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 border border-slate-800">
+                        <div class="flex items-center space-x-3">
+                            <div class="w-11 h-11 rounded-xl bg-slate-900 border border-slate-800 flex items-center justify-center text-lg ${r.color}">
+                                <i class="fa-solid ${r.icon}"></i>
+                            </div>
+                            <div>
+                                <div class="font-display font-bold text-sm text-slate-100 flex items-center gap-2">
+                                    ${r.name}
+                                    <span class="text-[10px] font-bold text-indigo-400 bg-indigo-950/80 border border-indigo-800/60 px-2 py-0.5 rounded-md">Lv. ${r.count}</span>
+                                </div>
+                                <div class="text-xs text-slate-400 mt-0.5 font-medium">
+                                    Yields: <span class="text-emerald-400 font-bold">+$${this.formatNum(yieldVal)}/sec</span>
+                                </div>
+                            </div>
+                        </div>
+                        <button onclick="game.buyRide('${r.id}')" ${canAfford ? '' : 'disabled'} 
+                            class="w-full sm:w-auto px-4 py-2 rounded-xl font-display font-bold text-xs transition flex items-center justify-center gap-2 ${
+                                canAfford 
+                                ? 'bg-indigo-600 hover:bg-indigo-500 text-white shadow-md hover:scale-105 active:scale-95' 
+                                : 'bg-slate-800/60 text-slate-500 cursor-not-allowed border border-slate-800'
+                            }">
+                            <span>Construct ${this.buyMultiplier}x</span>
+                            <span>($${this.formatNum(cost)})</span>
+                        </button>
+                    </div>`;
+                }).join('');
+            }
+
+            updateStaffTab() {
+                const container = document.getElementById('staff-list');
+                if (!container) return;
+
+                container.innerHTML = this.staff.map(st => {
+                    const cost = Math.floor(st.cost * Math.pow(1.25, st.count));
+                    const canAfford = this.money >= cost;
+
+                    return `
+                    <div class="glass-panel p-3.5 rounded-xl flex items-center justify-between gap-3 border border-slate-800">
+                        <div class="flex items-center space-x-3">
+                            <div class="w-11 h-11 rounded-xl bg-slate-900 border border-slate-800 flex items-center justify-center text-lg text-cyan-400">
+                                <i class="fa-solid ${st.icon}"></i>
+                            </div>
+                            <div>
+                                <div class="font-display font-bold text-sm text-slate-100 flex items-center gap-2">
+                                    ${st.name}
+                                    <span class="text-[10px] font-bold text-cyan-400 bg-cyan-950/80 border border-cyan-800/60 px-2 py-0.5 rounded-md">x${st.count}</span>
+                                </div>
+                                <div class="text-xs text-slate-400 mt-0.5 font-medium">
+                                    Bonus: +${(st.boost * 2).toFixed(0)}% Income &bull; +${st.hypeYield} HP/s
+                                </div>
+                            </div>
+                        </div>
+                        <button onclick="game.buyStaff('${st.id}')" ${canAfford ? '' : 'disabled'} 
+                            class="px-4 py-2 rounded-xl font-display font-bold text-xs transition flex items-center gap-2 ${
+                                canAfford 
+                                ? 'bg-cyan-600 hover:bg-cyan-500 text-white shadow-md hover:scale-105 active:scale-95' 
+                                : 'bg-slate-800/60 text-slate-500 cursor-not-allowed border border-slate-800'
+                            }">
+                            <span>Hire Staff</span>
+                            <span>($${this.formatNum(cost)})</span>
+                        </button>
+                    </div>`;
+                }).join('');
+            }
+
+            updateUpgradesTab() {
+                const container = document.getElementById('upgrades-list');
+                if (!container) return;
+
+                container.innerHTML = this.upgrades.map(u => {
+                    const canAfford = this.hype >= u.costHype;
+
+                    return `
+                    <div class="glass-panel p-3.5 rounded-xl flex flex-col justify-between border border-slate-800 ${u.bought ? 'bg-emerald-950/20 border-emerald-800/40' : ''}">
+                        <div>
+                            <div class="flex justify-between items-start mb-1">
+                                <h4 class="font-display font-bold text-sm text-slate-100">${u.name}</h4>
+                                ${u.bought ? '<span class="text-[10px] font-bold text-emerald-400 bg-emerald-950 border border-emerald-800 px-2 py-0.5 rounded-md">UNLOCKED</span>' : ''}
+                            </div>
+                            <p class="text-xs text-slate-400 leading-relaxed font-medium">${u.desc}</p>
+                        </div>
+                        <div class="mt-3 pt-2 border-t border-slate-800/80 flex justify-between items-center">
+                            <span class="text-xs font-bold text-amber-400">${u.costHype} HP</span>
+                            ${!u.bought ? `
+                                <button onclick="game.buyUpgrade('${u.id}')" ${canAfford ? '' : 'disabled'} 
+                                    class="px-3 py-1.5 rounded-lg font-display font-bold text-xs ${
+                                        canAfford 
+                                        ? 'bg-amber-500 hover:bg-amber-400 text-slate-950 shadow-md' 
+                                        : 'bg-slate-800 text-slate-500 cursor-not-allowed'
+                                    }">
+                                    Unlock
+                                </button>
+                            ` : ''}
+                        </div>
+                    </div>`;
+                }).join('');
+            }
+
+            updateFranchiseTab() {
+                const pending = this.calculatePendingPasses();
+                document.getElementById('franchise-current-passes').innerText = `${this.goldenPasses} GP`;
+                document.getElementById('franchise-pending-passes').innerText = `+${pending} GP`;
+
+                const btn = document.getElementById('btn-prestige');
+                if (btn) btn.disabled = pending <= 0;
+            }
+
+            switchTab(tabId) {
+                document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+                document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+
+                const targetTab = document.getElementById(`tab-${tabId}`);
+                if (targetTab) targetTab.classList.remove('hidden');
+
+                event.currentTarget.classList.add('active');
+            }
+
+            bindEvents() {
+                const mainBtn = document.getElementById('main-tap-btn');
+                if (mainBtn) mainBtn.addEventListener('click', (e) => this.handleTap(e));
+
+                const parkInput = document.getElementById('setting-park-name');
+                if (parkInput) {
+                    parkInput.addEventListener('change', (e) => {
+                        this.parkName = e.target.value || "Thrill World Resort";
+                    });
+                }
+            }
+
+            toggleAudio() {
+                audio.enabled = !audio.enabled;
+                const icon = document.getElementById('icon-audio');
+                if (icon) {
+                    icon.className = audio.enabled ? 'fa-solid fa-volume-high' : 'fa-solid fa-volume-xmark text-rose-400';
+                }
+                this.showToast(audio.enabled ? 'Audio On' : 'Audio Muted', 'info');
+            }
+
+            showToast(msg, type = 'info') {
+                const container = document.getElementById('toast-container');
+                if (!container) return;
+
+                const toast = document.createElement('div');
+                toast.className = 'glass-panel px-4 py-2.5 rounded-xl text-xs font-bold shadow-2xl transition-all transform translate-y-2 opacity-0 flex items-center gap-2 border border-slate-700 text-slate-200';
+                toast.innerHTML = `<span class="text-indigo-400"><i class="fa-solid fa-circle-info"></i></span> ${msg}`;
+
+                container.appendChild(toast);
+
+                setTimeout(() => toast.classList.remove('translate-y-2', 'opacity-0'), 10);
+                setTimeout(() => {
+                    toast.classList.add('opacity-0', 'translate-y-2');
+                    setTimeout(() => toast.remove(), 300);
+                }, 3000);
+            }
+
+            openModal(id) {
+                const modal = document.getElementById(id);
+                if (modal) modal.classList.remove('hidden');
+            }
+
+            closeModal(id) {
+                const modal = document.getElementById(id);
+                if (modal) modal.classList.add('hidden');
+            }
+
+            formatNum(num) {
+                if (num === null || num === undefined) return '0';
+                if (num < 1000) return Math.floor(num).toLocaleString();
+                const suffixes = ['', 'K', 'M', 'B', 'T', 'Qa'];
+                const i = Math.floor(Math.log10(num) / 3);
+                if (i >= suffixes.length) return num.toExponential(2);
+                const formatted = (num / Math.pow(10, i * 3)).toFixed(1);
+                return `${formatted}${suffixes[i]}`;
+            }
+
+            saveGame() {
+                const saveObj = {
+                    money: this.money,
+                    totalMoneyEarned: this.totalMoneyEarned,
+                    hype: this.hype,
+                    goldenPasses: this.goldenPasses,
+                    parkName: this.parkName,
+                    tapMult: this.tapMult,
+                    globalIncomeMult: this.globalIncomeMult,
+                    rides: this.rides.map(r => ({ id: r.id, count: r.count })),
+                    staff: this.staff.map(s => ({ id: s.id, count: s.count })),
+                    upgrades: this.upgrades.map(u => ({ id: u.id, bought: u.bought }))
+                };
+                localStorage.setItem('thrill_world_save', JSON.stringify(saveObj));
+            }
+
+            manualSave() {
+                this.saveGame();
+                this.showToast('Game saved safely!', 'success');
+            }
+
+            loadSave() {
+                const raw = localStorage.getItem('thrill_world_save');
+                if (!raw) return;
+
+                try {
+                    const data = JSON.parse(raw);
+                    this.money = data.money || 25;
+                    this.totalMoneyEarned = data.totalMoneyEarned || this.money;
+                    this.hype = data.hype || 0;
+                    this.goldenPasses = data.goldenPasses || 0;
+                    this.parkName = data.parkName || "Thrill World Resort";
+                    this.tapMult = data.tapMult || 1;
+                    this.globalIncomeMult = data.globalIncomeMult || 1;
+
+                    if (data.rides) {
+                        data.rides.forEach(savedR => {
+                            const r = this.rides.find(x => x.id === savedR.id);
+                            if (r) r.count = savedR.count;
+                        });
+                    }
+
+                    if (data.staff) {
+                        data.staff.forEach(savedS => {
+                            const s = this.staff.find(x => x.id === savedS.id);
+                            if (s) s.count = savedS.count;
+                        });
+                    }
+
+                    if (data.upgrades) {
+                        data.upgrades.forEach(savedU => {
+                            const u = this.upgrades.find(x => x.id === savedU.id);
+                            if (u) u.bought = savedU.bought;
+                        });
+                    }
+                } catch (e) {
+                    console.error("Failed to load save", e);
+                }
+            }
+
+            exportSave() {
+                this.saveGame();
+                const raw = localStorage.getItem('thrill_world_save');
+                navigator.clipboard.writeText(raw).then(() => {
+                    this.showToast('Save copied to clipboard!', 'success');
+                }).catch(() => {
+                    this.showToast('Could not copy save', 'error');
+                });
+            }
+
+            hardReset() {
+                localStorage.removeItem('thrill_world_save');
+                window.location.reload();
+            }
+        }
+
+        let game = null;
+        window.onload = () => {
+            game = new ThrillParkTycoon();
+            game.init();
+        };
+    </script>
+</body>
+</html>

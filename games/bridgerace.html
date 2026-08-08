@@ -1,0 +1,1259 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Bridge Race 3D</title>
+    <!-- Tailwind CSS for UI overlay styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Three.js Library for 3D graphics rendering -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <!-- Font Awesome icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body, html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            user-select: none;
+            -webkit-user-select: none;
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            touch-action: none;
+        }
+        #canvas-container {
+            width: 100%;
+            height: 100%;
+            position: absolute;
+            top: 0;
+            left: 0;
+            z-index: 1;
+        }
+        /* Custom UI Styling */
+        .gradient-btn {
+            background: linear-gradient(135deg, #FF512F 0%, #DD2476 100%);
+            box-shadow: 0 10px 20px rgba(221, 36, 118, 0.4);
+            transition: all 0.2s ease;
+        }
+        .gradient-btn:active {
+            transform: scale(0.95);
+        }
+        .green-btn {
+            background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+            box-shadow: 0 10px 20px rgba(56, 239, 125, 0.4);
+        }
+        /* Virtual Joystick CSS */
+        #joystick-container {
+            position: absolute;
+            bottom: 40px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 120px;
+            height: 120px;
+            background: rgba(255, 255, 255, 0.25);
+            backdrop-filter: blur(8px);
+            border: 2px solid rgba(255, 255, 255, 0.4);
+            border-radius: 50%;
+            display: none;
+            z-index: 20;
+            touch-action: none;
+        }
+        #joystick-knob {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 50px;
+            height: 50px;
+            background: linear-gradient(135deg, #ffffff, #e0e0e0);
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+            pointer-events: none;
+        }
+        .glass-card {
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.6);
+        }
+    </style>
+</head>
+<body class="bg-slate-900 text-slate-800">
+
+    <!-- 3D Canvas Rendering Area -->
+    <div id="canvas-container"></div>
+
+    <div class="relative z-10 w-full h-full pointer-events-none flex flex-col justify-between p-4">
+        
+        <!-- Header / HUD Bar -->
+        <div class="flex justify-between items-center w-full max-w-xl mx-auto pointer-events-auto gap-2">
+            <!-- Home Button -->
+            <a href="https://supernebula23.github.io/games" class="glass-card px-3 py-2 rounded-2xl flex items-center space-x-2 shadow-lg transition transform hover:scale-105 text-slate-800 hover:text-blue-600 no-underline cursor-pointer">
+                <i class="fa-solid fa-house text-lg text-blue-500"></i>
+                <span class="text-xs font-bold uppercase tracking-wider hidden sm:inline">Home</span>
+            </a>
+
+            <!-- Stage Level Display -->
+            <div class="glass-card px-4 py-2 rounded-2xl flex items-center space-x-3 shadow-lg">
+                <i class="fa-solid fa-trophy text-amber-500 text-xl"></i>
+                <div>
+                    <div class="text-xs text-slate-500 font-bold uppercase tracking-wider">STAGE</div>
+                    <div id="level-display" class="text-lg font-black text-slate-800">LEVEL 1</div>
+                </div>
+            </div>
+
+            <!-- Plank Count HUD -->
+            <div class="glass-card px-4 py-2 rounded-2xl flex items-center space-x-3 shadow-lg">
+                <div class="w-4 h-4 bg-blue-500 rounded-sm transform rotate-45 shadow"></div>
+                <div>
+                    <div class="text-xs text-slate-500 font-bold uppercase tracking-wider">BLOCKS</div>
+                    <div id="plank-display" class="text-lg font-black text-blue-600">0</div>
+                </div>
+            </div>
+
+            <!-- Coin Balance Display -->
+            <div class="glass-card px-4 py-2 rounded-2xl flex items-center space-x-3 shadow-lg">
+                <i class="fa-solid fa-coins text-yellow-500 text-xl"></i>
+                <div>
+                    <div class="text-xs text-slate-500 font-bold uppercase tracking-wider">COINS</div>
+                    <div id="coin-display" class="text-lg font-black text-slate-800">0</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Leaderboard Progress Bar -->
+        <div id="race-progress-bar" class="w-full max-w-md mx-auto hidden pointer-events-auto my-2">
+            <div class="glass-card p-3 rounded-2xl shadow-xl">
+                <div class="flex justify-between text-xs font-bold text-slate-600 mb-1">
+                    <span>RACE PROGRESS</span>
+                    <span id="rank-indicator" class="text-blue-600">1st Place</span>
+                </div>
+                <div class="relative w-full h-3 bg-slate-200 rounded-full overflow-hidden">
+                    <div id="player-progress-fill" class="h-full bg-gradient-to-r from-blue-400 to-blue-600 rounded-full transition-all duration-200" style="width: 0%"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Virtual Joystick Container -->
+        <div id="joystick-container">
+            <div id="joystick-knob"></div>
+        </div>
+
+        <!-- Desktop Controls Hint -->
+        <div id="controls-hint" class="text-center text-xs text-white/80 font-semibold bg-black/40 backdrop-blur-sm px-4 py-2 rounded-full mx-auto w-fit pointer-events-none mb-4 shadow">
+            <i class="fa-solid fa-keyboard mr-1"></i> WASD / Arrow Keys or Mouse / Touch Drag to Move
+        </div>
+    </div>
+
+    <!-- Start Menu Overlay Screen -->
+    <div id="start-menu" class="fixed inset-0 z-30 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-md">
+        <div class="glass-card max-w-md w-full p-8 rounded-3xl shadow-2xl text-center space-y-6 border border-white/50">
+            <div class="space-y-2">
+                <h1 class="text-4xl font-black italic tracking-wider text-transparent bg-clip-text bg-gradient-to-r from-blue-600 via-indigo-600 to-pink-500">
+                    BRIDGE RACE 3D
+                </h1>
+                <p class="text-sm font-medium text-slate-600">
+                    Collect bricks of your color, grow your rolling log, build stairs, and knock over opponents to reach the summit!
+                </p>
+            </div>
+
+            <!-- Character Color Selector -->
+            <div class="space-y-2">
+                <span class="text-xs font-bold text-slate-500 uppercase tracking-wider">Choose Player Color</span>
+                <div class="flex justify-center space-x-3">
+                    <button class="color-select-btn w-10 h-10 rounded-full bg-blue-500 ring-4 ring-blue-300 scale-110 transition-transform" data-color="0x2563eb" data-name="Blue"></button>
+                    <button class="color-select-btn w-10 h-10 rounded-full bg-purple-500 transition-transform hover:scale-105" data-color="0x9333ea" data-name="Purple"></button>
+                    <button class="color-select-btn w-10 h-10 rounded-full bg-cyan-500 transition-transform hover:scale-105" data-color="0x06b6d4" data-name="Cyan"></button>
+                    <button class="color-select-btn w-10 h-10 rounded-full bg-orange-500 transition-transform hover:scale-105" data-color="0xf97316" data-name="Orange"></button>
+                </div>
+            </div>
+
+            <!-- Start Button -->
+            <button id="start-btn" class="w-full py-4 rounded-2xl text-white font-black text-xl uppercase tracking-wider gradient-btn transition transform hover:scale-105">
+                START RACE <i class="fa-solid fa-play ml-2"></i>
+            </button>
+
+            <!-- Home Link -->
+            <a href="https://supernebula23.github.io/games" class="inline-flex items-center justify-center w-full py-3 rounded-2xl bg-slate-200/80 hover:bg-slate-300 text-slate-700 font-bold text-sm uppercase tracking-wider transition transform hover:scale-105 no-underline">
+                <i class="fa-solid fa-house mr-2 text-blue-500"></i> Back to Games Hub
+            </a>
+        </div>
+    </div>
+
+    <!-- Victory / Defeat Modal Screen -->
+    <div id="end-modal" class="fixed inset-0 z-30 hidden flex items-center justify-center p-4 bg-slate-900/70 backdrop-blur-md">
+        <div class="glass-card max-w-md w-full p-8 rounded-3xl shadow-2xl text-center space-y-6 border border-white/50">
+            <div id="end-icon" class="text-6xl text-amber-400 animate-bounce">
+                <i class="fa-solid fa-crown"></i>
+            </div>
+            
+            <div>
+                <h2 id="end-title" class="text-3xl font-black text-slate-800">VICTORY!</h2>
+                <p id="end-subtitle" class="text-slate-600 mt-1 font-medium">You finished 1st Place!</p>
+            </div>
+
+            <div class="bg-slate-100 p-4 rounded-2xl flex justify-around items-center">
+                <div>
+                    <div class="text-xs text-slate-500 font-bold uppercase">Reward</div>
+                    <div id="reward-coins" class="text-xl font-black text-amber-500">+100 Coins</div>
+                </div>
+                <div class="w-px h-8 bg-slate-300"></div>
+                <div>
+                    <div class="text-xs text-slate-500 font-bold uppercase">Completed</div>
+                    <div id="reward-level" class="text-xl font-black text-blue-600">Stage 1</div>
+                </div>
+            </div>
+
+            <button id="next-stage-btn" class="w-full py-4 rounded-2xl text-white font-black text-xl uppercase tracking-wider green-btn transition transform hover:scale-105">
+                CONTINUE <i class="fa-solid fa-arrow-right ml-2"></i>
+            </button>
+
+            <a href="https://supernebula23.github.io/games" class="inline-flex items-center justify-center w-full py-3 rounded-2xl bg-slate-200/80 hover:bg-slate-300 text-slate-700 font-bold text-sm uppercase tracking-wider transition transform hover:scale-105 no-underline">
+                <i class="fa-solid fa-house mr-2 text-blue-500"></i> Back to Games Hub
+            </a>
+        </div>
+    </div>
+
+    <!-- JavaScript Game Engine -->
+    <script>
+        class SoundFX {
+            constructor() {
+                this.ctx = null;
+            }
+            init() {
+                if (!this.ctx) {
+                    this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+                }
+            }
+            playPickUp() {
+                if (!this.ctx) return;
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(520, this.ctx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(880, this.ctx.currentTime + 0.08);
+                gain.gain.setValueAtTime(0.15, this.ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.08);
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                osc.start();
+                osc.stop(this.ctx.currentTime + 0.08);
+            }
+            playStep() {
+                if (!this.ctx) return;
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(340, this.ctx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(180, this.ctx.currentTime + 0.05);
+                gain.gain.setValueAtTime(0.12, this.ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.05);
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                osc.start();
+                osc.stop(this.ctx.currentTime + 0.05);
+            }
+            playKnockdown() {
+                if (!this.ctx) return;
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(220, this.ctx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(60, this.ctx.currentTime + 0.25);
+                gain.gain.setValueAtTime(0.3, this.ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.25);
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                osc.start();
+                osc.stop(this.ctx.currentTime + 0.25);
+            }
+            playWin() {
+                if (!this.ctx) return;
+                const notes = [523.25, 659.25, 783.99, 1046.50];
+                notes.forEach((freq, i) => {
+                    const osc = this.ctx.createOscillator();
+                    const gain = this.ctx.createGain();
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(freq, this.ctx.currentTime + i * 0.1);
+                    gain.gain.setValueAtTime(0.2, this.ctx.currentTime + i * 0.1);
+                    gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + i * 0.1 + 0.3);
+                    osc.connect(gain);
+                    gain.connect(this.ctx.destination);
+                    osc.start(this.ctx.currentTime + i * 0.1);
+                    osc.stop(this.ctx.currentTime + i * 0.1 + 0.3);
+                });
+            }
+            playLose() {
+                if (!this.ctx) return;
+                const notes = [400, 350, 300, 250];
+                notes.forEach((freq, i) => {
+                    const osc = this.ctx.createOscillator();
+                    const gain = this.ctx.createGain();
+                    osc.type = 'sawtooth';
+                    osc.frequency.setValueAtTime(freq, this.ctx.currentTime + i * 0.12);
+                    gain.gain.setValueAtTime(0.15, this.ctx.currentTime + i * 0.12);
+                    gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + i * 0.12 + 0.2);
+                    osc.connect(gain);
+                    gain.connect(this.ctx.destination);
+                    osc.start(this.ctx.currentTime + i * 0.12);
+                    osc.stop(this.ctx.currentTime + i * 0.12 + 0.2);
+                });
+            }
+        }
+        const sfx = new SoundFX();
+
+        const GAME_STATE = { MENU: 0, PLAYING: 1, END: 2 };
+        let currentState = GAME_STATE.MENU;
+
+        let currentLevel = 1;
+        let coins = 0;
+        let selectedPlayerColor = 0x2563eb; // Default Blue
+
+        const TEAM_COLORS = [
+            { id: 'player', color: 0x2563eb, name: 'Player' },
+            { id: 'red', color: 0xef4444, name: 'Red AI' },
+            { id: 'green', color: 0x22c55e, name: 'Green AI' },
+            { id: 'yellow', color: 0xeab308, name: 'Yellow AI' }
+        ];
+
+        // Three.js Scene setup variables
+        let scene, camera, renderer;
+        let clock = new THREE.Clock();
+        let players = [];
+        let playerObj = null;
+        let planksOnGround = [];
+        let bridgeLanes = [];
+        let finishZone = null;
+        let confettiParticles = [];
+
+        // Input controls
+        const keys = { w: false, a: false, s: false, d: false, ArrowUp: false, ArrowDown: false, ArrowLeft: false, ArrowRight: false };
+        let joystickActive = false;
+        let joystickVector = { x: 0, y: 0 };
+
+        function initThree() {
+            const container = document.getElementById('canvas-container');
+            
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(0x38bdf8); // Vibrant sky blue
+            scene.fog = new THREE.FogExp2(0x38bdf8, 0.007);
+
+            camera = new THREE.PerspectiveCamera(55, window.innerWidth / window.innerHeight, 0.5, 300);
+            camera.position.set(0, 18, 22);
+
+            renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+            renderer.shadowMap.enabled = true;
+            renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+            container.appendChild(renderer.domElement);
+
+            const ambientLight = new THREE.AmbientLight(0xffffff, 0.7);
+            scene.add(ambientLight);
+
+            const dirLight = new THREE.DirectionalLight(0xffffff, 0.9);
+            dirLight.position.set(30, 50, 20);
+            dirLight.castShadow = true;
+            dirLight.shadow.mapSize.width = 2048;
+            dirLight.shadow.mapSize.height = 2048;
+            dirLight.shadow.camera.near = 0.5;
+            dirLight.shadow.camera.far = 200;
+            dirLight.shadow.bias = -0.0008;
+            dirLight.shadow.normalBias = 0.03;
+            const d = 50;
+            dirLight.shadow.camera.left = -d;
+            dirLight.shadow.camera.right = d;
+            dirLight.shadow.camera.top = d;
+            dirLight.shadow.camera.bottom = -d;
+            scene.add(dirLight);
+
+            window.addEventListener('resize', onWindowResize, false);
+        }
+
+        function onWindowResize() {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        }
+
+        function createRunnerMesh(colorHex) {
+            const group = new THREE.Group();
+
+            const bodyMat = new THREE.MeshStandardMaterial({ 
+                color: colorHex, 
+                roughness: 0.3, 
+                metalness: 0.1 
+            });
+            const woodMat = new THREE.MeshStandardMaterial({ color: 0xd97706, roughness: 0.8 });
+
+            // Torso / Capsule Body
+            const torsoGeo = new THREE.CylinderGeometry(0.4, 0.35, 1.2, 16);
+            const torso = new THREE.Mesh(torsoGeo, bodyMat);
+            torso.position.y = 1.0;
+            torso.castShadow = true;
+            group.add(torso);
+
+            // Head
+            const headGeo = new THREE.SphereGeometry(0.38, 16, 16);
+            const head = new THREE.Mesh(headGeo, bodyMat);
+            head.position.y = 1.85;
+            head.castShadow = true;
+            group.add(head);
+
+            // Legs
+            const legGeo = new THREE.CylinderGeometry(0.12, 0.1, 0.8, 12);
+            const leftLeg = new THREE.Mesh(legGeo, bodyMat);
+            leftLeg.position.set(-0.2, 0.4, 0);
+            leftLeg.castShadow = true;
+            group.add(leftLeg);
+
+            const rightLeg = new THREE.Mesh(legGeo, bodyMat);
+            rightLeg.position.set(0.2, 0.4, 0);
+            rightLeg.castShadow = true;
+            group.add(rightLeg);
+
+            // Pushing Arms
+            const armGeo = new THREE.CylinderGeometry(0.1, 0.09, 0.7, 12);
+            const leftArm = new THREE.Mesh(armGeo, bodyMat);
+            leftArm.position.set(-0.45, 1.2, 0.2);
+            leftArm.rotation.x = -Math.PI / 3;
+            leftArm.castShadow = true;
+            group.add(leftArm);
+
+            const rightArm = new THREE.Mesh(armGeo, bodyMat);
+            rightArm.position.set(0.45, 1.2, 0.2);
+            rightArm.rotation.x = -Math.PI / 3;
+            rightArm.castShadow = true;
+            group.add(rightArm);
+
+            // Rolling Log / Sphere pushed in front (matches reference image)
+            const rollingLogGroup = new THREE.Group();
+            rollingLogGroup.position.set(0, 0.6, 0.9);
+            
+            const logGeo = new THREE.CylinderGeometry(0.45, 0.45, 1.3, 16);
+            logGeo.rotateZ(Math.PI / 2);
+            const logMesh = new THREE.Mesh(logGeo, woodMat);
+            logMesh.castShadow = true;
+            rollingLogGroup.add(logMesh);
+
+            // Wood end caps
+            const capGeo = new THREE.CircleGeometry(0.44, 12);
+            const capMat = new THREE.MeshStandardMaterial({ color: 0xfde047 });
+            const cap1 = new THREE.Mesh(capGeo, capMat);
+            cap1.position.x = 0.66;
+            cap1.rotation.y = Math.PI / 2;
+            rollingLogGroup.add(cap1);
+
+            const cap2 = new THREE.Mesh(capGeo, capMat);
+            cap2.position.x = -0.66;
+            cap2.rotation.y = -Math.PI / 2;
+            rollingLogGroup.add(cap2);
+
+            group.add(rollingLogGroup);
+
+            // Stack container on back for collected bricks
+            const stackGroup = new THREE.Group();
+            stackGroup.position.set(0, 0.9, -0.4);
+            group.add(stackGroup);
+
+            return {
+                mesh: group,
+                leftLeg: leftLeg,
+                rightLeg: rightLeg,
+                leftArm: leftArm,
+                rightArm: rightArm,
+                rollingLogGroup: rollingLogGroup,
+                logMesh: logMesh,
+                stackGroup: stackGroup
+            };
+        }
+
+        function buildLevelEnvironment() {
+            while (scene.children.length > 0) {
+                scene.remove(scene.children[0]);
+            }
+
+            const ambientLight = new THREE.AmbientLight(0xffffff, 0.7);
+            scene.add(ambientLight);
+
+            const dirLight = new THREE.DirectionalLight(0xffffff, 0.9);
+            dirLight.position.set(30, 50, 20);
+            dirLight.castShadow = true;
+            dirLight.shadow.mapSize.width = 2048;
+            dirLight.shadow.mapSize.height = 2048;
+            dirLight.shadow.bias = -0.0008;
+            dirLight.shadow.normalBias = 0.03;
+            const d = 50;
+            dirLight.shadow.camera.left = -d;
+            dirLight.shadow.camera.right = d;
+            dirLight.shadow.camera.top = d;
+            dirLight.shadow.camera.bottom = -d;
+            scene.add(dirLight);
+
+            planksOnGround = [];
+            bridgeLanes = [];
+            players = [];
+
+            // Stage platform architecture
+            const platformWidth = 24;
+            const platformLength = 22;
+            const woodDeckMat = new THREE.MeshStandardMaterial({ color: 0xdeb887, roughness: 0.7 });
+
+            // 1. Starting Platform
+            const startPlatform = new THREE.Mesh(new THREE.BoxGeometry(platformWidth, 2, platformLength), woodDeckMat);
+            startPlatform.position.set(0, -1, 0);
+            startPlatform.receiveShadow = true;
+            scene.add(startPlatform);
+
+            // 2. Staircase Bridges (4 Lanes)
+            const numLanes = 4;
+            const laneWidth = 2.4;
+            const totalSteps = 18;
+            const stepRise = 0.5;
+            const stepRun = 0.8;
+            const bridgeStartX = -((numLanes - 1) * (laneWidth + 1.2)) / 2;
+            const bridgeStartZ = -platformLength / 2;
+
+            // Barrier divider walls between lanes and on outer flanks
+            const barrierHeight = 1.3;
+            const railLen = Math.sqrt(Math.pow(totalSteps * stepRise, 2) + Math.pow(totalSteps * stepRun, 2));
+            const angle = Math.atan2(totalSteps * stepRise, totalSteps * stepRun);
+            const barrierMat = new THREE.MeshStandardMaterial({ 
+                color: 0xffffff, 
+                roughness: 0.2, 
+                metalness: 0.1,
+                transparent: true,
+                opacity: 0.85
+            });
+
+            // Construct 5 barrier walls (2 outer boundaries + 3 inner dividers)
+            for (let b = 0; b <= numLanes; b++) {
+                let wallX;
+                if (b === 0) {
+                    wallX = bridgeStartX - laneWidth / 2 - 0.15;
+                } else if (b === numLanes) {
+                    wallX = bridgeStartX + (numLanes - 1) * (laneWidth + 1.2) + laneWidth / 2 + 0.15;
+                } else {
+                    const prevX = bridgeStartX + (b - 1) * (laneWidth + 1.2) + laneWidth / 2;
+                    const nextX = bridgeStartX + b * (laneWidth + 1.2) - laneWidth / 2;
+                    wallX = (prevX + nextX) / 2;
+                }
+
+                // Slope barrier wall mesh
+                const wallGeo = new THREE.BoxGeometry(0.18, barrierHeight, railLen);
+                const wallMesh = new THREE.Mesh(wallGeo, barrierMat);
+                
+                const centerY = (totalSteps * stepRise) / 2 + barrierHeight / 2 - 0.2;
+                const centerZ = bridgeStartZ - (totalSteps * stepRun) / 2;
+                
+                wallMesh.position.set(wallX, centerY, centerZ);
+                wallMesh.rotation.x = angle;
+                wallMesh.castShadow = true;
+                wallMesh.receiveShadow = true;
+                scene.add(wallMesh);
+
+                // Top and bottom end posts
+                const postGeo = new THREE.CylinderGeometry(0.16, 0.16, barrierHeight + 0.4, 12);
+                const postMat = new THREE.MeshStandardMaterial({ color: 0xcbd5e1 });
+                
+                const post1 = new THREE.Mesh(postGeo, postMat);
+                post1.position.set(wallX, barrierHeight / 2, bridgeStartZ);
+                scene.add(post1);
+
+                const post2 = new THREE.Mesh(postGeo, postMat);
+                post2.position.set(wallX, totalSteps * stepRise + barrierHeight / 2, bridgeStartZ - totalSteps * stepRun);
+                scene.add(post2);
+            }
+
+            for (let i = 0; i < numLanes; i++) {
+                const laneX = bridgeStartX + i * (laneWidth + 1.2);
+                const stepsArray = [];
+
+                for (let s = 0; s < totalSteps; s++) {
+                    const stepGeo = new THREE.BoxGeometry(laneWidth, stepRise, stepRun);
+                    const unbuiltMat = new THREE.MeshStandardMaterial({ color: 0xe2e8f0, roughness: 0.9, transparent: true, opacity: 0.4, depthWrite: true });
+                    const stepMesh = new THREE.Mesh(stepGeo, unbuiltMat);
+                    
+                    const stepX = laneX;
+                    const stepY = s * stepRise + stepRise / 2;
+                    const stepZ = bridgeStartZ - s * stepRun - stepRun / 2;
+
+                    stepMesh.position.set(stepX, stepY, stepZ);
+                    stepMesh.receiveShadow = true;
+                    scene.add(stepMesh);
+
+                    stepsArray.push({
+                        mesh: stepMesh,
+                        position: new THREE.Vector3(stepX, stepY, stepZ),
+                        builtBy: null
+                    });
+                }
+
+                bridgeLanes.push({
+                    x: laneX,
+                    steps: stepsArray,
+                    topZ: bridgeStartZ - totalSteps * stepRun,
+                    topY: totalSteps * stepRise,
+                    stepRise: stepRise,
+                    stepRun: stepRun,
+                    startZ: bridgeStartZ
+                });
+            }
+
+            // 3. Victory Summit Platform
+            const topPlatformY = totalSteps * stepRise;
+            const topPlatformZ = bridgeStartZ - totalSteps * stepRun - 8;
+            const topPlatform = new THREE.Mesh(new THREE.BoxGeometry(platformWidth + 4, 2, 16), woodDeckMat);
+            topPlatform.position.set(0, topPlatformY - 1, topPlatformZ);
+            topPlatform.receiveShadow = true;
+            scene.add(topPlatform);
+
+            // Victory Arch
+            const archMat = new THREE.MeshStandardMaterial({ color: 0xf59e0b, metalness: 0.6, roughness: 0.2 });
+            const p1 = new THREE.Mesh(new THREE.CylinderGeometry(0.5, 0.5, 6, 16), archMat);
+            p1.position.set(-6, topPlatformY + 3, topPlatformZ - 2);
+            scene.add(p1);
+
+            const p2 = new THREE.Mesh(new THREE.CylinderGeometry(0.5, 0.5, 6, 16), archMat);
+            p2.position.set(6, topPlatformY + 3, topPlatformZ - 2);
+            scene.add(p2);
+
+            const beam = new THREE.Mesh(new THREE.BoxGeometry(13, 0.8, 0.8), archMat);
+            beam.position.set(0, topPlatformY + 6, topPlatformZ - 2);
+            scene.add(beam);
+
+            finishZone = {
+                center: new THREE.Vector3(0, topPlatformY, topPlatformZ - 2),
+                radius: 5
+            };
+
+            spawnPlanks(platformWidth - 4, platformLength - 6);
+
+            // Spawn Runners
+            TEAM_COLORS[0].color = selectedPlayerColor;
+            
+            for (let i = 0; i < 4; i++) {
+                const team = TEAM_COLORS[i];
+                const parts = createRunnerMesh(team.color);
+                
+                const startX = (i - 1.5) * 4;
+                const startZ = 6;
+                parts.mesh.position.set(startX, 0, startZ);
+                scene.add(parts.mesh);
+
+                const runner = {
+                    id: team.id,
+                    isPlayer: i === 0,
+                    name: team.name,
+                    color: team.color,
+                    parts: parts,
+                    position: parts.mesh.position,
+                    rotation: parts.mesh.rotation,
+                    planksCount: 0,
+                    plankStackMeshes: [],
+                    assignedLaneIndex: i,
+                    speed: 8.8,
+                    vx: 0,
+                    vz: 0,
+                    animTime: 0,
+                    aiState: 'SEARCH',
+                    stunTimer: 0
+                };
+                players.push(runner);
+            }
+
+            playerObj = players[0];
+        }
+
+        function spawnPlanks(areaWidth, areaLength) {
+            const planksPerTeam = 20;
+            const plankGeo = new THREE.BoxGeometry(0.85, 0.25, 1.4);
+
+            for (let t = 0; t < 4; t++) {
+                const team = TEAM_COLORS[t];
+                const mat = new THREE.MeshStandardMaterial({ color: team.color, roughness: 0.4 });
+
+                for (let p = 0; p < planksPerTeam; p++) {
+                    const mesh = new THREE.Mesh(plankGeo, mat);
+                    const rx = (Math.random() - 0.5) * areaWidth;
+                    const rz = (Math.random() - 0.5) * areaLength + 2;
+
+                    mesh.position.set(rx, 0.15, rz);
+                    mesh.rotation.y = Math.random() * Math.PI;
+                    mesh.castShadow = true;
+                    mesh.receiveShadow = true;
+
+                    scene.add(mesh);
+                    planksOnGround.push({
+                        mesh: mesh,
+                        teamId: team.id,
+                        color: team.color,
+                        active: true,
+                        respawnTimer: 0
+                    });
+                }
+            }
+        }
+
+        function setupInputs() {
+            window.addEventListener('keydown', (e) => {
+                if (keys.hasOwnProperty(e.key)) keys[e.key] = true;
+            });
+            window.addEventListener('keyup', (e) => {
+                if (keys.hasOwnProperty(e.key)) keys[e.key] = false;
+            });
+
+            const joyContainer = document.getElementById('joystick-container');
+            const joyKnob = document.getElementById('joystick-knob');
+            let startTouchX = 0, startTouchY = 0;
+
+            const handleTouchStart = (e) => {
+                if (currentState !== GAME_STATE.PLAYING) return;
+                const touch = e.touches ? e.touches[0] : e;
+                joystickActive = true;
+                startTouchX = touch.clientX;
+                startTouchY = touch.clientY;
+                joyContainer.style.display = 'block';
+                joyContainer.style.left = `${startTouchX}px`;
+                joyContainer.style.top = `${startTouchY}px`;
+                joyKnob.style.transform = 'translate(-50%, -50%)';
+                joystickVector = { x: 0, y: 0 };
+            };
+
+            const handleTouchMove = (e) => {
+                if (!joystickActive) return;
+                const touch = e.touches ? e.touches[0] : e;
+                const deltaX = touch.clientX - startTouchX;
+                const deltaY = touch.clientY - startTouchY;
+                const dist = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
+                const maxDist = 50;
+
+                const clampX = (deltaX / Math.max(dist, 1)) * Math.min(dist, maxDist);
+                const clampY = (deltaY / Math.max(dist, 1)) * Math.min(dist, maxDist);
+
+                joyKnob.style.transform = `translate(calc(-50% + ${clampX}px), calc(-50% + ${clampY}px))`;
+
+                joystickVector.x = clampX / maxDist;
+                joystickVector.y = clampY / maxDist;
+            };
+
+            const handleTouchEnd = () => {
+                joystickActive = false;
+                joyContainer.style.display = 'none';
+                joystickVector = { x: 0, y: 0 };
+            };
+
+            const canvas = document.getElementById('canvas-container');
+            canvas.addEventListener('mousedown', handleTouchStart);
+            window.addEventListener('mousemove', handleTouchMove);
+            window.addEventListener('mouseup', handleTouchEnd);
+
+            canvas.addEventListener('touchstart', handleTouchStart, { passive: true });
+            window.addEventListener('touchmove', handleTouchMove, { passive: true });
+            window.addEventListener('touchend', handleTouchEnd);
+
+            document.querySelectorAll('.color-select-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    document.querySelectorAll('.color-select-btn').forEach(b => b.classList.remove('ring-4', 'ring-blue-300', 'scale-110'));
+                    e.target.classList.add('ring-4', 'ring-blue-300', 'scale-110');
+                    selectedPlayerColor = parseInt(e.target.getAttribute('data-color'));
+                });
+            });
+
+            document.getElementById('start-btn').addEventListener('click', () => {
+                sfx.init();
+                startNewGame();
+            });
+
+            document.getElementById('next-stage-btn').addEventListener('click', () => {
+                document.getElementById('end-modal').classList.add('hidden');
+                startNewGame();
+            });
+        }
+
+        function startNewGame() {
+            document.getElementById('start-menu').classList.add('hidden');
+            document.getElementById('race-progress-bar').classList.remove('hidden');
+
+            buildLevelEnvironment();
+            currentState = GAME_STATE.PLAYING;
+            updateHUD();
+        }
+
+        function updateHUD() {
+            document.getElementById('level-display').innerText = `LEVEL ${currentLevel}`;
+            document.getElementById('coin-display').innerText = `${coins}`;
+            if (playerObj) {
+                document.getElementById('plank-display').innerText = `${playerObj.planksCount}`;
+            }
+        }
+
+        function updatePlayerMovement(delta) {
+            if (!playerObj || currentState !== GAME_STATE.PLAYING) return;
+
+            if (playerObj.stunTimer > 0) {
+                playerObj.stunTimer -= delta;
+                playerObj.parts.mesh.rotation.z = Math.sin(playerObj.stunTimer * 20) * 0.4;
+                return;
+            } else {
+                playerObj.parts.mesh.rotation.z = 0;
+            }
+
+            let moveX = 0;
+            let moveZ = 0;
+
+            if (keys.w || keys.ArrowUp) moveZ -= 1;
+            if (keys.s || keys.ArrowDown) moveZ += 1;
+            if (keys.a || keys.ArrowLeft) moveX -= 1;
+            if (keys.d || keys.ArrowRight) moveX += 1;
+
+            if (joystickActive) {
+                moveX = joystickVector.x;
+                moveZ = joystickVector.y;
+            }
+
+            const inputLen = Math.sqrt(moveX * moveX + moveZ * moveZ);
+            if (inputLen > 0.1) {
+                const normX = moveX / Math.max(inputLen, 1);
+                const normZ = moveZ / Math.max(inputLen, 1);
+
+                playerObj.vx = normX * playerObj.speed;
+                playerObj.vz = normZ * playerObj.speed;
+
+                const targetAngle = Math.atan2(normX, normZ);
+                playerObj.rotation.y = targetAngle;
+
+                playerObj.animTime += delta * 12;
+            } else {
+                playerObj.vx *= 0.1;
+                playerObj.vz *= 0.1;
+            }
+
+            moveRunner(playerObj, delta);
+        }
+
+        function updateAIMovement(bot, delta) {
+            if (currentState !== GAME_STATE.PLAYING) return;
+
+            if (bot.stunTimer > 0) {
+                bot.stunTimer -= delta;
+                bot.parts.mesh.rotation.z = Math.sin(bot.stunTimer * 20) * 0.4;
+                return;
+            } else {
+                bot.parts.mesh.rotation.z = 0;
+            }
+
+            const myLane = bridgeLanes[bot.assignedLaneIndex];
+            if (!myLane) return;
+            const bridgeStartZ = -11;
+
+            // Immediately switch out of BUILD mode if out of planks
+            if (bot.aiState === 'BUILD' && bot.planksCount <= 0) {
+                bot.aiState = 'SEARCH';
+            }
+
+            // Check if all steps in bot's lane are built by this bot
+            let fullyBuilt = true;
+            for (let s = 0; s < myLane.steps.length; s++) {
+                if (myLane.steps[s].builtBy !== bot.id) {
+                    fullyBuilt = false;
+                    break;
+                }
+            }
+
+            if (fullyBuilt || bot.position.z <= myLane.topZ) {
+                // Bridge complete: sprint straight to the victory crown
+                const dir = new THREE.Vector3().subVectors(finishZone.center, bot.position);
+                dir.y = 0;
+                dir.normalize();
+
+                bot.vx = dir.x * bot.speed;
+                bot.vz = dir.z * bot.speed;
+                bot.rotation.y = Math.atan2(dir.x, dir.z);
+                bot.animTime += delta * 12;
+            } else if (bot.aiState === 'SEARCH') {
+                // If currently on the bridge while searching, descend back to the platform
+                if (bot.position.z < bridgeStartZ + 0.5) {
+                    bot.vx = (myLane.x - bot.position.x) * 6;
+                    bot.vz = bot.speed * 0.95; // Move back down bridge
+                    bot.rotation.y = 0; // Face forward down bridge
+                    bot.animTime += delta * 10;
+                } else {
+                    // On ground platform: gather bricks
+                    const targetPlanks = 6 + Math.min(currentLevel * 2, 8);
+                    if (bot.planksCount >= targetPlanks) {
+                        bot.aiState = 'BUILD';
+                    } else {
+                        let closest = null;
+                        let minDist = Infinity;
+
+                        // First look for team color bricks
+                        planksOnGround.forEach(p => {
+                            if (p.active && p.teamId === bot.id) {
+                                const d = bot.position.distanceTo(p.mesh.position);
+                                if (d < minDist) {
+                                    minDist = d;
+                                    closest = p;
+                                }
+                            }
+                        });
+
+                        // Fallback to any active brick if primary color is on cooldown
+                        if (!closest) {
+                            planksOnGround.forEach(p => {
+                                if (p.active) {
+                                    const d = bot.position.distanceTo(p.mesh.position);
+                                    if (d < minDist) {
+                                        minDist = d;
+                                        closest = p;
+                                    }
+                                }
+                            });
+                        }
+
+                        if (closest) {
+                            const dir = new THREE.Vector3().subVectors(closest.mesh.position, bot.position);
+                            dir.y = 0;
+                            dir.normalize();
+
+                            bot.vx = dir.x * bot.speed * 0.95;
+                            bot.vz = dir.z * bot.speed * 0.95;
+                            bot.rotation.y = Math.atan2(dir.x, dir.z);
+                            bot.animTime += delta * 10;
+                        } else {
+                            bot.vx *= 0.5;
+                            bot.vz *= 0.5;
+                        }
+                    }
+                }
+            } else if (bot.aiState === 'BUILD') {
+                if (bot.position.z > bridgeStartZ + 0.5) {
+                    // Head towards bridge entrance
+                    const entranceTarget = new THREE.Vector3(myLane.x, 0, bridgeStartZ - 0.2);
+                    const dir = new THREE.Vector3().subVectors(entranceTarget, bot.position);
+                    dir.y = 0;
+                    dir.normalize();
+
+                    bot.vx = dir.x * bot.speed;
+                    bot.vz = dir.z * bot.speed;
+                    bot.rotation.y = Math.atan2(dir.x, dir.z);
+                    bot.animTime += delta * 10;
+                } else {
+                    // Climb straight up bridge lane
+                    bot.vx = (myLane.x - bot.position.x) * 8;
+                    bot.vz = -bot.speed * 0.95;
+                    bot.rotation.y = Math.PI;
+                    bot.animTime += delta * 10;
+                }
+            }
+
+            moveRunner(bot, delta);
+        }
+
+        function moveRunner(runner, delta) {
+            runner.position.x += runner.vx * delta;
+            runner.position.z += runner.vz * delta;
+
+            const bridgeStartZ = -11;
+            const totalSteps = 18;
+            const stepRun = 0.8;
+            const stepRise = 0.5;
+            const laneWidth = 2.4;
+
+            // Compute vertical height and enforce lateral lane containment on stairs
+            if (runner.position.z > bridgeStartZ) {
+                runner.position.x = Math.max(-11.5, Math.min(11.5, runner.position.x));
+                runner.position.z = Math.min(10, runner.position.z);
+                runner.position.y = 0;
+            } else if (runner.position.z <= bridgeStartZ && runner.position.z >= bridgeStartZ - (totalSteps * stepRun)) {
+                const distUpRamp = bridgeStartZ - runner.position.z;
+                const calcY = (distUpRamp / stepRun) * stepRise;
+                runner.position.y = calcY;
+
+                // Clamp runner X within assigned lane barriers
+                const myLane = bridgeLanes[runner.assignedLaneIndex];
+                if (myLane) {
+                    const halfWidth = laneWidth / 2 - 0.25;
+                    runner.position.x = Math.max(myLane.x - halfWidth, Math.min(myLane.x + halfWidth, runner.position.x));
+                }
+            } else {
+                runner.position.y = totalSteps * stepRise;
+            }
+
+            // Limb movement animation
+            const swing = Math.sin(runner.animTime) * 0.6;
+            runner.parts.leftLeg.rotation.x = swing;
+            runner.parts.rightLeg.rotation.x = -swing;
+            
+            if (Math.abs(runner.vx) > 0.1 || Math.abs(runner.vz) > 0.1) {
+                runner.parts.logMesh.rotation.x += delta * 10;
+            }
+
+            checkBridgeInteraction(runner);
+            checkPlankCollisions(runner);
+            checkRunnerKnockdowns(runner);
+
+            if (runner.position.distanceTo(finishZone.center) < finishZone.radius) {
+                handleRaceFinish(runner);
+            }
+        }
+
+        function checkBridgeInteraction(runner) {
+            const bridgeStartZ = -11;
+            const totalSteps = 18;
+            const stepRun = 0.8;
+            const myLane = bridgeLanes[runner.assignedLaneIndex];
+            if (!myLane) return;
+
+            // Check if runner is horizontally aligned with their lane
+            const distFromLaneX = Math.abs(runner.position.x - myLane.x);
+            if (distFromLaneX > 1.3) return;
+
+            if (runner.position.z <= bridgeStartZ && runner.position.z >= myLane.topZ) {
+                const distAlongBridge = bridgeStartZ - runner.position.z;
+                const stepIdx = Math.floor(distAlongBridge / stepRun);
+
+                if (stepIdx >= 0 && stepIdx < myLane.steps.length) {
+                    const step = myLane.steps[stepIdx];
+                    if (step.builtBy !== runner.id) {
+                        if (runner.planksCount > 0) {
+                            consumePlank(runner);
+                            step.builtBy = runner.id;
+                            step.mesh.material = new THREE.MeshStandardMaterial({ 
+                                color: runner.color, 
+                                roughness: 0.3 
+                            });
+                            step.mesh.material.opacity = 1.0;
+
+                            if (runner.isPlayer) sfx.playStep();
+                        } else {
+                            // Block forward progression (-Z direction) if out of planks on unbuilt/enemy step
+                            if (runner.vz < 0) {
+                                const stepFrontZ = step.position.z + stepRun / 2;
+                                runner.position.z = Math.max(runner.position.z, stepFrontZ + 0.05);
+                                runner.vz = 0;
+                                if (!runner.isPlayer) {
+                                    runner.aiState = 'SEARCH';
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        function checkPlankCollisions(runner) {
+            planksOnGround.forEach(p => {
+                if (p.active && p.teamId === runner.id) {
+                    const dist = runner.position.distanceTo(p.mesh.position);
+                    if (dist < 1.2) {
+                        p.active = false;
+                        scene.remove(p.mesh);
+
+                        addPlankToRunner(runner);
+                        if (runner.isPlayer) {
+                            sfx.playPickUp();
+                            updateHUD();
+                        }
+
+                        setTimeout(() => {
+                            p.active = true;
+                            scene.add(p.mesh);
+                        }, 3000);
+                    }
+                }
+            });
+        }
+
+        function checkRunnerKnockdowns(runner) {
+            players.forEach(other => {
+                if (other.id !== runner.id && runner.stunTimer <= 0 && other.stunTimer <= 0) {
+                    const dist = runner.position.distanceTo(other.position);
+                    if (dist < 1.3) {
+                        // Bumping logic: runner with significantly higher brick count knocks down opponent
+                        if (runner.planksCount > other.planksCount + 2) {
+                            other.stunTimer = 1.5;
+                            dropRunnerPlanks(other);
+                            if (runner.isPlayer || other.isPlayer) sfx.playKnockdown();
+                        }
+                    }
+                }
+            });
+        }
+
+        function dropRunnerPlanks(runner) {
+            const dropAmount = Math.min(runner.planksCount, 6);
+            for (let i = 0; i < dropAmount; i++) {
+                consumePlank(runner);
+            }
+        }
+
+        function addPlankToRunner(runner) {
+            runner.planksCount++;
+
+            const plankGeo = new THREE.BoxGeometry(0.75, 0.22, 1.25);
+            const mat = new THREE.MeshStandardMaterial({ color: runner.color, roughness: 0.4 });
+            const stackMesh = new THREE.Mesh(plankGeo, mat);
+
+            const stackIndex = runner.planksCount - 1;
+            stackMesh.position.set(0, stackIndex * 0.24, 0);
+            runner.parts.stackGroup.add(stackMesh);
+            runner.plankStackMeshes.push(stackMesh);
+
+            // Scale rolling sphere/log proportional to stack size (matching game thumbnail art)
+            const scaleFactor = 1 + Math.min(runner.planksCount * 0.05, 1.0);
+            runner.parts.rollingLogGroup.scale.set(scaleFactor, scaleFactor, scaleFactor);
+        }
+
+        function consumePlank(runner) {
+            if (runner.planksCount <= 0) return;
+            runner.planksCount--;
+
+            const popped = runner.plankStackMeshes.pop();
+            if (popped) {
+                runner.parts.stackGroup.remove(popped);
+            }
+
+            const scaleFactor = 1 + Math.min(runner.planksCount * 0.05, 1.0);
+            runner.parts.rollingLogGroup.scale.set(scaleFactor, scaleFactor, scaleFactor);
+
+            if (runner.isPlayer) updateHUD();
+        }
+
+        function updateMatchProgress() {
+            if (!playerObj) return;
+
+            let maxPlayerStep = 0;
+            const myLane = bridgeLanes[playerObj.assignedLaneIndex];
+            myLane.steps.forEach((step, idx) => {
+                if (step.builtBy === playerObj.id) maxPlayerStep = idx + 1;
+            });
+
+            const percent = (maxPlayerStep / 18) * 100;
+            document.getElementById('player-progress-fill').style.width = `${percent}%`;
+
+            let rank = 1;
+            players.forEach(p => {
+                if (p.id !== playerObj.id) {
+                    if (p.position.z < playerObj.position.z) rank++;
+                }
+            });
+
+            const rankSuffix = ['1st', '2nd', '3rd', '4th'][rank - 1];
+            document.getElementById('rank-indicator').innerText = `${rankSuffix} Place`;
+        }
+
+        function handleRaceFinish(winner) {
+            if (currentState === GAME_STATE.END) return;
+            currentState = GAME_STATE.END;
+
+            const endModal = document.getElementById('end-modal');
+            const endTitle = document.getElementById('end-title');
+            const endSubtitle = document.getElementById('end-subtitle');
+            const endIcon = document.getElementById('end-icon');
+
+            if (winner.isPlayer) {
+                sfx.playWin();
+                endTitle.innerText = "VICTORY!";
+                endTitle.className = "text-3xl font-black text-emerald-600";
+                endSubtitle.innerText = "You dominated the bridge race!";
+                endIcon.innerHTML = '<i class="fa-solid fa-crown text-amber-400"></i>';
+
+                coins += 100;
+                currentLevel++;
+                spawnConfetti();
+            } else {
+                sfx.playLose();
+                endTitle.innerText = "DEFEAT";
+                endTitle.className = "text-3xl font-black text-rose-600";
+                endSubtitle.innerText = `${winner.name} reached the summit first!`;
+                endIcon.innerHTML = '<i class="fa-solid fa-skull text-slate-400"></i>';
+            }
+
+            document.getElementById('reward-coins').innerText = `+${winner.isPlayer ? 100 : 25} Coins`;
+            document.getElementById('reward-level').innerText = `Stage ${currentLevel}`;
+
+            setTimeout(() => {
+                endModal.classList.remove('hidden');
+            }, 800);
+        }
+
+        function spawnConfetti() {
+            const confettiGeo = new THREE.PlaneGeometry(0.25, 0.25);
+            const confettiColors = [0xef4444, 0x3b82f6, 0x22c55e, 0xeab308, 0xec4899];
+
+            for (let i = 0; i < 140; i++) {
+                const color = confettiColors[Math.floor(Math.random() * confettiColors.length)];
+                const mat = new THREE.MeshBasicMaterial({ color: color, side: THREE.DoubleSide });
+                const mesh = new THREE.Mesh(confettiGeo, mat);
+
+                mesh.position.set(
+                    finishZone.center.x + (Math.random() - 0.5) * 12,
+                    finishZone.center.y + 4 + Math.random() * 6,
+                    finishZone.center.z + (Math.random() - 0.5) * 12
+                );
+
+                const velocity = new THREE.Vector3(
+                    (Math.random() - 0.5) * 7,
+                    Math.random() * 8 + 3,
+                    (Math.random() - 0.5) * 7
+                );
+
+                scene.add(mesh);
+                confettiParticles.push({ mesh: mesh, vel: velocity, rotSpeed: Math.random() * 10 });
+            }
+        }
+
+        function updateConfetti(delta) {
+            confettiParticles.forEach(p => {
+                p.mesh.position.addScaledVector(p.vel, delta);
+                p.vel.y -= 9.8 * delta;
+                p.mesh.rotation.x += p.rotSpeed * delta;
+                p.mesh.rotation.y += p.rotSpeed * delta;
+            });
+        }
+
+        function updateCamera() {
+            if (!playerObj) return;
+
+            const targetCamPos = new THREE.Vector3(
+                playerObj.position.x * 0.35,
+                playerObj.position.y + 14,
+                playerObj.position.z + 18
+            );
+
+            camera.position.lerp(targetCamPos, 0.08);
+            camera.lookAt(playerObj.position.x * 0.15, playerObj.position.y + 2, playerObj.position.z - 2);
+        }
+
+        function animate() {
+            requestAnimationFrame(animate);
+
+            const delta = Math.min(clock.getDelta(), 0.1);
+
+            if (currentState === GAME_STATE.PLAYING) {
+                updatePlayerMovement(delta);
+
+                for (let i = 1; i < players.length; i++) {
+                    updateAIMovement(players[i], delta);
+                }
+
+                updateMatchProgress();
+            }
+
+            if (confettiParticles.length > 0) {
+                updateConfetti(delta);
+            }
+
+            updateCamera();
+            renderer.render(scene, camera);
+        }
+
+        window.onload = function() {
+            initThree();
+            setupInputs();
+            animate();
+        };
+    </script>
+</body>
+</html>

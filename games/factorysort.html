@@ -1,0 +1,921 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Factory Blitz: 2-Minute Conveyor Rush</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts for Industrial / Sci-Fi Theme -->
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=Outfit:wght@400;600;700;800&display=swap" rel="stylesheet">
+    
+    <style>
+        * {
+            user-select: none;
+            -webkit-user-select: none;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Outfit', sans-serif;
+            background-color: #0d1117;
+            color: #f0f6fc;
+            overflow-x: hidden;
+            touch-action: manipulation;
+        }
+
+        .font-orbitron {
+            font-family: 'Orbitron', sans-serif;
+        }
+
+        /* Industrial Factory Dark Grid Background */
+        .bg-factory {
+            background-color: #0b0f19;
+            background-image: 
+                radial-gradient(circle at 50% 20%, rgba(245, 158, 11, 0.12) 0%, transparent 60%),
+                radial-gradient(circle at 80% 80%, rgba(14, 165, 233, 0.1) 0%, transparent 50%),
+                linear-gradient(to right, rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+                linear-gradient(to bottom, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+            background-size: 100% 100%, 100% 100%, 32px 32px, 32px 32px;
+        }
+
+        /* Animated Conveyor Belt Texture */
+        @keyframes conveyorMove {
+            0% { background-position: 0 0; }
+            100% { background-position: 48px 0; }
+        }
+
+        .conveyor-track {
+            background: #1e293b;
+            background-image: repeating-linear-gradient(
+                90deg,
+                #0f172a 0px,
+                #0f172a 20px,
+                #334155 20px,
+                #334155 24px,
+                #1e293b 24px,
+                #1e293b 48px
+            );
+            animation: conveyorMove 1.2s linear infinite;
+        }
+
+        .conveyor-track.paused {
+            animation-play-state: paused;
+        }
+
+        /* Hazard Stripe Border */
+        .hazard-stripes {
+            background: repeating-linear-gradient(
+                -45deg,
+                #f59e0b,
+                #f59e0b 12px,
+                #0f172a 12px,
+                #0f172a 24px
+            );
+        }
+
+        /* Bin Card Hover & Drag Target Effects */
+        .bin-card {
+            transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+
+        .bin-card:hover, .bin-card.drag-over {
+            transform: translateY(-6px) scale(1.02);
+            box-shadow: 0 12px 28px -4px rgba(245, 158, 11, 0.35);
+        }
+
+        /* Item Entry Pop Animation */
+        @keyframes itemPop {
+            0% { transform: scale(0.4) rotate(-8deg); opacity: 0; }
+            70% { transform: scale(1.08) rotate(2deg); }
+            100% { transform: scale(1) rotate(0deg); opacity: 1; }
+        }
+
+        .animate-item-pop {
+            animation: itemPop 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+        }
+
+        /* Wrong Bin Error Shake */
+        @keyframes errorShake {
+            0%, 100% { transform: translateX(0); }
+            20% { transform: translateX(-12px) rotate(-3deg); }
+            40% { transform: translateX(12px) rotate(3deg); }
+            60% { transform: translateX(-8px) rotate(-1.5deg); }
+            80% { transform: translateX(8px) rotate(1.5deg); }
+        }
+
+        .animate-error {
+            animation: errorShake 0.4s ease-in-out;
+        }
+
+        /* Correct Sorting Pulse */
+        @keyframes successPulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.08); filter: brightness(1.25); }
+        }
+
+        .animate-success {
+            animation: successPulse 0.3s ease-out;
+        }
+
+        /* Floating Points Text Effect */
+        @keyframes floatPoints {
+            0% { opacity: 1; transform: translateY(0) scale(1); }
+            100% { opacity: 0; transform: translateY(-50px) scale(1.25); }
+        }
+
+        .floating-points {
+            position: absolute;
+            pointer-events: none;
+            animation: floatPoints 0.75s ease-out forwards;
+            font-weight: 900;
+            z-index: 60;
+            text-shadow: 0 0 10px rgba(0, 0, 0, 0.8);
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: #0b0f19; }
+        ::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
+    </style>
+</head>
+<body class="min-h-screen bg-factory flex flex-col justify-between items-center p-3 md:p-6 text-slate-100 select-none">
+
+    <div class="w-full max-w-5xl flex flex-col flex-grow justify-between gap-4">
+
+        <!-- Top Factory HUD Header -->
+        <header class="bg-slate-900/90 backdrop-blur-md rounded-2xl p-4 border border-amber-500/30 shadow-2xl shadow-amber-950/20 flex flex-wrap justify-between items-center gap-3">
+            <!-- Game Title & Badge -->
+            <div class="flex items-center space-x-3">
+                <div class="w-12 h-12 rounded-2xl bg-gradient-to-tr from-amber-600 to-orange-500 flex items-center justify-center text-slate-950 text-2xl font-black shadow-lg shadow-amber-500/30 border border-amber-300">
+                    <i class="fa-solid fa-industry"></i>
+                </div>
+                <div>
+                    <h1 class="text-xl md:text-2xl font-black tracking-wider text-amber-400 font-orbitron leading-none drop-shadow">FACTORY<span class="text-slate-100">BLITZ</span></h1>
+                    <p class="text-xs text-amber-200/70 font-semibold tracking-widest uppercase mt-0.5"><i class="fa-solid fa-conveyor-belt mr-1"></i>2-Minute Belt Rush</p>
+                </div>
+            </div>
+
+            <!-- Stats Dashboard -->
+            <div class="flex items-center space-x-3 md:space-x-6">
+                <!-- Score -->
+                <div class="text-center px-3.5 py-1.5 bg-slate-950/90 rounded-xl border border-amber-500/30 min-w-[95px]">
+                    <span class="block text-[10px] text-amber-300/80 font-bold uppercase tracking-wider">Score</span>
+                    <span id="scoreDisplay" class="text-2xl font-black text-amber-400 font-orbitron drop-shadow">0</span>
+                </div>
+
+                <!-- Timer -->
+                <div id="timerContainer" class="text-center px-4 py-1.5 bg-slate-950/90 rounded-xl border border-amber-500/40 min-w-[110px] transition-all shadow-inner">
+                    <span class="block text-[10px] text-amber-300/80 font-bold uppercase tracking-wider"><i class="fa-solid fa-stopwatch mr-1"></i>Shift Time</span>
+                    <span id="timerDisplay" class="text-2xl font-black text-emerald-400 font-orbitron tracking-tight drop-shadow">02:00</span>
+                </div>
+
+                <!-- Combo Multiplier -->
+                <div class="text-center px-3.5 py-1.5 bg-slate-950/90 rounded-xl border border-amber-500/30 min-w-[85px]">
+                    <span class="block text-[10px] text-amber-300/80 font-bold uppercase tracking-wider">Combo</span>
+                    <span id="comboDisplay" class="text-2xl font-black text-cyan-400 font-orbitron drop-shadow">0x</span>
+                </div>
+            </div>
+
+            <!-- Controls -->
+            <div class="flex items-center space-x-2">
+                <a href="https://supernebula23.github.io/games" class="p-2.5 rounded-xl bg-slate-800/80 hover:bg-slate-700 border border-slate-600 text-slate-200 hover:text-white transition-all flex items-center justify-center" title="More Games / Home">
+                    <i class="fa-solid fa-house text-lg"></i>
+                </a>
+                <button id="soundToggleBtn" class="p-2.5 rounded-xl bg-slate-800/80 hover:bg-slate-700 border border-slate-600 text-slate-200 hover:text-white transition-all" title="Toggle Audio">
+                    <i id="soundIcon" class="fa-solid fa-volume-high text-lg"></i>
+                </button>
+                <button id="pauseBtn" class="p-2.5 rounded-xl bg-slate-800/80 hover:bg-slate-700 border border-slate-600 text-slate-200 hover:text-white transition-all disabled:opacity-40" title="Pause Shift" disabled>
+                    <i class="fa-solid fa-pause text-lg"></i>
+                </button>
+            </div>
+        </header>
+
+        <!-- Main Assembly Line & Conveyor Belt Stage -->
+        <main class="flex-grow flex flex-col items-center justify-center relative my-2 w-full">
+            
+            <!-- Active Power-up Banner -->
+            <div id="activePowerupBar" class="hidden mb-3 px-4 py-1.5 rounded-full bg-gradient-to-r from-amber-500 via-orange-500 to-amber-400 text-slate-950 font-black text-xs uppercase tracking-widest shadow-lg shadow-amber-500/20 animate-pulse flex items-center gap-2 border border-amber-200">
+                <i class="fa-solid fa-bolt text-sm"></i>
+                <span id="powerupText">Belt Slowdown Active!</span>
+            </div>
+
+            <!-- Conveyor Line Info -->
+            <div class="w-full max-w-xl flex justify-between items-center mb-2 px-2 text-xs font-semibold text-slate-400">
+                <span>Items Sorted: <strong id="sortedCount" class="text-amber-400 font-bold font-orbitron">0</strong></span>
+                <div class="flex items-center space-x-2">
+                    <span>Up Next:</span>
+                    <div id="nextItemPreview" class="w-8 h-8 rounded-xl bg-slate-900 border border-slate-700 flex items-center justify-center text-lg shadow-inner">⚙️</div>
+                </div>
+            </div>
+
+            <!-- Conveyor Belt Industrial Stage Frame -->
+            <div class="w-full max-w-2xl bg-slate-950 rounded-3xl border-2 border-slate-700/80 p-3 shadow-2xl relative overflow-hidden flex flex-col items-center">
+                
+                <!-- Hazard Caution Stripes Top & Bottom -->
+                <div class="w-full h-2 hazard-stripes rounded-t-xl opacity-90"></div>
+
+                <!-- Moving Conveyor Belt Container -->
+                <div id="conveyorTrack" class="conveyor-track w-full h-52 md:h-60 rounded-xl relative overflow-hidden flex items-center justify-start border-y-4 border-slate-900 px-4 py-2 my-1 shadow-inner">
+                    
+                    <!-- Conveyor Rollers Visual Indicator -->
+                    <div class="absolute inset-x-0 top-1 flex justify-between px-2 pointer-events-none opacity-40">
+                        <div class="w-3 h-3 rounded-full bg-amber-500/50"></div>
+                        <div class="w-3 h-3 rounded-full bg-amber-500/50"></div>
+                        <div class="w-3 h-3 rounded-full bg-amber-500/50"></div>
+                        <div class="w-3 h-3 rounded-full bg-amber-500/50"></div>
+                    </div>
+
+                    <!-- Front Active Target Item on Belt -->
+                    <div class="w-full flex items-center justify-center relative">
+                        
+                        <div id="itemCard" class="w-44 h-44 md:w-52 md:h-52 rounded-2xl bg-slate-900/95 border-2 border-amber-400/80 shadow-2xl shadow-amber-950/50 flex flex-col items-center justify-center p-3 cursor-grab active:cursor-grabbing hover:border-amber-300 transition-all group z-20" draggable="true">
+                            
+                            <!-- Item Emoji Icon -->
+                            <div id="itemEmoji" class="text-6xl md:text-7xl mb-2 transition-transform duration-200 group-hover:scale-110 filter drop-shadow-md">
+                                ⚙️
+                            </div>
+                            
+                            <!-- Item Name -->
+                            <div id="itemName" class="font-bold text-center text-sm md:text-base text-amber-300 font-orbitron leading-tight drop-shadow">
+                                Ready Line
+                            </div>
+                            
+                            <!-- Hotkey / Action Prompt -->
+                            <div id="itemHint" class="text-[10px] text-slate-400 mt-2 font-semibold bg-slate-950 px-2.5 py-0.5 rounded-full border border-slate-800">
+                                Press Start Shift
+                            </div>
+                        </div>
+
+                    </div>
+
+                    <!-- Hazard Drop Zone Alert Marker on Belt Right -->
+                    <div class="absolute right-3 top-1/2 -translate-y-1/2 flex flex-col items-center text-red-500/40 pointer-events-none">
+                        <i class="fa-solid fa-triangle-exclamation text-2xl animate-bounce"></i>
+                        <span class="text-[9px] font-bold uppercase tracking-wider mt-1">Hazard Drop</span>
+                    </div>
+
+                </div>
+
+                <div class="w-full h-2 hazard-stripes rounded-b-xl opacity-90"></div>
+
+            </div>
+
+        </main>
+
+        <!-- Sorting Bins Footer (4 Categories) -->
+        <footer class="w-full">
+            <div class="text-center mb-2">
+                <p class="text-xs text-slate-400 font-semibold">
+                    Sort into correct bin using <span class="text-amber-400 font-bold">Drag, Tap, or Keys [1, 2, 3, 4] / [Q, W, E, R]</span>
+                </p>
+            </div>
+
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
+                
+                <!-- BIN 1: METAL & MECHANICAL -->
+                <div data-category="metal" class="bin-card bg-gradient-to-b from-slate-900 to-slate-800 border-2 border-slate-600 hover:border-amber-400 rounded-2xl p-3 md:p-4 flex flex-col items-center justify-center text-center cursor-pointer shadow-xl relative group overflow-hidden">
+                    <div class="absolute top-2 left-2 bg-slate-800 text-amber-400 font-black text-xs px-2 py-0.5 rounded-md border border-slate-700">
+                        1 [Q]
+                    </div>
+                    <div class="w-12 h-12 rounded-xl bg-amber-500/10 text-amber-400 flex items-center justify-center text-3xl mb-1 group-hover:scale-110 transition-transform filter drop-shadow">
+                        ⚙️
+                    </div>
+                    <h3 class="font-bold text-amber-200 font-orbitron text-sm md:text-base">Metal & Parts</h3>
+                    <p class="text-[11px] text-slate-400 leading-tight">Gears, Bolts, Engine, Pipes</p>
+                </div>
+
+                <!-- BIN 2: ELECTRONICS & TECH -->
+                <div data-category="tech" class="bin-card bg-gradient-to-b from-slate-900 to-slate-800 border-2 border-cyan-500/50 hover:border-cyan-400 rounded-2xl p-3 md:p-4 flex flex-col items-center justify-center text-center cursor-pointer shadow-xl relative group overflow-hidden">
+                    <div class="absolute top-2 left-2 bg-slate-800 text-cyan-300 font-black text-xs px-2 py-0.5 rounded-md border border-slate-700">
+                        2 [W]
+                    </div>
+                    <div class="w-12 h-12 rounded-xl bg-cyan-500/10 text-cyan-400 flex items-center justify-center text-3xl mb-1 group-hover:scale-110 transition-transform filter drop-shadow">
+                        ⚡
+                    </div>
+                    <h3 class="font-bold text-cyan-200 font-orbitron text-sm md:text-base">Electronics</h3>
+                    <p class="text-[11px] text-slate-400 leading-tight">Chips, Circuit, Battery, CPU</p>
+                </div>
+
+                <!-- BIN 3: BIO & ORGANIC -->
+                <div data-category="bio" class="bin-card bg-gradient-to-b from-slate-900 to-slate-800 border-2 border-emerald-500/50 hover:border-emerald-400 rounded-2xl p-3 md:p-4 flex flex-col items-center justify-center text-center cursor-pointer shadow-xl relative group overflow-hidden">
+                    <div class="absolute top-2 left-2 bg-slate-800 text-emerald-300 font-black text-xs px-2 py-0.5 rounded-md border border-slate-700">
+                        3 [E]
+                    </div>
+                    <div class="w-12 h-12 rounded-xl bg-emerald-500/10 text-emerald-400 flex items-center justify-center text-3xl mb-1 group-hover:scale-110 transition-transform filter drop-shadow">
+                        🌿
+                    </div>
+                    <h3 class="font-bold text-emerald-200 font-orbitron text-sm md:text-base">Bio-Organic</h3>
+                    <p class="text-[11px] text-slate-400 leading-tight">Food, Wood, Fiber, Spores</p>
+                </div>
+
+                <!-- BIN 4: HAZARDOUS WASTE -->
+                <div data-category="hazard" class="bin-card bg-gradient-to-b from-slate-900 to-slate-800 border-2 border-rose-500/50 hover:border-rose-400 rounded-2xl p-3 md:p-4 flex flex-col items-center justify-center text-center cursor-pointer shadow-xl relative group overflow-hidden">
+                    <div class="absolute top-2 left-2 bg-slate-800 text-rose-300 font-black text-xs px-2 py-0.5 rounded-md border border-slate-700">
+                        4 [R]
+                    </div>
+                    <div class="w-12 h-12 rounded-xl bg-rose-500/10 text-rose-400 flex items-center justify-center text-3xl mb-1 group-hover:scale-110 transition-transform filter drop-shadow">
+                        ☣️
+                    </div>
+                    <h3 class="font-bold text-rose-200 font-orbitron text-sm md:text-base">Hazardous</h3>
+                    <p class="text-[11px] text-slate-400 leading-tight">Acid, Nuclear, Toxic, Gas</p>
+                </div>
+
+            </div>
+        </footer>
+    </div>
+
+    <!-- START & SHIFT INSTRUCTIONS MODAL -->
+    <div id="startModal" class="fixed inset-0 bg-slate-950/90 backdrop-blur-md flex items-center justify-center p-4 z-50">
+        <div class="bg-slate-900 border-2 border-amber-500/50 rounded-3xl p-6 md:p-8 max-w-md w-full shadow-2xl text-center relative overflow-hidden">
+            <!-- Glow background decor -->
+            <div class="absolute -top-16 -right-16 w-36 h-36 bg-amber-500/20 rounded-full blur-2xl"></div>
+            <div class="absolute -bottom-16 -left-16 w-36 h-36 bg-orange-600/20 rounded-full blur-2xl"></div>
+
+            <div class="w-16 h-16 bg-gradient-to-tr from-amber-500 to-orange-500 rounded-2xl flex items-center justify-center text-3xl mx-auto mb-4 text-slate-950 shadow-lg shadow-amber-500/30 border border-amber-200">
+                <i class="fa-solid fa-conveyor-belt"></i>
+            </div>
+
+            <h2 class="text-3xl font-black text-amber-400 font-orbitron mb-2 drop-shadow">Factory Blitz</h2>
+            <p class="text-slate-300 text-xs md:text-sm mb-6 leading-relaxed">
+                Report to the assembly line! Sort moving factory items into their correct disposal chutes before the 2-minute shift timer expires.
+            </p>
+
+            <div class="bg-slate-950 rounded-2xl p-4 text-left mb-6 border border-slate-800 space-y-2.5 text-xs text-slate-300">
+                <div class="flex items-center space-x-2.5">
+                    <span class="text-cyan-400 text-base"><i class="fa-solid fa-bolt"></i></span>
+                    <span><strong>Combo Streak:</strong> Consecutive correct sorting multiplies your point earnings!</span>
+                </div>
+                <div class="flex items-center space-x-2.5">
+                    <span class="text-amber-400 text-base"><i class="fa-solid fa-clock-rotate-left"></i></span>
+                    <span><strong>Power Crate Items:</strong> Grab Belt Slowdown, Double Points, & Auto-Sorters!</span>
+                </div>
+                <div class="flex items-center space-x-2.5">
+                    <span class="text-emerald-400 text-base"><i class="fa-solid fa-keyboard"></i></span>
+                    <span><strong>Keyboard Shortcuts:</strong> Use <kbd class="px-1.5 py-0.5 bg-slate-800 border border-slate-700 rounded text-amber-300 font-mono">1, 2, 3, 4</kbd> or <kbd class="px-1.5 py-0.5 bg-slate-800 border border-slate-700 rounded text-amber-300 font-mono">Q, W, E, R</kbd> for rapid sorting!</span>
+                </div>
+            </div>
+
+            <div class="mb-6 flex justify-between items-center px-2">
+                <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">Top Factory Record:</span>
+                <span id="highScoreStart" class="text-lg font-black text-amber-400 font-orbitron drop-shadow">0 PTS</span>
+            </div>
+
+            <button id="startGameBtn" class="w-full py-4 rounded-xl bg-gradient-to-r from-amber-500 via-orange-500 to-amber-500 hover:from-amber-400 hover:to-orange-400 text-slate-950 font-black text-lg tracking-wider uppercase font-orbitron shadow-lg shadow-amber-500/25 active:scale-95 transition-all cursor-pointer border border-amber-300">
+                Start 2-Min Shift <i class="fa-solid fa-play ml-2 text-sm"></i>
+            </button>
+        </div>
+    </div>
+
+    <!-- GAME OVER SHIFT REPORT MODAL -->
+    <div id="gameOverModal" class="fixed inset-0 bg-slate-950/95 backdrop-blur-md flex items-center justify-center p-4 z-50 hidden">
+        <div class="bg-slate-900 border-2 border-amber-500/50 rounded-3xl p-6 md:p-8 max-w-md w-full shadow-2xl text-center relative overflow-hidden">
+            
+            <div class="w-20 h-20 bg-gradient-to-tr from-amber-400 to-orange-500 rounded-2xl flex items-center justify-center text-4xl mx-auto mb-4 text-slate-950 shadow-xl shadow-amber-500/30 border border-amber-200">
+                <i class="fa-solid fa-clipboard-check"></i>
+            </div>
+
+            <h2 class="text-3xl font-black text-amber-400 font-orbitron mb-1 drop-shadow">Shift Complete!</h2>
+            <p id="rankTitle" class="text-slate-400 text-xs uppercase tracking-widest font-bold mb-6">Assembly Line Performance Report</p>
+
+            <div class="grid grid-cols-2 gap-3 mb-6">
+                <div class="bg-slate-950 border border-slate-800 p-3 rounded-2xl">
+                    <span class="block text-[10px] font-bold text-slate-400 uppercase">Total Score</span>
+                    <span id="finalScore" class="text-2xl font-black text-amber-400 font-orbitron">0</span>
+                </div>
+                <div class="bg-slate-950 border border-slate-800 p-3 rounded-2xl">
+                    <span class="block text-[10px] font-bold text-slate-400 uppercase">Max Combo</span>
+                    <span id="finalMaxCombo" class="text-2xl font-black text-cyan-400 font-orbitron">0x</span>
+                </div>
+                <div class="bg-slate-950 border border-slate-800 p-3 rounded-2xl">
+                    <span class="block text-[10px] font-bold text-slate-400 uppercase">Precision</span>
+                    <span id="finalAccuracy" class="text-2xl font-black text-emerald-400 font-orbitron">0%</span>
+                </div>
+                <div class="bg-slate-950 border border-slate-800 p-3 rounded-2xl">
+                    <span class="block text-[10px] font-bold text-slate-400 uppercase">Items Sorted</span>
+                    <span id="finalTotalSorted" class="text-2xl font-black text-slate-200 font-orbitron">0</span>
+                </div>
+            </div>
+
+            <div id="newHighScoreTag" class="hidden mb-6 py-2 px-4 bg-amber-500/20 border border-amber-500/50 rounded-xl text-amber-300 text-xs font-bold uppercase tracking-wider animate-bounce">
+                🎉 New High Score Achieved!
+            </div>
+
+            <button id="restartGameBtn" class="w-full py-4 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-slate-950 font-black text-base uppercase font-orbitron tracking-wider shadow-lg shadow-amber-500/30 active:scale-95 transition-all cursor-pointer border border-amber-300">
+                Work Another Shift <i class="fa-solid fa-rotate-right ml-1"></i>
+            </button>
+            <a href="https://supernebula23.github.io/games" class="mt-3 block w-full py-3 rounded-xl bg-slate-800/90 hover:bg-slate-700 text-amber-400 hover:text-amber-300 font-bold text-xs uppercase font-orbitron tracking-wider border border-slate-700 transition-all text-center">
+                <i class="fa-solid fa-house mr-1.5"></i> Back to Games Home
+            </a>
+        </div>
+    </div>
+
+    <!-- PAUSE MODAL -->
+    <div id="pauseModal" class="fixed inset-0 bg-slate-950/90 backdrop-blur-md flex items-center justify-center p-4 z-50 hidden">
+        <div class="bg-slate-900 border-2 border-slate-700 rounded-3xl p-6 max-w-xs w-full text-center shadow-2xl">
+            <h3 class="text-2xl font-black text-amber-400 font-orbitron mb-4"><i class="fa-solid fa-pause text-slate-400 mr-2"></i>Line Paused</h3>
+            <div class="space-y-3">
+                <button id="resumeGameBtn" class="w-full py-3 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold uppercase text-xs tracking-wider font-orbitron border border-amber-300">
+                    Resume Shift
+                </button>
+                <button id="quitGameBtn" class="w-full py-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold uppercase text-xs tracking-wider font-orbitron">
+                    Clock Out
+                </button>
+                <a href="https://supernebula23.github.io/games" class="block w-full py-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-amber-400 font-bold uppercase text-xs tracking-wider font-orbitron border border-slate-700 text-center">
+                    <i class="fa-solid fa-house mr-1.5"></i> Games Home
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Factory Game Configuration
+        const GAME_DURATION = 120; // 2 Minutes
+        
+        // Game State Engine
+        let gameState = {
+            score: 0,
+            timeLeft: GAME_DURATION,
+            combo: 0,
+            maxCombo: 0,
+            totalSorted: 0,
+            correctSorts: 0,
+            incorrectSorts: 0,
+            isGameRunning: false,
+            isPaused: false,
+            timerInterval: null,
+            soundEnabled: true,
+            currentItem: null,
+            nextItem: null,
+            powerUpActive: null, // 'slow', 'surge', 'auto'
+            powerUpTimeout: null,
+            autoSortRemaining: 0,
+            highScore: localStorage.getItem('factory_blitz_highscore') || 0
+        };
+
+        // Factory Item Database Categorized into 4 Bins
+        const factoryItems = [
+            // BIN 1: METAL & MECHANICAL PARTS (metal)
+            { name: "Steel Gear", category: "metal", emoji: "⚙️" },
+            { name: "Titanium Bolt", category: "metal", emoji: "🔩" },
+            { name: "Piston Engine", category: "metal", emoji: "🔧" },
+            { name: "Iron Chain", category: "metal", emoji: "⛓️" },
+            { name: "Metal Pipe", category: "metal", emoji: "🛠️" },
+            { name: "Steel Bearing", category: "metal", emoji: "⚙️" },
+
+            // BIN 2: ELECTRONICS & TECH (tech)
+            { name: "Circuit Board", category: "tech", emoji: "📟" },
+            { name: "Micro CPU", category: "tech", emoji: "🎛️" },
+            { name: "Lithium Battery", category: "tech", emoji: "🔋" },
+            { name: "Laser Diode", category: "tech", emoji: "⚡" },
+            { name: "Memory Card", category: "tech", emoji: "💾" },
+            { name: "Optical Sensor", category: "tech", emoji: "📡" },
+
+            // BIN 3: BIO & ORGANIC (bio)
+            { name: "Timber Wood", category: "bio", emoji: "🪵" },
+            { name: "Bio Fiber", category: "bio", emoji: "🌾" },
+            { name: "Organic Cotton", category: "bio", emoji: "🧵" },
+            { name: "Plant Spores", category: "bio", emoji: "🌿" },
+            { name: "Food Residue", category: "bio", emoji: "🍎" },
+            { name: "Natural Resin", category: "bio", emoji: "🍁" },
+
+            // BIN 4: HAZARDOUS WASTE (hazard)
+            { name: "Toxic Barrel", category: "hazard", emoji: "🛢️" },
+            { name: "Acid Crate", category: "hazard", emoji: "🧪" },
+            { name: "Nuclear Isotope", category: "hazard", emoji: "☢️" },
+            { name: "Biohazard Capsule", category: "hazard", emoji: "☣️" },
+            { name: "Corrosive Gas", category: "hazard", emoji: "💨" },
+            { name: "Radioactive Sludge", category: "hazard", emoji: "☣️" }
+        ];
+
+        // Special Power-Up Factory Crates
+        const powerUpCrates = [
+            { name: "Conveyor Slowdown", category: "powerup", type: "slow", emoji: "⏱️" },
+            { name: "2x Score Surge", category: "powerup", type: "surge", emoji: "⚡" },
+            { name: "Auto Sorting Bot", category: "powerup", type: "auto", emoji: "🤖" }
+        ];
+
+        // Web Audio Synthesizer Sound Generator
+        let audioCtx = null;
+
+        function initAudio() {
+            if (!audioCtx) {
+                const AudioContext = window.AudioContext || window.webkitAudioContext;
+                audioCtx = new AudioContext();
+            }
+        }
+
+        function playTone(freq, type, duration, gainVal = 0.1) {
+            if (!gameState.soundEnabled) return;
+            try {
+                initAudio();
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.type = type;
+                osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+                gain.gain.setValueAtTime(gainVal, audioCtx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.00001, audioCtx.currentTime + duration);
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+                osc.start();
+                osc.stop(audioCtx.currentTime + duration);
+            } catch (e) {}
+        }
+
+        function playSound(soundType) {
+            if (!gameState.soundEnabled) return;
+
+            if (soundType === 'correct') {
+                const pitch = 440 + Math.min(gameState.combo * 30, 600);
+                playTone(pitch, 'sine', 0.12, 0.12);
+                setTimeout(() => playTone(pitch * 1.25, 'triangle', 0.15, 0.12), 40);
+            } else if (soundType === 'wrong') {
+                playTone(150, 'sawtooth', 0.25, 0.2);
+                setTimeout(() => playTone(110, 'sawtooth', 0.3, 0.2), 80);
+            } else if (soundType === 'powerup') {
+                [523.25, 659.25, 783.99, 1046.50].forEach((freq, idx) => {
+                    setTimeout(() => playTone(freq, 'sine', 0.15, 0.1), idx * 40);
+                });
+            } else if (soundType === 'tick') {
+                playTone(800, 'square', 0.03, 0.04);
+            } else if (soundType === 'gameover') {
+                [350, 300, 250, 200].forEach((freq, idx) => {
+                    setTimeout(() => playTone(freq, 'sawtooth', 0.2, 0.15), idx * 100);
+                });
+            }
+        }
+
+        // DOM Elements
+        const scoreDisplay = document.getElementById('scoreDisplay');
+        const timerDisplay = document.getElementById('timerDisplay');
+        const timerContainer = document.getElementById('timerContainer');
+        const comboDisplay = document.getElementById('comboDisplay');
+        const sortedCount = document.getElementById('sortedCount');
+        const itemCard = document.getElementById('itemCard');
+        const itemEmoji = document.getElementById('itemEmoji');
+        const itemName = document.getElementById('itemName');
+        const itemHint = document.getElementById('itemHint');
+        const nextItemPreview = document.getElementById('nextItemPreview');
+        const activePowerupBar = document.getElementById('activePowerupBar');
+        const powerupText = document.getElementById('powerupText');
+        const conveyorTrack = document.getElementById('conveyorTrack');
+
+        // Modals & Buttons
+        const startModal = document.getElementById('startModal');
+        const gameOverModal = document.getElementById('gameOverModal');
+        const pauseModal = document.getElementById('pauseModal');
+        const startGameBtn = document.getElementById('startGameBtn');
+        const restartGameBtn = document.getElementById('restartGameBtn');
+        const pauseBtn = document.getElementById('pauseBtn');
+        const resumeGameBtn = document.getElementById('resumeGameBtn');
+        const quitGameBtn = document.getElementById('quitGameBtn');
+        const soundToggleBtn = document.getElementById('soundToggleBtn');
+        const soundIcon = document.getElementById('soundIcon');
+        const highScoreStart = document.getElementById('highScoreStart');
+
+        // Initialize High Score
+        highScoreStart.textContent = `${gameState.highScore} PTS`;
+
+        function startGame() {
+            gameState.score = 0;
+            gameState.timeLeft = GAME_DURATION;
+            gameState.combo = 0;
+            gameState.maxCombo = 0;
+            gameState.totalSorted = 0;
+            gameState.correctSorts = 0;
+            gameState.incorrectSorts = 0;
+            gameState.isGameRunning = true;
+            gameState.isPaused = false;
+            
+            clearPowerUp();
+            updateHUD();
+
+            startModal.classList.add('hidden');
+            gameOverModal.classList.add('hidden');
+            pauseModal.classList.add('hidden');
+            pauseBtn.disabled = false;
+            conveyorTrack.classList.remove('paused');
+
+            // Spawn first items
+            gameState.nextItem = getRandomItem();
+            spawnNextItem();
+
+            // Start Timer Loop
+            clearInterval(gameState.timerInterval);
+            gameState.timerInterval = setInterval(gameTimerTick, 1000);
+        }
+
+        function gameTimerTick() {
+            if (!gameState.isGameRunning || gameState.isPaused) return;
+
+            gameState.timeLeft--;
+            updateTimerDisplay();
+
+            if (gameState.timeLeft <= 10 && gameState.timeLeft > 0) {
+                playSound('tick');
+                timerContainer.classList.add('border-red-500', 'bg-red-950/80');
+            } else {
+                timerContainer.classList.remove('border-red-500', 'bg-red-950/80');
+            }
+
+            if (gameState.timeLeft <= 0) {
+                endGame();
+            }
+        }
+
+        function updateTimerDisplay() {
+            const minutes = Math.floor(gameState.timeLeft / 60);
+            const seconds = gameState.timeLeft % 60;
+            timerDisplay.textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+        }
+
+        function updateHUD() {
+            scoreDisplay.textContent = gameState.score;
+            comboDisplay.textContent = `${gameState.combo}x`;
+            sortedCount.textContent = gameState.totalSorted;
+            updateTimerDisplay();
+        }
+
+        function getRandomItem() {
+            // 12% chance for Power Crate
+            if (Math.random() < 0.12 && !gameState.powerUpActive) {
+                return powerUpCrates[Math.floor(Math.random() * powerUpCrates.length)];
+            }
+            return factoryItems[Math.floor(Math.random() * factoryItems.length)];
+        }
+
+        function spawnNextItem() {
+            gameState.currentItem = gameState.nextItem;
+            gameState.nextItem = getRandomItem();
+
+            // Update Central Card UI
+            itemEmoji.textContent = gameState.currentItem.emoji;
+            itemName.textContent = gameState.currentItem.name;
+            
+            if (gameState.currentItem.category === 'powerup') {
+                itemHint.textContent = "POWER CRATE!";
+                itemCard.classList.add('border-amber-300', 'shadow-amber-500/50');
+            } else {
+                itemHint.textContent = "Sort: Drag or Keys 1-4 / Q-R";
+                itemCard.classList.remove('border-amber-300', 'shadow-amber-500/50');
+            }
+
+            // Pop Animation Effect
+            itemCard.classList.remove('animate-item-pop');
+            void itemCard.offsetWidth;
+            itemCard.classList.add('animate-item-pop');
+
+            // Update Preview
+            nextItemPreview.textContent = gameState.nextItem.emoji;
+
+            // Auto-Cast active check
+            if (gameState.autoSortRemaining > 0 && gameState.currentItem.category !== 'powerup') {
+                setTimeout(() => {
+                    sortItem(gameState.currentItem.category);
+                    gameState.autoSortRemaining--;
+                    if (gameState.autoSortRemaining <= 0) {
+                        clearPowerUp();
+                    }
+                }, 200);
+            }
+        }
+
+        function sortItem(targetCategory) {
+            if (!gameState.isGameRunning || gameState.isPaused || !gameState.currentItem) return;
+
+            const isPowerUp = gameState.currentItem.category === 'powerup';
+            let isCorrect = false;
+
+            if (isPowerUp) {
+                isCorrect = true;
+                triggerPowerUp(gameState.currentItem.type);
+            } else {
+                isCorrect = (gameState.currentItem.category === targetCategory);
+            }
+
+            gameState.totalSorted++;
+
+            const binElement = document.querySelector(`[data-category="${targetCategory}"]`);
+
+            if (isCorrect) {
+                gameState.correctSorts++;
+                gameState.combo++;
+                if (gameState.combo > gameState.maxCombo) {
+                    gameState.maxCombo = gameState.combo;
+                }
+
+                // Points calculation
+                const multiplier = (gameState.powerUpActive === 'surge') ? 2 : 1;
+                const pointsEarned = (100 + (gameState.combo * 25)) * multiplier;
+                gameState.score += pointsEarned;
+
+                playSound(isPowerUp ? 'powerup' : 'correct');
+
+                if (binElement) {
+                    binElement.classList.add('animate-success');
+                    setTimeout(() => binElement.classList.remove('animate-success'), 300);
+                    showFloatingPoints(`+${pointsEarned}`, binElement, 'text-amber-400');
+                }
+
+            } else {
+                gameState.incorrectSorts++;
+                gameState.combo = 0; // Reset streak
+                gameState.score = Math.max(0, gameState.score - 50); // Penalty
+
+                playSound('wrong');
+
+                if (binElement) {
+                    binElement.classList.add('animate-error');
+                    setTimeout(() => binElement.classList.remove('animate-error'), 400);
+                    showFloatingPoints('-50 PTS', binElement, 'text-rose-400');
+                }
+            }
+
+            updateHUD();
+            spawnNextItem();
+        }
+
+        function triggerPowerUp(type) {
+            playSound('powerup');
+            clearPowerUp();
+
+            if (type === 'slow') {
+                gameState.powerUpActive = 'slow';
+                powerupText.textContent = "Conveyor Belt Slowdown Active!";
+                activePowerupBar.classList.remove('hidden');
+                setTimeout(clearPowerUp, 8000);
+            } else if (type === 'surge') {
+                gameState.powerUpActive = 'surge';
+                powerupText.textContent = "2x Score Surge Active!";
+                activePowerupBar.classList.remove('hidden');
+                gameState.powerUpTimeout = setTimeout(clearPowerUp, 10000);
+            } else if (type === 'auto') {
+                gameState.powerUpActive = 'auto';
+                gameState.autoSortRemaining = 5;
+                powerupText.textContent = "Auto Sorting Bot Active (5 Items)!";
+                activePowerupBar.classList.remove('hidden');
+            }
+        }
+
+        function clearPowerUp() {
+            gameState.powerUpActive = null;
+            if (gameState.powerUpTimeout) clearTimeout(gameState.powerUpTimeout);
+            activePowerupBar.classList.add('hidden');
+        }
+
+        function showFloatingPoints(text, targetEl, colorClass = 'text-amber-400') {
+            const rect = targetEl.getBoundingClientRect();
+            const popup = document.createElement('div');
+            popup.className = `floating-points ${colorClass} text-xl font-black font-orbitron`;
+            popup.textContent = text;
+            popup.style.left = `${rect.left + rect.width / 2 - 25}px`;
+            popup.style.top = `${rect.top}px`;
+            document.body.appendChild(popup);
+            setTimeout(() => popup.remove(), 750);
+        }
+
+        // Drag & Drop Handling
+        itemCard.addEventListener('dragstart', (e) => {
+            if (!gameState.isGameRunning || gameState.isPaused) return;
+            e.dataTransfer.setData('text/plain', gameState.currentItem ? gameState.currentItem.category : '');
+            itemCard.classList.add('opacity-40', 'scale-90');
+        });
+
+        itemCard.addEventListener('dragend', () => {
+            itemCard.classList.remove('opacity-40', 'scale-90');
+        });
+
+        // Target Bins Event Listeners
+        const binCards = document.querySelectorAll('.bin-card');
+
+        binCards.forEach(bin => {
+            const category = bin.dataset.category;
+
+            // Click / Tap Handler
+            bin.addEventListener('click', () => {
+                if (gameState.isGameRunning && !gameState.isPaused) {
+                    sortItem(category);
+                }
+            });
+
+            // Drag Events
+            bin.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                bin.classList.add('drag-over');
+            });
+
+            bin.addEventListener('dragleave', () => {
+                bin.classList.remove('drag-over');
+            });
+
+            bin.addEventListener('drop', (e) => {
+                e.preventDefault();
+                bin.classList.remove('drag-over');
+                if (gameState.isGameRunning && !gameState.isPaused) {
+                    sortItem(category);
+                }
+            });
+        });
+
+        // Hotkey controls (Keys 1-4, Q-R, P)
+        window.addEventListener('keydown', (e) => {
+            if (!gameState.isGameRunning || gameState.isPaused) {
+                if ((e.key === 'p' || e.key === 'P') && gameState.isGameRunning) togglePause();
+                return;
+            }
+
+            const key = e.key.toLowerCase();
+            if (key === '1' || key === 'q') sortItem('metal');
+            else if (key === '2' || key === 'w') sortItem('tech');
+            else if (key === '3' || key === 'e') sortItem('bio');
+            else if (key === '4' || key === 'r') sortItem('hazard');
+            else if (key === 'p') togglePause();
+        });
+
+        // Pause Logic
+        function togglePause() {
+            if (!gameState.isGameRunning) return;
+            gameState.isPaused = !gameState.isPaused;
+
+            if (gameState.isPaused) {
+                pauseModal.classList.remove('hidden');
+                conveyorTrack.classList.add('paused');
+            } else {
+                pauseModal.classList.add('hidden');
+                conveyorTrack.classList.remove('paused');
+            }
+        }
+
+        // End Game Function
+        function endGame() {
+            gameState.isGameRunning = false;
+            clearInterval(gameState.timerInterval);
+            pauseBtn.disabled = true;
+            conveyorTrack.classList.add('paused');
+
+            playSound('gameover');
+
+            // Calculate accuracy & rank
+            const total = gameState.correctSorts + gameState.incorrectSorts;
+            const accuracy = total > 0 ? Math.round((gameState.correctSorts / total) * 100) : 0;
+
+            let rank = "Junior Factory Apprentice";
+            if (gameState.score > 8000) rank = "Master Factory Chief";
+            else if (gameState.score > 5000) rank = "Senior Line Operator";
+            else if (gameState.score > 2500) rank = "Assembly Worker";
+
+            document.getElementById('rankTitle').textContent = rank;
+
+            // High Score Check
+            let isNewHighScore = false;
+            if (gameState.score > gameState.highScore) {
+                gameState.highScore = gameState.score;
+                localStorage.setItem('factory_blitz_highscore', gameState.highScore);
+                isNewHighScore = true;
+            }
+
+            // Fill Game Over Modal
+            document.getElementById('finalScore').textContent = gameState.score;
+            document.getElementById('finalMaxCombo').textContent = `${gameState.maxCombo}x`;
+            document.getElementById('finalAccuracy').textContent = `${accuracy}%`;
+            document.getElementById('finalTotalSorted').textContent = gameState.totalSorted;
+
+            const newHighScoreTag = document.getElementById('newHighScoreTag');
+            if (isNewHighScore) {
+                newHighScoreTag.classList.remove('hidden');
+            } else {
+                newHighScoreTag.classList.add('hidden');
+            }
+
+            gameOverModal.classList.remove('hidden');
+        }
+
+        // Button Event Handlers
+        startGameBtn.addEventListener('click', startGame);
+        restartGameBtn.addEventListener('click', startGame);
+        pauseBtn.addEventListener('click', togglePause);
+        resumeGameBtn.addEventListener('click', togglePause);
+
+        quitGameBtn.addEventListener('click', () => {
+            gameState.isGameRunning = false;
+            clearInterval(gameState.timerInterval);
+            pauseModal.classList.add('hidden');
+            startModal.classList.remove('hidden');
+            pauseBtn.disabled = true;
+            conveyorTrack.classList.add('paused');
+        });
+
+        // Sound Toggle
+        soundToggleBtn.addEventListener('click', () => {
+            gameState.soundEnabled = !gameState.soundEnabled;
+            if (gameState.soundEnabled) {
+                soundIcon.className = "fa-solid fa-volume-high text-lg text-slate-200";
+            } else {
+                soundIcon.className = "fa-solid fa-volume-xmark text-lg text-slate-500";
+            }
+        });
+    </script>
+</body>
+</html>

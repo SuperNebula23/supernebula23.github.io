@@ -1,0 +1,1654 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Harvest Valley - Cozy Farming Game</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=Quicksand:wght@500;600;700&display=swap" rel="stylesheet">
+    
+    <style>
+        * {
+            font-family: 'Fredoka', 'Quicksand', sans-serif;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+        
+        body {
+            background-color: #2c3e50;
+            color: #2d3748;
+            overflow-x: hidden;
+            touch-action: manipulation;
+        }
+
+        .pixel-corners {
+            clip-path: polygon(
+                0 8px, 8px 8px, 8px 0,
+                calc(100% - 8px) 0, calc(100% - 8px) 8px, 100% 8px,
+                100% calc(100% - 8px), calc(100% - 8px) calc(100% - 8px), calc(100% - 8px) 100%,
+                8px 100%, 8px calc(100% - 8px), 0 calc(100% - 8px)
+            );
+        }
+
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 8px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: #f1e5d1;
+            border-radius: 4px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #c29b38;
+            border-radius: 4px;
+        }
+
+        /* Tooltip style */
+        .tooltip {
+            visibility: hidden;
+            position: absolute;
+            z-index: 50;
+            opacity: 0;
+            transition: opacity 0.2s;
+        }
+        .has-tooltip:hover .tooltip {
+            visibility: visible;
+            opacity: 1;
+        }
+
+        @keyframes float-up {
+            0% { opacity: 1; transform: translateY(0) scale(1); }
+            100% { opacity: 0; transform: translateY(-40px) scale(1.1); }
+        }
+
+        .floating-text {
+            position: absolute;
+            pointer-events: none;
+            font-weight: bold;
+            animation: float-up 1.2s ease-out forwards;
+            z-index: 40;
+            text-shadow: 2px 2px 0px rgba(0,0,0,0.6);
+        }
+
+        .hotbar-slot {
+            transition: all 0.15s ease-in-out;
+        }
+        .hotbar-slot.active {
+            border-color: #f59e0b !important;
+            transform: scale(1.08);
+            box-shadow: 0 0 12px rgba(245, 158, 11, 0.6);
+        }
+
+        canvas {
+            image-rendering: pixelated;
+            cursor: crosshair;
+        }
+    </style>
+</head>
+<body class="flex flex-col h-screen w-screen overflow-hidden bg-emerald-950 select-none">
+
+    <!-- TOP STATUS BAR -->
+    <header class="bg-gradient-to-r from-amber-900 via-amber-800 to-yellow-950 text-amber-100 px-4 py-2 flex flex-wrap justify-between items-center border-b-4 border-amber-950 shadow-lg z-20">
+        <div class="flex items-center space-x-4">
+            <a href="https://supernebula23.github.io/games" class="bg-amber-950/90 hover:bg-amber-900 text-amber-200 hover:text-white px-3 py-1.5 rounded-xl border border-amber-600/50 transition shadow flex items-center gap-2 font-bold text-sm" title="Back to Games">
+                <i class="fa-solid fa-house text-yellow-400"></i>
+                <span class="hidden sm:inline">Home</span>
+            </a>
+
+            <div class="flex items-center bg-amber-950/80 px-3 py-1.5 rounded-xl border border-amber-600/40">
+                <i class="fa-solid font-bold text-2xl text-amber-500 fa-wheat-awn mr-2"></i>
+                <div>
+                    <h1 class="font-bold text-lg leading-none text-amber-200">Harvest Valley</h1>
+                    <span id="season-display" class="text-xs font-semibold text-emerald-400">Spring • Year 1</span>
+                </div>
+            </div>
+
+            <!-- Day & Clock -->
+            <div class="flex items-center space-x-3 bg-amber-950/80 px-3 py-1.5 rounded-xl border border-amber-600/40">
+                <i id="weather-icon" class="fa-solid fa-sun text-xl text-yellow-400 animate-pulse"></i>
+                <div>
+                    <div class="text-xs text-amber-300 font-semibold uppercase tracking-wider">Day <span id="day-counter">1</span></div>
+                    <div id="time-display" class="text-sm font-extrabold text-amber-100">06:00 AM</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Gold & Energy & Level -->
+        <div class="flex items-center space-x-4 my-1 sm:my-0">
+            <!-- Gold -->
+            <div class="flex items-center bg-yellow-950/90 border-2 border-yellow-500/80 px-3 py-1 rounded-xl shadow-inner">
+                <i class="fa-solid fa-coins text-yellow-400 text-lg mr-2"></i>
+                <span id="gold-display" class="font-black text-yellow-300 text-lg tracking-wide">150</span>
+            </div>
+
+            <!-- Energy Bar -->
+            <div class="flex flex-col w-32 sm:w-44">
+                <div class="flex justify-between text-xs font-bold text-amber-200 mb-0.5">
+                    <span><i class="fa-solid fa-bolt text-yellow-400 mr-1"></i>Energy</span>
+                    <span id="energy-text">100/100</span>
+                </div>
+                <div class="w-full bg-slate-900/80 rounded-full h-3 p-0.5 border border-amber-600/50">
+                    <div id="energy-bar" class="bg-gradient-to-r from-emerald-500 to-green-400 h-full rounded-full transition-all duration-300" style="width: 100%;"></div>
+                </div>
+            </div>
+
+            <!-- Player Level -->
+            <div class="flex flex-col w-28 sm:w-36">
+                <div class="flex justify-between text-xs font-bold text-amber-200 mb-0.5">
+                    <span>Lvl <span id="level-text">1</span></span>
+                    <span id="xp-text">0/50</span>
+                </div>
+                <div class="w-full bg-slate-900/80 rounded-full h-3 p-0.5 border border-amber-600/50">
+                    <div id="xp-bar" class="bg-gradient-to-r from-blue-500 to-cyan-400 h-full rounded-full transition-all duration-300" style="width: 0%;"></div>
+                </div>
+            </div>
+
+            <!-- Sound & Sleep Controls -->
+            <div class="flex items-center space-x-2">
+                <button id="audio-toggle" class="bg-amber-800 hover:bg-amber-700 text-amber-100 p-2 rounded-xl border border-amber-600 transition shadow" title="Toggle Sound FX">
+                    <i id="audio-icon" class="fa-solid fa-volume-high text-lg"></i>
+                </button>
+                <button id="btn-sleep" class="bg-indigo-800 hover:bg-indigo-700 text-indigo-100 px-3 py-1.5 rounded-xl border border-indigo-500 font-bold text-sm transition shadow flex items-center gap-1.5">
+                    <i class="fa-solid fa-bed"></i> Sleep
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- MAIN GAME BODY -->
+    <div class="flex-1 flex flex-col md:flex-row relative overflow-hidden">
+        
+        <!-- LEFT CONTROL SIDEBAR (Mobile top / Desktop left) -->
+        <aside class="w-full md:w-64 bg-amber-950/90 border-r-0 md:border-r-4 border-amber-900 p-3 flex flex-row md:flex-col justify-between z-10 space-y-0 md:space-y-3 overflow-x-auto">
+            <!-- Navigation Tabs -->
+            <div class="flex flex-row md:flex-col gap-2 w-full">
+                <button onclick="switchTab('farm')" id="tab-farm" class="tab-btn active flex-1 flex items-center justify-center md:justify-start gap-2 bg-amber-700 text-amber-100 p-2.5 rounded-xl font-bold border border-amber-500 shadow">
+                    <i class="fa-solid fa-tractor text-lg text-yellow-400"></i>
+                    <span>Farm Field</span>
+                </button>
+                <button onclick="switchTab('animals')" id="tab-animals" class="tab-btn flex-1 flex items-center justify-center md:justify-start gap-2 bg-amber-900/80 text-amber-200 hover:bg-amber-800 p-2.5 rounded-xl font-bold border border-amber-800 transition">
+                    <i class="fa-solid fa-cow text-lg text-amber-400"></i>
+                    <span>Livestock</span>
+                </button>
+                <button onclick="openShop()" class="tab-btn flex-1 flex items-center justify-center md:justify-start gap-2 bg-amber-900/80 text-amber-200 hover:bg-amber-800 p-2.5 rounded-xl font-bold border border-amber-800 transition">
+                    <i class="fa-solid fa-store text-lg text-emerald-400"></i>
+                    <span>Market Shop</span>
+                </button>
+                <button onclick="openQuests()" class="tab-btn flex-1 flex items-center justify-center md:justify-start gap-2 bg-amber-900/80 text-amber-200 hover:bg-amber-800 p-2.5 rounded-xl font-bold border border-amber-800 transition">
+                    <i class="fa-solid fa-scroll text-lg text-amber-300"></i>
+                    <span>Quests <span id="quest-badge" class="hidden bg-red-500 text-white text-xs px-1.5 py-0.5 rounded-full ml-1">!</span></span>
+                </button>
+            </div>
+
+            <!-- Quick Info / Quest Preview -->
+            <div class="hidden md:block bg-amber-900/50 p-3 rounded-xl border border-amber-800/80 text-xs text-amber-200">
+                <div class="font-bold text-amber-400 uppercase tracking-wider mb-1"><i class="fa-solid fa-circle-info mr-1"></i> Farmer Tip</div>
+                <p id="farmer-tip" class="leading-relaxed">Water your crops every sunny day! Rain automatically waters all tilled soil.</p>
+            </div>
+
+            <!-- Sell Bin Quick Action -->
+            <div class="hidden md:block bg-gradient-to-b from-amber-900 to-yellow-950 p-3 rounded-xl border-2 border-amber-700 shadow-inner">
+                <div class="flex justify-between items-center mb-2">
+                    <span class="font-bold text-amber-200 text-sm"><i class="fa-solid fa-box-open text-amber-400 mr-1.5"></i> Shipping Bin</span>
+                    <button onclick="sellAllHarvest()" class="bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold px-2 py-1 rounded-lg transition shadow">
+                        Sell All
+                    </button>
+                </div>
+                <div id="sell-bin-summary" class="text-xs text-amber-300/80">
+                    Harvest crops and click "Sell All" or dump items here to earn Gold!
+                </div>
+            </div>
+        </aside>
+
+        <!-- CENTER VIEWPORT (CANVAS & PANELS) -->
+        <main class="flex-1 relative flex flex-col items-center justify-center bg-emerald-900 p-2 sm:p-4 overflow-hidden">
+            
+            <!-- CANVAS CONTAINER -->
+            <div id="farm-view" class="w-full h-full flex flex-col items-center justify-center relative">
+                <div class="relative rounded-2xl overflow-hidden shadow-2xl border-4 border-amber-900 bg-emerald-800">
+                    <canvas id="farmCanvas" width="800" height="560" class="max-w-full max-h-[72vh] object-contain"></canvas>
+                    
+                    <!-- Weather Overlay -->
+                    <div id="weather-overlay" class="absolute inset-0 pointer-events-none transition-all duration-1000"></div>
+                </div>
+            </div>
+
+            <!-- ANIMALS VIEW (Visual Livestock Pasture) -->
+            <div id="animals-view" class="hidden w-full h-full flex flex-col max-w-5xl bg-amber-950/90 rounded-2xl border-4 border-amber-800 p-3 sm:p-4 overflow-y-auto custom-scrollbar">
+                <div class="flex justify-between items-center mb-3">
+                    <h2 class="text-xl sm:text-2xl font-bold text-amber-200 flex items-center gap-2">
+                        <i class="fa-solid fa-cow text-yellow-400"></i> Livestock Pasture & Coop
+                    </h2>
+                    <div class="flex gap-2">
+                        <span id="chicken-count" class="text-xs font-bold bg-amber-900 px-3 py-1.5 rounded-full text-amber-300 border border-amber-700 flex items-center gap-1">🐔 2 Chickens</span>
+                        <span id="cow-count" class="text-xs font-bold bg-amber-900 px-3 py-1.5 rounded-full text-amber-300 border border-amber-700 flex items-center gap-1">🐮 1 Cow</span>
+                    </div>
+                </div>
+
+                <!-- VISUAL PASTURE CANVAS CONTAINER -->
+                <div class="relative rounded-2xl overflow-hidden shadow-2xl border-4 border-amber-900 bg-emerald-800 mb-4 flex justify-center items-center">
+                    <canvas id="pastureCanvas" width="800" height="420" class="max-w-full max-h-[50vh] object-contain cursor-pointer"></canvas>
+                    <div class="absolute bottom-2 left-3 bg-black/60 backdrop-blur-md text-amber-200 text-xs px-3 py-1 rounded-lg border border-amber-500/40 pointer-events-none">
+                        💡 Click animals to pet or collect produce!
+                    </div>
+                </div>
+
+                <!-- ANIMAL CONTROLS & MARKET -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <!-- Chicken Coop Controls -->
+                    <div class="bg-amber-900/60 p-3.5 rounded-xl border-2 border-amber-700 flex flex-col justify-between">
+                        <div>
+                            <div class="flex justify-between items-center mb-2">
+                                <h3 class="text-lg font-bold text-yellow-300 flex items-center gap-2">
+                                    <i class="fa-solid fa-egg text-amber-200"></i> Chicken Coop
+                                </h3>
+                                <button onclick="buyLivestock('chicken')" class="bg-emerald-700 hover:bg-emerald-600 text-white font-bold px-3 py-1 rounded-lg border border-emerald-500 transition text-xs flex items-center gap-1">
+                                    <i class="fa-solid fa-plus-circle"></i> Buy Hen (100G)
+                                </button>
+                            </div>
+
+                            <div id="chicken-status-list" class="space-y-1.5 mb-3 max-h-28 overflow-y-auto custom-scrollbar">
+                                <!-- Dynamic chicken items -->
+                            </div>
+                        </div>
+
+                        <div class="flex gap-2">
+                            <button onclick="feedAnimals('chicken')" class="flex-1 bg-amber-600 hover:bg-amber-500 text-amber-950 font-bold py-1.5 rounded-xl border border-amber-400 transition text-xs flex items-center justify-center gap-1">
+                                <i class="fa-solid fa-bowl-rice"></i> Feed Hay (5 Gold)
+                            </button>
+                            <button onclick="collectAnimalProduce('chicken')" class="flex-1 bg-yellow-500 hover:bg-yellow-400 text-yellow-950 font-bold py-1.5 rounded-xl border border-yellow-300 transition text-xs flex items-center justify-center gap-1">
+                                <i class="fa-solid fa-basket-shopping"></i> Collect Eggs
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Cow Barn Controls -->
+                    <div class="bg-amber-900/60 p-3.5 rounded-xl border-2 border-amber-700 flex flex-col justify-between">
+                        <div>
+                            <div class="flex justify-between items-center mb-2">
+                                <h3 class="text-lg font-bold text-yellow-300 flex items-center gap-2">
+                                    <i class="fa-solid fa-cow text-amber-200"></i> Cow Barn
+                                </h3>
+                                <button onclick="buyLivestock('cow')" class="bg-emerald-700 hover:bg-emerald-600 text-white font-bold px-3 py-1 rounded-lg border border-emerald-500 transition text-xs flex items-center gap-1">
+                                    <i class="fa-solid fa-plus-circle"></i> Buy Cow (250G)
+                                </button>
+                            </div>
+
+                            <div id="cow-status-list" class="space-y-1.5 mb-3 max-h-28 overflow-y-auto custom-scrollbar">
+                                <!-- Dynamic cow status -->
+                            </div>
+                        </div>
+
+                        <div class="flex gap-2">
+                            <button onclick="feedAnimals('cow')" class="flex-1 bg-amber-600 hover:bg-amber-500 text-amber-950 font-bold py-1.5 rounded-xl border border-amber-400 transition text-xs flex items-center justify-center gap-1">
+                                <i class="fa-solid fa-bowl-rice"></i> Feed Hay (10 Gold)
+                            </button>
+                            <button onclick="collectAnimalProduce('cow')" class="flex-1 bg-yellow-500 hover:bg-yellow-400 text-yellow-950 font-bold py-1.5 rounded-xl border border-yellow-300 transition text-xs flex items-center justify-center gap-1">
+                                <i class="fa-solid fa-bottle-droplet"></i> Milk Cow
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- BOTTOM TOOLBAR / HOTBAR -->
+            <div id="hotbar-container" class="w-full max-w-2xl mt-2 bg-amber-950/90 border-2 border-amber-800 rounded-2xl p-2 flex items-center justify-between shadow-2xl z-20">
+                <div class="flex items-center gap-1.5 overflow-x-auto w-full justify-center px-1" id="hotbar-slots">
+                    <!-- Slots dynamic generated by JS -->
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- MODAL: MARKET SHOP -->
+    <div id="shop-modal" class="hidden fixed inset-0 bg-black/75 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div class="bg-amber-950 border-4 border-amber-700 rounded-2xl w-full max-w-3xl max-h-[85vh] flex flex-col shadow-2xl overflow-hidden">
+            <div class="bg-amber-900 px-6 py-4 flex justify-between items-center border-b-2 border-amber-800">
+                <h2 class="text-2xl font-bold text-amber-100 flex items-center gap-2">
+                    <i class="fa-solid fa-store text-emerald-400"></i> Valley Farmers Market
+                </h2>
+                <button onclick="closeShop()" class="text-amber-400 hover:text-white text-2xl font-bold transition">&times;</button>
+            </div>
+
+            <!-- Shop Tabs -->
+            <div class="flex bg-amber-900/60 border-b border-amber-800/80 px-6 pt-2 gap-2">
+                <button id="shop-tab-seeds" onclick="switchShopTab('seeds')" class="px-4 py-2 font-bold text-amber-200 border-b-4 border-amber-400">Seeds</button>
+                <button id="shop-tab-tools" onclick="switchShopTab('tools')" class="px-4 py-2 font-bold text-amber-400/70 border-b-4 border-transparent hover:text-amber-200">Tools & Gear</button>
+                <button id="shop-tab-decor" onclick="switchShopTab('decor')" class="px-4 py-2 font-bold text-amber-400/70 border-b-4 border-transparent hover:text-amber-200">Farm Upgrades</button>
+            </div>
+
+            <div id="shop-items-grid" class="p-6 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 overflow-y-auto custom-scrollbar flex-1">
+                <!-- Populated dynamically -->
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL: QUEST BOARD -->
+    <div id="quest-modal" class="hidden fixed inset-0 bg-black/75 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div class="bg-amber-950 border-4 border-amber-700 rounded-2xl w-full max-w-xl max-h-[80vh] flex flex-col shadow-2xl overflow-hidden">
+            <div class="bg-amber-900 px-6 py-4 flex justify-between items-center border-b-2 border-amber-800">
+                <h2 class="text-2xl font-bold text-amber-100 flex items-center gap-2">
+                    <i class="fa-solid fa-scroll text-amber-300"></i> Town Order Board
+                </h2>
+                <button onclick="closeQuests()" class="text-amber-400 hover:text-white text-2xl font-bold transition">&times;</button>
+            </div>
+
+            <div id="quest-list" class="p-6 space-y-4 overflow-y-auto custom-scrollbar flex-1">
+                <!-- Dynamic Quests -->
+            </div>
+        </div>
+    </div>
+
+    <!-- TOAST NOTIFICATION CONTAINER -->
+    <div id="toast-container" class="fixed bottom-20 right-6 z-50 flex flex-col gap-2 pointer-events-none"></div>
+
+    <script>
+        /* ==========================================================================
+           AUDIO SYNTHESIZER (WEB AUDIO API - NO EXTERNAL ASSETS NEEDED)
+           ========================================================================== */
+        class SoundFX {
+            constructor() {
+                this.ctx = null;
+                this.enabled = true;
+            }
+
+            init() {
+                if (!this.ctx) {
+                    const AudioContext = window.AudioContext || window.webkitAudioContext;
+                    this.ctx = new AudioContext();
+                }
+            }
+
+            play(type) {
+                if (!this.enabled) return;
+                try {
+                    this.init();
+                    if (this.ctx.state === 'suspended') {
+                        this.ctx.resume();
+                    }
+
+                    const now = this.ctx.currentTime;
+                    const osc = this.ctx.createOscillator();
+                    const gain = this.ctx.createGain();
+                    osc.connect(gain);
+                    gain.connect(this.ctx.destination);
+
+                    if (type === 'till') {
+                        osc.type = 'triangle';
+                        osc.frequency.setValueAtTime(140, now);
+                        osc.frequency.exponentialRampToValueAtTime(40, now + 0.15);
+                        gain.gain.setValueAtTime(0.4, now);
+                        gain.gain.exponentialRampToValueAtTime(0.01, now + 0.15);
+                        osc.start(now);
+                        osc.stop(now + 0.15);
+                    } else if (type === 'plant') {
+                        osc.type = 'sine';
+                        osc.frequency.setValueAtTime(300, now);
+                        osc.frequency.exponentialRampToValueAtTime(600, now + 0.1);
+                        gain.gain.setValueAtTime(0.3, now);
+                        gain.gain.exponentialRampToValueAtTime(0.01, now + 0.1);
+                        osc.start(now);
+                        osc.stop(now + 0.1);
+                    } else if (type === 'water') {
+                        osc.type = 'sine';
+                        osc.frequency.setValueAtTime(400, now);
+                        osc.frequency.linearRampToValueAtTime(200, now + 0.25);
+                        gain.gain.setValueAtTime(0.3, now);
+                        gain.gain.exponentialRampToValueAtTime(0.01, now + 0.25);
+                        osc.start(now);
+                        osc.stop(now + 0.25);
+                    } else if (type === 'harvest') {
+                        // Pleasant chord
+                        [523.25, 659.25, 783.99].forEach((freq, i) => {
+                            const o = this.ctx.createOscillator();
+                            const g = this.ctx.createGain();
+                            o.type = 'sine';
+                            o.frequency.setValueAtTime(freq, now + i * 0.05);
+                            g.gain.setValueAtTime(0.25, now + i * 0.05);
+                            g.gain.exponentialRampToValueAtTime(0.001, now + i * 0.05 + 0.3);
+                            o.connect(g);
+                            g.connect(this.ctx.destination);
+                            o.start(now + i * 0.05);
+                            o.stop(now + i * 0.05 + 0.3);
+                        });
+                    } else if (type === 'coin') {
+                        osc.type = 'sine';
+                        osc.frequency.setValueAtTime(987.77, now);
+                        osc.frequency.setValueAtTime(1318.51, now + 0.08);
+                        gain.gain.setValueAtTime(0.3, now);
+                        gain.gain.exponentialRampToValueAtTime(0.01, now + 0.25);
+                        osc.start(now);
+                        osc.stop(now + 0.25);
+                    } else if (type === 'sleep') {
+                        osc.type = 'sine';
+                        osc.frequency.setValueAtTime(261.63, now);
+                        osc.frequency.linearRampToValueAtTime(523.25, now + 0.5);
+                        gain.gain.setValueAtTime(0.3, now);
+                        gain.gain.exponentialRampToValueAtTime(0.01, now + 0.6);
+                        osc.start(now);
+                        osc.stop(now + 0.6);
+                    }
+                } catch (e) {
+                    console.log("Audio not allowed yet");
+                }
+            }
+        }
+
+        const sfx = new SoundFX();
+
+        /* ==========================================================================
+           GAME DATA & CONFIGURATION
+           ========================================================================== */
+        const CROPS = {
+            wheat: {
+                id: 'wheat', name: 'Wheat', seedCost: 10, sellValue: 22, xp: 8,
+                growthDays: 2, icon: '🌾', color: '#eab308', season: 'Spring'
+            },
+            carrot: {
+                id: 'carrot', name: 'Carrot', seedCost: 15, sellValue: 35, xp: 12,
+                growthDays: 3, icon: '🥕', color: '#f97316', season: 'Spring'
+            },
+            tomato: {
+                id: 'tomato', name: 'Tomato', seedCost: 25, sellValue: 58, xp: 18,
+                growthDays: 4, icon: '🍅', color: '#ef4444', season: 'Summer'
+            },
+            blueberry: {
+                id: 'blueberry', name: 'Blueberry', seedCost: 35, sellValue: 85, xp: 25,
+                growthDays: 5, icon: '🫐', color: '#3b82f6', season: 'Summer'
+            },
+            pumpkin: {
+                id: 'pumpkin', name: 'Pumpkin', seedCost: 50, sellValue: 140, xp: 40,
+                growthDays: 6, icon: '🎃', color: '#f97316', season: 'Autumn'
+            },
+            watermelon: {
+                id: 'watermelon', name: 'Watermelon', seedCost: 60, sellValue: 180, xp: 50,
+                growthDays: 7, icon: '🍉', color: '#10b981', season: 'Summer'
+            }
+        };
+
+        const TOOLS = {
+            hoe: { id: 'hoe', name: 'Farm Hoe', icon: 'fa-wheat-awn', type: 'tool', desc: 'Till dirt tiles into fertile soil.' },
+            waterCan: { id: 'waterCan', name: 'Watering Can', icon: 'fa-faucet-drip', type: 'tool', desc: 'Water tilled soil to grow crops.' },
+            sickle: { id: 'sickle', name: 'Harvest Hand', icon: 'fa-hand-holding-harvest', type: 'tool', desc: 'Harvest fully grown crops.' }
+        };
+
+        const SEASONS = ['Spring', 'Summer', 'Autumn', 'Winter'];
+
+        /* ==========================================================================
+           GAME STATE
+           ========================================================================== */
+        const GRID_COLS = 10;
+        const GRID_ROWS = 7;
+        const TILE_SIZE = 70;
+
+        let gameState = {
+            gold: 150,
+            energy: 100,
+            maxEnergy: 100,
+            level: 1,
+            xp: 0,
+            nextLevelXp: 50,
+            day: 1,
+            seasonIndex: 0,
+            weather: 'Sunny', // Sunny, Rainy
+            selectedHotbarIndex: 0,
+            
+            // Hotbar items list
+            hotbar: [
+                { type: 'tool', id: 'hoe' },
+                { type: 'tool', id: 'waterCan' },
+                { type: 'tool', id: 'sickle' },
+                { type: 'seed', id: 'wheat', count: 5 },
+                { type: 'seed', id: 'carrot', count: 3 }
+            ],
+
+            // Grid tiles
+            grid: [],
+
+            // Animals with positions for 2D visual rendering
+            chickens: [
+                { id: 1, name: 'Cluckers', fed: false, hasProduce: false, x: 180, y: 260, targetX: 200, targetY: 280, dir: 1, animTimer: 0 },
+                { id: 2, name: 'Penny', fed: false, hasProduce: false, x: 260, y: 310, targetX: 250, targetY: 300, dir: -1, animTimer: 2 }
+            ],
+            cows: [
+                { id: 1, name: 'Bessie', fed: false, hasProduce: false, x: 550, y: 240, targetX: 520, targetY: 250, dir: 1, animTimer: 1 }
+            ],
+
+            // Inventory harvests
+            inventory: {
+                egg: 0,
+                milk: 0
+            },
+
+            // Quests
+            quests: [],
+
+            // Upgrades
+            hasSprinklers: false,
+            waterCanCapacity: 1, // 1 tile vs 3 tile
+            waterLevel: 10
+        };
+
+        // Populate initial grid
+        function initGrid() {
+            gameState.grid = [];
+            for (let r = 0; r < GRID_ROWS; r++) {
+                let row = [];
+                for (let c = 0; c < GRID_COLS; c++) {
+                    row.push({
+                        col: c,
+                        row: r,
+                        tilled: false,
+                        watered: false,
+                        crop: null, // { id: 'wheat', stage: 1, progress: 0 }
+                        hasSprinkler: false
+                    });
+                }
+                gameState.grid.push(row);
+            }
+
+            // Pre-till a 3x2 starter plot
+            for (let r = 2; r <= 3; r++) {
+                for (let c = 3; c <= 5; c++) {
+                    gameState.grid[r][c].tilled = true;
+                }
+            }
+        }
+
+        /* ==========================================================================
+           CANVAS RENDERER
+           ========================================================================== */
+        const canvas = document.getElementById('farmCanvas');
+        const ctx = canvas.getContext('2d');
+
+        const pastureCanvas = document.getElementById('pastureCanvas');
+        const pastureCtx = pastureCanvas.getContext('2d');
+
+        let mousePos = { x: -1, y: -1, col: -1, row: -1 };
+        let pastureMousePos = { x: -1, y: -1 };
+
+        // Pasture canvas rendering engine
+        function renderPastureCanvas() {
+            if (!pastureCanvas) return;
+
+            // Pasture Background
+            pastureCtx.fillStyle = '#388e3c';
+            pastureCtx.fillRect(0, 0, pastureCanvas.width, pastureCanvas.height);
+
+            // Lush Meadow Grass Textures
+            pastureCtx.fillStyle = '#2e7d32';
+            for (let i = 0; i < pastureCanvas.width; i += 30) {
+                for (let j = 120; j < pastureCanvas.height; j += 30) {
+                    if ((i + j) % 60 === 0) {
+                        pastureCtx.fillRect(i, j, 15, 12);
+                    }
+                }
+            }
+
+            // Sky / Horizon Line
+            pastureCtx.fillStyle = '#81d4fa';
+            pastureCtx.fillRect(0, 0, pastureCanvas.width, 100);
+
+            // Distance Hills
+            pastureCtx.fillStyle = '#4caf50';
+            pastureCtx.beginPath();
+            pastureCtx.arc(150, 120, 160, Math.PI, 0);
+            pastureCtx.arc(500, 130, 200, Math.PI, 0);
+            pastureCtx.arc(750, 120, 150, Math.PI, 0);
+            pastureCtx.fill();
+
+            // Draw Red Barn in Background
+            pastureCtx.fillStyle = '#b71c1c';
+            pastureCtx.fillRect(560, 30, 180, 90);
+            pastureCtx.fillStyle = '#d32f2f';
+            pastureCtx.beginPath();
+            pastureCtx.moveTo(540, 30);
+            pastureCtx.lineTo(650, -10);
+            pastureCtx.lineTo(760, 30);
+            pastureCtx.fill();
+            // Barn Door & Trim
+            pastureCtx.fillStyle = '#fff';
+            pastureCtx.fillRect(620, 60, 60, 60);
+            pastureCtx.fillStyle = '#5d4037';
+            pastureCtx.fillRect(625, 65, 50, 55);
+
+            // Draw Chicken Coop
+            pastureCtx.fillStyle = '#8d6e63';
+            pastureCtx.fillRect(100, 50, 120, 70);
+            pastureCtx.fillStyle = '#5d4037';
+            pastureCtx.beginPath();
+            pastureCtx.moveTo(80, 50);
+            pastureCtx.lineTo(160, 15);
+            pastureCtx.lineTo(240, 50);
+            pastureCtx.fill();
+            pastureCtx.fillStyle = '#3e2723';
+            pastureCtx.fillRect(140, 80, 35, 40); // coop door
+
+            // Fence line
+            pastureCtx.strokeStyle = '#5d4037';
+            pastureCtx.lineWidth = 6;
+            pastureCtx.beginPath();
+            pastureCtx.moveTo(0, 120);
+            pastureCtx.lineTo(800, 120);
+            pastureCtx.stroke();
+            for (let x = 20; x < 800; x += 40) {
+                pastureCtx.fillStyle = '#795548';
+                pastureCtx.fillRect(x, 100, 8, 30);
+            }
+
+            // Draw Hay Bales
+            pastureCtx.fillStyle = '#fbc02d';
+            pastureCtx.beginPath();
+            pastureCtx.roundRect(320, 140, 45, 25, 6);
+            pastureCtx.roundRect(350, 130, 45, 25, 6);
+            pastureCtx.fill();
+
+            const time = Date.now() * 0.003;
+
+            // UPDATE & DRAW CHICKENS
+            gameState.chickens.forEach((chicken, index) => {
+                // AI Wandering
+                if (Math.random() < 0.01) {
+                    chicken.targetX = Math.max(80, Math.min(380, chicken.x + (Math.random() * 100 - 50)));
+                    chicken.targetY = Math.max(160, Math.min(380, chicken.y + (Math.random() * 80 - 40)));
+                }
+
+                // Smooth position step
+                const dx = chicken.targetX - chicken.x;
+                const dy = chicken.targetY - chicken.y;
+                if (Math.abs(dx) > 1) {
+                    chicken.x += Math.sign(dx) * 0.6;
+                    chicken.dir = dx > 0 ? 1 : -1;
+                }
+                if (Math.abs(dy) > 1) chicken.y += Math.sign(dy) * 0.6;
+
+                const bob = Math.sin(time * 6 + index) * 3;
+
+                // Draw Chicken Sprite
+                pastureCtx.save();
+                pastureCtx.translate(chicken.x, chicken.y + bob);
+
+                // Shadow
+                pastureCtx.fillStyle = 'rgba(0,0,0,0.2)';
+                pastureCtx.beginPath();
+                pastureCtx.ellipse(0, 16, 14, 6, 0, 0, Math.PI * 2);
+                pastureCtx.fill();
+
+                // Body
+                pastureCtx.fillStyle = '#ffffff';
+                pastureCtx.beginPath();
+                pastureCtx.ellipse(0, 0, 16, 14, 0, 0, Math.PI * 2);
+                pastureCtx.fill();
+
+                // Head
+                pastureCtx.beginPath();
+                pastureCtx.arc(chicken.dir * 10, -10, 9, 0, Math.PI * 2);
+                pastureCtx.fill();
+
+                // Comb
+                pastureCtx.fillStyle = '#e53935';
+                pastureCtx.beginPath();
+                pastureCtx.arc(chicken.dir * 10, -18, 4, 0, Math.PI * 2);
+                pastureCtx.fill();
+
+                // Beak
+                pastureCtx.fillStyle = '#ffb300';
+                pastureCtx.beginPath();
+                pastureCtx.moveTo(chicken.dir * 16, -10);
+                pastureCtx.lineTo(chicken.dir * 22, -8);
+                pastureCtx.lineTo(chicken.dir * 16, -5);
+                pastureCtx.fill();
+
+                // Eye
+                pastureCtx.fillStyle = '#000';
+                pastureCtx.beginPath();
+                pastureCtx.arc(chicken.dir * 12, -12, 1.5, 0, Math.PI * 2);
+                pastureCtx.fill();
+
+                // Name Tag
+                pastureCtx.font = 'bold 11px sans-serif';
+                pastureCtx.fillStyle = '#fff';
+                pastureCtx.textAlign = 'center';
+                pastureCtx.fillText(chicken.name, 0, -24);
+
+                // Produce / Status Icon
+                if (chicken.hasProduce) {
+                    pastureCtx.font = '20px sans-serif';
+                    pastureCtx.fillText('🥚', 0, -38);
+                } else if (!chicken.fed) {
+                    pastureCtx.font = '12px sans-serif';
+                    pastureCtx.fillStyle = '#f59e0b';
+                    pastureCtx.fillText('💭🌾', 0, -38);
+                }
+
+                pastureCtx.restore();
+            });
+
+            // UPDATE & DRAW COWS
+            gameState.cows.forEach((cow, index) => {
+                // AI Wandering
+                if (Math.random() < 0.008) {
+                    cow.targetX = Math.max(420, Math.min(720, cow.x + (Math.random() * 120 - 60)));
+                    cow.targetY = Math.max(180, Math.min(370, cow.y + (Math.random() * 80 - 40)));
+                }
+
+                const dx = cow.targetX - cow.x;
+                const dy = cow.targetY - cow.y;
+                if (Math.abs(dx) > 1) {
+                    cow.x += Math.sign(dx) * 0.5;
+                    cow.dir = dx > 0 ? 1 : -1;
+                }
+                if (Math.abs(dy) > 1) cow.y += Math.sign(dy) * 0.5;
+
+                const tailWag = Math.sin(time * 4 + index) * 0.2;
+
+                // Draw Cow Sprite
+                pastureCtx.save();
+                pastureCtx.translate(cow.x, cow.y);
+
+                // Shadow
+                pastureCtx.fillStyle = 'rgba(0,0,0,0.2)';
+                pastureCtx.beginPath();
+                pastureCtx.ellipse(0, 24, 30, 10, 0, 0, Math.PI * 2);
+                pastureCtx.fill();
+
+                // Cow Body
+                pastureCtx.fillStyle = '#f5f5f5';
+                pastureCtx.beginPath();
+                pastureCtx.roundRect(-28, -12, 56, 36, 12);
+                pastureCtx.fill();
+
+                // Black Spots
+                pastureCtx.fillStyle = '#212121';
+                pastureCtx.beginPath();
+                pastureCtx.arc(-10, -2, 10, 0, Math.PI * 2);
+                pastureCtx.arc(12, 8, 8, 0, Math.PI * 2);
+                pastureCtx.arc(-18, 12, 7, 0, Math.PI * 2);
+                pastureCtx.fill();
+
+                // Cow Head
+                const headX = cow.dir * 28;
+                pastureCtx.fillStyle = '#f5f5f5';
+                pastureCtx.beginPath();
+                pastureCtx.arc(headX, -8, 16, 0, Math.PI * 2);
+                pastureCtx.fill();
+
+                // Snout
+                pastureCtx.fillStyle = '#f8bbd0';
+                pastureCtx.beginPath();
+                pastureCtx.ellipse(headX + cow.dir * 4, -2, 10, 7, 0, 0, Math.PI * 2);
+                pastureCtx.fill();
+
+                // Eyes
+                pastureCtx.fillStyle = '#000';
+                pastureCtx.beginPath();
+                pastureCtx.arc(headX + cow.dir * 4, -12, 2, 0, Math.PI * 2);
+                pastureCtx.fill();
+
+                // Horns
+                pastureCtx.fillStyle = '#d7ccc8';
+                pastureCtx.beginPath();
+                pastureCtx.arc(headX - 4, -22, 4, 0, Math.PI * 2);
+                pastureCtx.arc(headX + 4, -22, 4, 0, Math.PI * 2);
+                pastureCtx.fill();
+
+                // Legs
+                pastureCtx.fillStyle = '#e0e0e0';
+                pastureCtx.fillRect(-20, 20, 8, 12);
+                pastureCtx.fillRect(-6, 20, 8, 12);
+                pastureCtx.fillRect(8, 20, 8, 12);
+                pastureCtx.fillRect(20, 20, 8, 12);
+
+                // Name Tag
+                pastureCtx.font = 'bold 12px sans-serif';
+                pastureCtx.fillStyle = '#fff';
+                pastureCtx.textAlign = 'center';
+                pastureCtx.fillText(cow.name, 0, -32);
+
+                // Produce / Status Icon
+                if (cow.hasProduce) {
+                    pastureCtx.font = '22px sans-serif';
+                    pastureCtx.fillText('🥛', 0, -48);
+                } else if (!cow.fed) {
+                    pastureCtx.font = '14px sans-serif';
+                    pastureCtx.fillStyle = '#f59e0b';
+                    pastureCtx.fillText('💭🌾', 0, -48);
+                }
+
+                pastureCtx.restore();
+            });
+        }
+
+        function renderCanvas() {
+            // Clear canvas
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            // Render pasture canvas alongside main canvas
+            renderPastureCanvas();
+
+            // Draw Grass / Background
+            ctx.fillStyle = '#2e7d32';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Subtle grass pattern texture
+            ctx.fillStyle = '#388e3c';
+            for (let i = 0; i < canvas.width; i += 20) {
+                for (let j = 0; j < canvas.height; j += 20) {
+                    if ((i + j) % 40 === 0) {
+                        ctx.fillRect(i, j, 10, 10);
+                    }
+                }
+            }
+
+            // Draw Farm Fence Outer Border
+            ctx.strokeStyle = '#5d4037';
+            ctx.lineWidth = 8;
+            ctx.strokeRect(10, 10, canvas.width - 20, canvas.height - 20);
+
+            // Draw Farm Grid Plots
+            const startX = (canvas.width - GRID_COLS * TILE_SIZE) / 2;
+            const startY = (canvas.height - GRID_ROWS * TILE_SIZE) / 2;
+
+            for (let r = 0; r < GRID_ROWS; r++) {
+                for (let c = 0; c < GRID_COLS; c++) {
+                    const tile = gameState.grid[r][c];
+                    const x = startX + c * TILE_SIZE;
+                    const y = startY + r * TILE_SIZE;
+
+                    // Draw Base Tile
+                    if (tile.tilled) {
+                        ctx.fillStyle = tile.watered ? '#3e2723' : '#6d4c41';
+                        ctx.beginPath();
+                        ctx.roundRect(x + 2, y + 2, TILE_SIZE - 4, TILE_SIZE - 4, 8);
+                        ctx.fill();
+
+                        // Watered sheen highlight
+                        if (tile.watered) {
+                            ctx.fillStyle = 'rgba(3, 169, 244, 0.25)';
+                            ctx.beginPath();
+                            ctx.roundRect(x + 4, y + 4, TILE_SIZE - 8, TILE_SIZE - 8, 6);
+                            ctx.fill();
+                        }
+                    } else {
+                        // Untilled grass patch border
+                        ctx.strokeStyle = 'rgba(0,0,0,0.08)';
+                        ctx.lineWidth = 1;
+                        ctx.strokeRect(x, y, TILE_SIZE, TILE_SIZE);
+                    }
+
+                    // Draw Sprinkler if placed
+                    if (tile.hasSprinkler) {
+                        ctx.fillStyle = '#9e9e9e';
+                        ctx.beginPath();
+                        ctx.arc(x + TILE_SIZE/2, y + TILE_SIZE/2, 10, 0, Math.PI * 2);
+                        ctx.fill();
+                        ctx.fillStyle = '#0288d1';
+                        ctx.beginPath();
+                        ctx.arc(x + TILE_SIZE/2, y + TILE_SIZE/2, 5, 0, Math.PI * 2);
+                        ctx.fill();
+                    }
+
+                    // Draw Crop
+                    if (tile.crop) {
+                        const cropData = CROPS[tile.crop.id];
+                        const maxDays = cropData.growthDays;
+                        const isMature = tile.crop.progress >= maxDays;
+
+                        ctx.textAlign = 'center';
+                        ctx.textBaseline = 'middle';
+
+                        if (!isMature) {
+                            // Sprout stage 1-2
+                            const scale = 0.4 + (tile.crop.progress / maxDays) * 0.5;
+                            ctx.font = `${Math.floor(28 * scale)}px sans-serif`;
+                            ctx.fillText('🌱', x + TILE_SIZE / 2, y + TILE_SIZE / 2);
+                        } else {
+                            // Fully Grown Stage
+                            ctx.font = '36px sans-serif';
+                            ctx.fillText(cropData.icon, x + TILE_SIZE / 2, y + TILE_SIZE / 2 - 2);
+
+                            // Ready glow ring
+                            ctx.strokeStyle = '#f59e0b';
+                            ctx.lineWidth = 2;
+                            ctx.setLineDash([4, 4]);
+                            ctx.beginPath();
+                            ctx.arc(x + TILE_SIZE/2, y + TILE_SIZE/2, TILE_SIZE/2 - 6, 0, Math.PI*2);
+                            ctx.stroke();
+                            ctx.setLineDash([]);
+                        }
+                    }
+
+                    // Hover Tile Highlight
+                    if (mousePos.col === c && mousePos.row === r) {
+                        ctx.strokeStyle = '#f59e0b';
+                        ctx.lineWidth = 3;
+                        ctx.beginPath();
+                        ctx.roundRect(x + 1, y + 1, TILE_SIZE - 2, TILE_SIZE - 2, 8);
+                        ctx.stroke();
+                    }
+                }
+            }
+
+            // Draw Weather Visual FX (Rain animation overlay)
+            if (gameState.weather === 'Rainy') {
+                ctx.fillStyle = 'rgba(120, 180, 255, 0.2)';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                ctx.strokeStyle = 'rgba(255, 255, 255, 0.4)';
+                ctx.lineWidth = 1.5;
+                const time = Date.now() * 0.005;
+                for (let i = 0; i < 40; i++) {
+                    const rx = (i * 23 + time * 100) % canvas.width;
+                    const ry = (i * 37 + time * 300) % canvas.height;
+                    ctx.beginPath();
+                    ctx.moveTo(rx, ry);
+                    ctx.lineTo(rx - 4, ry + 12);
+                    ctx.stroke();
+                }
+            }
+
+            requestAnimationFrame(renderCanvas);
+        }
+
+        /* ==========================================================================
+           TILE INTERACTION LOGIC
+           ========================================================================== */
+        canvas.addEventListener('mousemove', (e) => {
+            const rect = canvas.getBoundingClientRect();
+            const scaleX = canvas.width / rect.width;
+            const scaleY = canvas.height / rect.height;
+
+            const clientX = (e.clientX - rect.left) * scaleX;
+            const clientY = (e.clientY - rect.top) * scaleY;
+
+            const startX = (canvas.width - GRID_COLS * TILE_SIZE) / 2;
+            const startY = (canvas.height - GRID_ROWS * TILE_SIZE) / 2;
+
+            const col = Math.floor((clientX - startX) / TILE_SIZE);
+            const row = Math.floor((clientY - startY) / TILE_SIZE);
+
+            if (col >= 0 && col < GRID_COLS && row >= 0 && row < GRID_ROWS) {
+                mousePos.col = col;
+                mousePos.row = row;
+            } else {
+                mousePos.col = -1;
+                mousePos.row = -1;
+            }
+        });
+
+        canvas.addEventListener('mouseleave', () => {
+            mousePos.col = -1;
+            mousePos.row = -1;
+        });
+
+        canvas.addEventListener('click', (e) => {
+            if (mousePos.col === -1 || mousePos.row === -1) return;
+            interactWithTile(mousePos.col, mousePos.row);
+        });
+
+        function interactWithTile(col, row) {
+            const tile = gameState.grid[row][col];
+            const activeItem = gameState.hotbar[gameState.selectedHotbarIndex];
+
+            if (!activeItem) return;
+
+            // Check Energy
+            if (gameState.energy <= 0) {
+                showToast("⚡ Out of energy! Sleep to restore your stamina.", "bg-red-600");
+                return;
+            }
+
+            const startX = (canvas.width - GRID_COLS * TILE_SIZE) / 2;
+            const startY = (canvas.height - GRID_ROWS * TILE_SIZE) / 2;
+            const screenX = startX + col * TILE_SIZE + TILE_SIZE/2;
+            const screenY = startY + row * TILE_SIZE + TILE_SIZE/2;
+
+            // 1. HOE TOOL
+            if (activeItem.type === 'tool' && activeItem.id === 'hoe') {
+                if (!tile.tilled) {
+                    tile.tilled = true;
+                    useEnergy(2);
+                    sfx.play('till');
+                    spawnFloatingText(screenX, screenY, "Tilled!", "#d97706");
+                }
+            }
+
+            // 2. WATERING CAN TOOL
+            else if (activeItem.type === 'tool' && activeItem.id === 'waterCan') {
+                if (tile.tilled && !tile.watered) {
+                    tile.watered = true;
+                    useEnergy(1);
+                    sfx.play('water');
+                    spawnFloatingText(screenX, screenY, "Watered!💧", "#3b82f6");
+                }
+            }
+
+            // 3. SICKLE / HARVEST TOOL
+            else if (activeItem.type === 'tool' && activeItem.id === 'sickle') {
+                if (tile.crop) {
+                    const cropData = CROPS[tile.crop.id];
+                    if (tile.crop.progress >= cropData.growthDays) {
+                        // Harvest Crop!
+                        const goldEarned = cropData.sellValue;
+                        addGold(goldEarned);
+                        addXp(cropData.xp);
+                        sfx.play('harvest');
+
+                        spawnFloatingText(screenX, screenY, `+${goldEarned}G ${cropData.icon}`, "#f59e0b");
+                        tile.crop = null;
+                        useEnergy(1);
+                    } else {
+                        showToast("This crop isn't fully grown yet!", "bg-amber-700");
+                    }
+                }
+            }
+
+            // 4. SEEDS PLANTING
+            else if (activeItem.type === 'seed') {
+                if (!tile.tilled) {
+                    showToast("Till the soil first with your Hoe!", "bg-amber-800");
+                    return;
+                }
+                if (tile.crop) {
+                    showToast("A seed is already planted here!", "bg-amber-800");
+                    return;
+                }
+                if (activeItem.count <= 0) {
+                    showToast("Out of seeds!", "bg-red-700");
+                    return;
+                }
+
+                // Plant crop
+                tile.crop = {
+                    id: activeItem.id,
+                    progress: 0
+                };
+                activeItem.count--;
+                if (activeItem.count <= 0) {
+                    // Remove seed stack
+                    gameState.hotbar.splice(gameState.selectedHotbarIndex, 1);
+                    if (gameState.selectedHotbarIndex >= gameState.hotbar.length) {
+                        gameState.selectedHotbarIndex = Math.max(0, gameState.hotbar.length - 1);
+                    }
+                }
+
+                sfx.play('plant');
+                spawnFloatingText(screenX, screenY, "Planted 🌱", "#10b981");
+                useEnergy(1);
+                updateHotbarUI();
+            }
+        }
+
+        /* ==========================================================================
+           UI & HOTBAR UPDATES
+           ========================================================================== */
+        function updateHotbarUI() {
+            const container = document.getElementById('hotbar-slots');
+            container.innerHTML = '';
+
+            gameState.hotbar.forEach((item, idx) => {
+                const slot = document.createElement('button');
+                slot.className = `hotbar-slot w-12 h-12 sm:w-14 sm:h-14 bg-amber-900/90 border-2 ${idx === gameState.selectedHotbarIndex ? 'active border-amber-400' : 'border-amber-700/80'} rounded-xl flex flex-col items-center justify-center relative hover:bg-amber-800 transition`;
+                slot.onclick = () => {
+                    gameState.selectedHotbarIndex = idx;
+                    updateHotbarUI();
+                };
+
+                // Keyboard Number Shortcut Badge
+                const numBadge = document.createElement('span');
+                numBadge.className = 'absolute top-0.5 left-1 text-[10px] font-bold text-amber-300/60';
+                numBadge.innerText = idx + 1;
+                slot.appendChild(numBadge);
+
+                if (item.type === 'tool') {
+                    const tool = TOOLS[item.id];
+                    slot.innerHTML += `<i class="fa-solid ${tool.icon} text-lg sm:text-2xl text-amber-200"></i>`;
+                } else if (item.type === 'seed') {
+                    const crop = CROPS[item.id];
+                    slot.innerHTML += `
+                        <span class="text-xl sm:text-2xl">${crop.icon}</span>
+                        <span class="absolute bottom-0.5 right-1 bg-amber-950/90 text-amber-300 font-bold text-xs px-1 rounded-full">${item.count}</span>
+                    `;
+                }
+
+                container.appendChild(slot);
+            });
+        }
+
+        function useEnergy(amount) {
+            gameState.energy = Math.max(0, gameState.energy - amount);
+            updateStatusUI();
+        }
+
+        function addGold(amount) {
+            gameState.gold += amount;
+            sfx.play('coin');
+            updateStatusUI();
+        }
+
+        function addXp(amount) {
+            gameState.xp += amount;
+            if (gameState.xp >= gameState.nextLevelXp) {
+                gameState.level++;
+                gameState.xp -= gameState.nextLevelXp;
+                gameState.nextLevelXp = Math.floor(gameState.nextLevelXp * 1.5);
+                gameState.maxEnergy += 10;
+                gameState.energy = gameState.maxEnergy; // Refill energy on level up
+                showToast(`🎉 Level Up! You reached Level ${gameState.level}!`, "bg-emerald-600");
+                sfx.play('harvest');
+            }
+            updateStatusUI();
+        }
+
+        function updateStatusUI() {
+            document.getElementById('gold-display').innerText = gameState.gold;
+            document.getElementById('energy-text').innerText = `${gameState.energy}/${gameState.maxEnergy}`;
+            document.getElementById('energy-bar').style.width = `${(gameState.energy / gameState.maxEnergy) * 100}%`;
+            
+            document.getElementById('level-text').innerText = gameState.level;
+            document.getElementById('xp-text').innerText = `${gameState.xp}/${gameState.nextLevelXp}`;
+            document.getElementById('xp-bar').style.width = `${(gameState.xp / gameState.nextLevelXp) * 100}%`;
+
+            document.getElementById('day-counter').innerText = gameState.day;
+            document.getElementById('season-display').innerText = `${SEASONS[gameState.seasonIndex]} • Year 1`;
+        }
+
+        function spawnFloatingText(x, y, text, color = "#fff") {
+            const elem = document.createElement('div');
+            elem.className = 'floating-text';
+            elem.innerText = text;
+            elem.style.color = color;
+            elem.style.left = `${x}px`;
+            elem.style.top = `${y}px`;
+            document.getElementById('farm-view').appendChild(elem);
+
+            setTimeout(() => elem.remove(), 1200);
+        }
+
+        function showToast(message, bgColor = "bg-amber-800") {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            toast.className = `${bgColor} text-white font-bold px-4 py-2.5 rounded-xl shadow-2xl border border-white/20 text-sm transform transition-all duration-300 translate-y-2 opacity-0 flex items-center gap-2`;
+            toast.innerHTML = `<i class="fa-solid fa-bell"></i> ${message}`;
+            container.appendChild(toast);
+
+            setTimeout(() => {
+                toast.classList.remove('translate-y-2', 'opacity-0');
+            }, 10);
+
+            setTimeout(() => {
+                toast.classList.add('opacity-0', 'translate-y-2');
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+
+        /* ==========================================================================
+           DAY & NIGHT / SLEEPING SYSTEM
+           ========================================================================== */
+        document.getElementById('btn-sleep').addEventListener('click', sleepAndAdvanceDay);
+
+        function sleepAndAdvanceDay() {
+            sfx.play('sleep');
+
+            // Advance Day
+            gameState.day++;
+            if (gameState.day > 28) {
+                gameState.day = 1;
+                gameState.seasonIndex = (gameState.seasonIndex + 1) % SEASONS.length;
+            }
+
+            // Weather RNG (30% chance rain)
+            gameState.weather = Math.random() < 0.3 ? 'Rainy' : 'Sunny';
+            const weatherIcon = document.getElementById('weather-icon');
+            if (gameState.weather === 'Rainy') {
+                weatherIcon.className = 'fa-solid fa-cloud-showers-heavy text-xl text-blue-400 animate-bounce';
+                showToast("🌧️ It's raining today! All crops were watered automatically.", "bg-blue-600");
+            } else {
+                weatherIcon.className = 'fa-solid fa-sun text-xl text-yellow-400 animate-pulse';
+            }
+
+            // Restore Energy
+            gameState.energy = gameState.maxEnergy;
+
+            // Crop Growth Step
+            for (let r = 0; r < GRID_ROWS; r++) {
+                for (let c = 0; c < GRID_COLS; c++) {
+                    const tile = gameState.grid[r][c];
+
+                    // Rain or sprinkler waters tile
+                    if (gameState.weather === 'Rainy' || tile.hasSprinkler) {
+                        tile.watered = true;
+                    }
+
+                    if (tile.crop) {
+                        // Grow crop if tile was watered
+                        if (tile.watered) {
+                            tile.crop.progress = Math.min(CROPS[tile.crop.id].growthDays, tile.crop.progress + 1);
+                        }
+                    }
+
+                    // Reset water for next day
+                    tile.watered = gameState.weather === 'Rainy' || tile.hasSprinkler;
+                }
+            }
+
+            // Animal produce reset
+            gameState.chickens.forEach(c => {
+                if (c.fed) {
+                    c.hasProduce = true;
+                    c.fed = false;
+                }
+            });
+            gameState.cows.forEach(c => {
+                if (c.fed) {
+                    c.hasProduce = true;
+                    c.fed = false;
+                }
+            });
+
+            updateStatusUI();
+            renderAnimalStatusList();
+            showToast(`🌅 Good Morning! Day ${gameState.day} has begun.`, "bg-amber-600");
+        }
+
+        /* ==========================================================================
+           PASTURE CANVAS CLICK & TOUCH INTERACTION
+           ========================================================================== */
+        pastureCanvas.addEventListener('click', (e) => {
+            const rect = pastureCanvas.getBoundingClientRect();
+            const scaleX = pastureCanvas.width / rect.width;
+            const scaleY = pastureCanvas.height / rect.height;
+
+            const clickX = (e.clientX - rect.left) * scaleX;
+            const clickY = (e.clientY - rect.top) * scaleY;
+
+            // Check click on Chickens
+            let hit = false;
+            gameState.chickens.forEach(c => {
+                const dist = Math.hypot(clickX - c.x, clickY - c.y);
+                if (dist < 30) {
+                    hit = true;
+                    if (c.hasProduce) {
+                        c.hasProduce = false;
+                        addGold(25);
+                        addXp(10);
+                        sfx.play('harvest');
+                        spawnFloatingText(clickX, clickY - 20, "+25G 🥚", "#f59e0b");
+                        renderAnimalStatusList();
+                    } else {
+                        sfx.play('plant');
+                        spawnFloatingText(clickX, clickY - 20, "❤️ Pet!", "#ef4444");
+                    }
+                }
+            });
+
+            // Check click on Cows
+            if (!hit) {
+                gameState.cows.forEach(cow => {
+                    const dist = Math.hypot(clickX - cow.x, clickY - cow.y);
+                    if (dist < 40) {
+                        hit = true;
+                        if (cow.hasProduce) {
+                            cow.hasProduce = false;
+                            addGold(55);
+                            addXp(15);
+                            sfx.play('harvest');
+                            spawnFloatingText(clickX, clickY - 20, "+55G 🥛", "#f59e0b");
+                            renderAnimalStatusList();
+                        } else {
+                            sfx.play('plant');
+                            spawnFloatingText(clickX, clickY - 20, "❤️ Pet!", "#ef4444");
+                        }
+                    }
+                });
+            }
+        });
+
+        /* ==========================================================================
+           LIVESTOCK SYSTEM
+           ========================================================================== */
+        function renderAnimalStatusList() {
+            const chickenList = document.getElementById('chicken-status-list');
+            chickenList.innerHTML = '';
+            gameState.chickens.forEach(c => {
+                chickenList.innerHTML += `
+                    <div class="flex justify-between items-center bg-amber-950/60 p-2 rounded-lg border border-amber-800 text-xs">
+                        <span class="font-bold text-amber-200">🐔 ${c.name}</span>
+                        <div class="flex gap-2">
+                            <span class="${c.fed ? 'text-emerald-400' : 'text-amber-400/60'}">${c.fed ? 'Fed' : 'Hungry'}</span>
+                            ${c.hasProduce ? '<span class="text-yellow-300 font-bold">🥚 Egg Ready!</span>' : ''}
+                        </div>
+                    </div>
+                `;
+            });
+
+            const cowList = document.getElementById('cow-status-list');
+            cowList.innerHTML = '';
+            gameState.cows.forEach(c => {
+                cowList.innerHTML += `
+                    <div class="flex justify-between items-center bg-amber-950/60 p-2 rounded-lg border border-amber-800 text-xs">
+                        <span class="font-bold text-amber-200">🐮 ${c.name}</span>
+                        <div class="flex gap-2">
+                            <span class="${c.fed ? 'text-emerald-400' : 'text-amber-400/60'}">${c.fed ? 'Fed' : 'Hungry'}</span>
+                            ${c.hasProduce ? '<span class="text-blue-300 font-bold">🥛 Milk Ready!</span>' : ''}
+                        </div>
+                    </div>
+                `;
+            });
+
+            document.getElementById('chicken-count').innerText = `${gameState.chickens.length} Chickens`;
+            document.getElementById('cow-count').innerText = `${gameState.cows.length} Cows`;
+        }
+
+        function feedAnimals(type) {
+            const cost = type === 'chicken' ? 5 : 10;
+            if (gameState.gold < cost) {
+                showToast("Not enough Gold for animal feed!", "bg-red-700");
+                return;
+            }
+
+            const list = type === 'chicken' ? gameState.chickens : gameState.cows;
+            let fedAny = false;
+            list.forEach(animal => {
+                if (!animal.fed) {
+                    animal.fed = true;
+                    fedAny = true;
+                }
+            });
+
+            if (fedAny) {
+                gameState.gold -= cost;
+                sfx.play('coin');
+                showToast(`Fed your ${type}s! They'll produce goods tomorrow.`, "bg-emerald-600");
+                updateStatusUI();
+                renderAnimalStatusList();
+            } else {
+                showToast(`All ${type}s are already fed today!`, "bg-amber-700");
+            }
+        }
+
+        function collectAnimalProduce(type) {
+            const list = type === 'chicken' ? gameState.chickens : gameState.cows;
+            let collectedCount = 0;
+
+            list.forEach(animal => {
+                if (animal.hasProduce) {
+                    animal.hasProduce = false;
+                    collectedCount++;
+                }
+            });
+
+            if (collectedCount > 0) {
+                const itemKey = type === 'chicken' ? 'egg' : 'milk';
+                const sellVal = type === 'chicken' ? 25 : 55;
+                const totalEarned = collectedCount * sellVal;
+
+                addGold(totalEarned);
+                addXp(collectedCount * 10);
+                sfx.play('harvest');
+                showToast(`Gathered ${collectedCount} ${type === 'chicken' ? 'Egg(s) 🥚' : 'Milk 🥛'} (+${totalEarned} Gold)`, "bg-yellow-600");
+                renderAnimalStatusList();
+            } else {
+                showToast("No produce ready to collect today! Feed them and sleep.", "bg-amber-700");
+            }
+        }
+
+        function buyLivestock(type) {
+            const cost = type === 'chicken' ? 100 : 250;
+            if (gameState.gold < cost) {
+                showToast("Not enough Gold!", "bg-red-700");
+                return;
+            }
+
+            gameState.gold -= cost;
+            if (type === 'chicken') {
+                gameState.chickens.push({
+                    id: Date.now(),
+                    name: `Hen #${gameState.chickens.length + 1}`,
+                    fed: false,
+                    hasProduce: false,
+                    x: 150 + Math.random() * 180,
+                    y: 220 + Math.random() * 120,
+                    targetX: 200,
+                    targetY: 250,
+                    dir: 1
+                });
+            } else {
+                gameState.cows.push({
+                    id: Date.now(),
+                    name: `Cow #${gameState.cows.length + 1}`,
+                    fed: false,
+                    hasProduce: false,
+                    x: 480 + Math.random() * 200,
+                    y: 200 + Math.random() * 130,
+                    targetX: 550,
+                    targetY: 260,
+                    dir: 1
+                });
+            }
+
+            sfx.play('coin');
+            showToast(`Purchased a new ${type}!`, "bg-emerald-600");
+            updateStatusUI();
+            renderAnimalStatusList();
+        }
+
+        /* ==========================================================================
+           MARKET SHOP MODAL & TABS
+           ========================================================================== */
+        let currentShopTab = 'seeds';
+
+        function openShop() {
+            document.getElementById('shop-modal').classList.remove('hidden');
+            renderShopItems();
+        }
+
+        function closeShop() {
+            document.getElementById('shop-modal').classList.add('hidden');
+        }
+
+        function switchShopTab(tab) {
+            currentShopTab = tab;
+            document.querySelectorAll('#shop-modal button[id^="shop-tab-"]').forEach(btn => {
+                btn.className = "px-4 py-2 font-bold text-amber-400/70 border-b-4 border-transparent hover:text-amber-200";
+            });
+            document.getElementById(`shop-tab-${tab}`).className = "px-4 py-2 font-bold text-amber-200 border-b-4 border-amber-400";
+            renderShopItems();
+        }
+
+        function renderShopItems() {
+            const grid = document.getElementById('shop-items-grid');
+            grid.innerHTML = '';
+
+            if (currentShopTab === 'seeds') {
+                Object.values(CROPS).forEach(crop => {
+                    grid.innerHTML += `
+                        <div class="bg-amber-900/60 p-4 rounded-xl border-2 border-amber-700 flex flex-col justify-between items-center text-center">
+                            <span class="text-4xl mb-2">${crop.icon}</span>
+                            <h3 class="font-bold text-amber-100 text-lg">${crop.name} Seeds</h3>
+                            <p class="text-xs text-amber-300/80 mb-3">Grows in ${crop.growthDays} Days • Sells for ${crop.sellValue}G</p>
+                            <button onclick="buySeed('${crop.id}')" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-2 rounded-xl border border-emerald-400 transition flex items-center justify-center gap-1.5 text-sm">
+                                <i class="fa-solid fa-coins text-yellow-300"></i> Buy (${crop.seedCost}G)
+                            </button>
+                        </div>
+                    `;
+                });
+            } else if (currentShopTab === 'tools') {
+                grid.innerHTML = `
+                    <div class="bg-amber-900/60 p-4 rounded-xl border-2 border-amber-700 flex flex-col justify-between items-center text-center">
+                        <i class="fa-solid fa-faucet-drip text-4xl text-blue-400 mb-2"></i>
+                        <h3 class="font-bold text-amber-100 text-lg">Copper Watering Can</h3>
+                        <p class="text-xs text-amber-300/80 mb-3">Increases water capacity to hold 30 charges!</p>
+                        <button onclick="buyUpgrade('waterCan')" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-2 rounded-xl border border-emerald-400 transition text-sm">
+                            Upgrade (150G)
+                        </button>
+                    </div>
+                `;
+            } else if (currentShopTab === 'decor') {
+                grid.innerHTML = `
+                    <div class="bg-amber-900/60 p-4 rounded-xl border-2 border-amber-700 flex flex-col justify-between items-center text-center">
+                        <i class="fa-solid fa-shower text-4xl text-cyan-400 mb-2"></i>
+                        <h3 class="font-bold text-amber-100 text-lg">Farm Sprinkler</h3>
+                        <p class="text-xs text-amber-300/80 mb-3">Place on tile to automatically water adjacent crops every morning!</p>
+                        <button onclick="buySprinkler()" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-2 rounded-xl border border-emerald-400 transition text-sm">
+                            Buy Sprinkler (200G)
+                        </button>
+                    </div>
+                `;
+            }
+        }
+
+        function buySeed(cropId) {
+            const crop = CROPS[cropId];
+            if (gameState.gold < crop.seedCost) {
+                showToast("Not enough Gold!", "bg-red-700");
+                return;
+            }
+
+            gameState.gold -= crop.seedCost;
+            sfx.play('coin');
+
+            // Find existing seed stack in hotbar
+            let existing = gameState.hotbar.find(i => i.type === 'seed' && i.id === cropId);
+            if (existing) {
+                existing.count += 1;
+            } else {
+                gameState.hotbar.push({ type: 'seed', id: cropId, count: 1 });
+            }
+
+            updateStatusUI();
+            updateHotbarUI();
+            showToast(`Bought ${crop.name} Seed! 🌱`, "bg-emerald-600");
+        }
+
+        function buySprinkler() {
+            if (gameState.gold < 200) {
+                showToast("Not enough Gold!", "bg-red-700");
+                return;
+            }
+            // Place sprinkler on middle tile
+            gameState.grid[3][3].hasSprinkler = true;
+            gameState.gold -= 200;
+            sfx.play('coin');
+            showToast("Sprinkler installed on farm grid! 🚿", "bg-emerald-600");
+            updateStatusUI();
+        }
+
+        function buyUpgrade(tool) {
+            if (gameState.gold < 150) {
+                showToast("Not enough Gold!", "bg-red-700");
+                return;
+            }
+            gameState.gold -= 150;
+            showToast("Watering Can upgraded!", "bg-emerald-600");
+            updateStatusUI();
+        }
+
+        function sellAllHarvest() {
+            showToast("Harvest crops on the field to earn instant Gold!", "bg-amber-600");
+        }
+
+        /* ==========================================================================
+           QUEST SYSTEM
+           ========================================================================== */
+        function initQuests() {
+            gameState.quests = [
+                { id: 1, title: "Spring Harvest", desc: "Earn 200 Total Gold from crops.", target: 200, reward: 100, icon: "🌾" },
+                { id: 2, title: "Livestock Master", desc: "Own at least 2 Chickens in your coop.", target: 2, reward: 150, icon: "🐔" }
+            ];
+        }
+
+        function openQuests() {
+            document.getElementById('quest-modal').classList.remove('hidden');
+            const questList = document.getElementById('quest-list');
+            questList.innerHTML = '';
+
+            gameState.quests.forEach(q => {
+                questList.innerHTML += `
+                    <div class="bg-amber-900/60 p-4 rounded-xl border-2 border-amber-700 flex justify-between items-center">
+                        <div class="flex items-center gap-3">
+                            <span class="text-3xl">${q.icon}</span>
+                            <div>
+                                <h3 class="font-bold text-amber-100 text-base">${q.title}</h3>
+                                <p class="text-xs text-amber-300/80">${q.desc}</p>
+                            </div>
+                        </div>
+                        <button onclick="claimQuest(${q.id})" class="bg-amber-500 hover:bg-amber-400 text-amber-950 font-bold px-3 py-1.5 rounded-xl border border-amber-300 text-xs transition">
+                            Reward: ${q.reward}G
+                        </button>
+                    </div>
+                `;
+            });
+        }
+
+        function closeQuests() {
+            document.getElementById('quest-modal').classList.add('hidden');
+        }
+
+        function claimQuest(id) {
+            const q = gameState.quests.find(x => x.id === id);
+            if (q) {
+                addGold(q.reward);
+                addXp(30);
+                showToast(`Completed Quest: ${q.title}!`, "bg-emerald-600");
+            }
+        }
+
+        /* ==========================================================================
+           VIEW & NAVIGATION SWITCHER
+           ========================================================================== */
+        function switchTab(tabName) {
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.className = "tab-btn flex-1 flex items-center justify-center md:justify-start gap-2 bg-amber-900/80 text-amber-200 hover:bg-amber-800 p-2.5 rounded-xl font-bold border border-amber-800 transition";
+            });
+
+            document.getElementById(`tab-${tabName}`).className = "tab-btn active flex-1 flex items-center justify-center md:justify-start gap-2 bg-amber-700 text-amber-100 p-2.5 rounded-xl font-bold border border-amber-500 shadow";
+
+            if (tabName === 'farm') {
+                document.getElementById('farm-view').classList.remove('hidden');
+                document.getElementById('animals-view').classList.add('hidden');
+            } else if (tabName === 'animals') {
+                document.getElementById('farm-view').classList.add('hidden');
+                document.getElementById('animals-view').classList.remove('hidden');
+                renderAnimalStatusList();
+            }
+        }
+
+        // Sound FX Toggle
+        document.getElementById('audio-toggle').addEventListener('click', () => {
+            sfx.enabled = !sfx.enabled;
+            const icon = document.getElementById('audio-icon');
+            icon.className = sfx.enabled ? "fa-solid fa-volume-high text-lg" : "fa-solid fa-volume-xmark text-lg text-red-400";
+            showToast(sfx.enabled ? "Sound FX Enabled" : "Sound FX Muted", "bg-amber-800");
+        });
+
+        // Keyboard Hotkeys (1-5 for hotbar selection)
+        window.addEventListener('keydown', (e) => {
+            const keyNum = parseInt(e.key);
+            if (!isNaN(keyNum) && keyNum >= 1 && keyNum <= gameState.hotbar.length) {
+                gameState.selectedHotbarIndex = keyNum - 1;
+                updateHotbarUI();
+            }
+        });
+
+        /* ==========================================================================
+           INITIALIZATION & ENGINE BOOTSTRAP
+           ========================================================================== */
+        window.onload = function() {
+            initGrid();
+            initQuests();
+            updateStatusUI();
+            updateHotbarUI();
+
+            // Start Canvas Game Engine Loop
+            requestAnimationFrame(renderCanvas);
+            
+            showToast("🌾 Welcome to Harvest Valley! Till dirt, plant seeds, and water crops to grow your farm.", "bg-emerald-700");
+        };
+    </script>
+</body>
+</html>

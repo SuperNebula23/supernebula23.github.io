@@ -348,8 +348,8 @@
 
             blueMaterial = new THREE.MeshPhongMaterial({ color: 0x0284c7, shininess: 90, specular: 0x38bdf8 });
             redMaterial = new THREE.MeshPhongMaterial({ color: 0xe11d48, shininess: 90, specular: 0xf43f5e });
-            trackMaterial = new THREE.MeshPhongMaterial({ color: 0xf8fafc, roughness: 0.8 });
-            bridgeMaterial = new THREE.MeshPhongMaterial({ color: 0xfbbf24, roughness: 0.6 });
+            trackMaterial = new THREE.MeshStandardMaterial({ color: 0xf8fafc, roughness: 0.8 });
+            bridgeMaterial = new THREE.MeshStandardMaterial({ color: 0xfbbf24, roughness: 0.6 });
 
             setupLevel();
             setupControls();
@@ -531,7 +531,7 @@
                 const upcomingBridge = bridgeSections.find(b => b.startZ >= currentZ && b.startZ < currentZ + 40);
 
                 if (upcomingBridge) {
-                    // Force a gate choice before narrow bridge: High positive vs Small negative/divide!
+                    // Force a gate choice before narrow bridge: High positive vs Small negative!
                     spawnTacticalBridgeGatePair(upcomingBridge.startZ - 12);
                     // Spawn fair pendulum on the bridge
                     spawnPendulumHammer(upcomingBridge.startZ + 15);
@@ -560,7 +560,6 @@
         }
 
         function spawnTacticalBridgeGatePair(zPos) {
-            // Generates a choice: Big (+) or (x2) that expands crowd too wide VS small (-) or (/2) that fits cleanly!
             const leftData = { text: '+20', val: 20, op: '+' };
             const rightData = { text: '-8', val: 8, op: '-' };
 
@@ -614,7 +613,7 @@
 
             const rightTex = createGateTexture(rightData.text, rightOp === '+' || rightOp === '*');
             const rightMat = new THREE.MeshBasicMaterial({ map: rightTex, transparent: true, side: THREE.DoubleSide });
-            const rightMesh = new THREE.Mesh(new THREE.PlaneGeometry(4.6, 3.2), rightMesh);
+            const rightMesh = new THREE.Mesh(new THREE.PlaneGeometry(4.6, 3.2), rightMat);
             rightMesh.position.set(2.4, 2.0, 0);
             rightMesh.rotation.y = Math.PI;
             gateGroup.add(rightMesh);
@@ -974,7 +973,7 @@
                     }
                 });
 
-                // 2. Obstacle Collisions (Fixed Hammer & Saw Blades)
+                // 2. Obstacle Collisions
                 const runnersToRemove = new Set();
                 obstacleEntities.forEach(obs => {
                     if (obs.type === 'SAW') {
@@ -993,10 +992,9 @@
                         }
                     } else if (obs.type === 'PENDULUM') {
                         obs.angle += obs.swingSpeed;
-                        const swingAngle = Math.sin(obs.angle) * 0.85; // Smoother, fairer swing
+                        const swingAngle = Math.sin(obs.angle) * 0.85;
                         obs.mesh.rotation.z = swingAngle;
 
-                        // World X position of hammer head
                         const hammerWorldX = Math.sin(swingAngle) * -5.2;
 
                         if (Math.abs(playerZ - obs.z) < 1.0) {

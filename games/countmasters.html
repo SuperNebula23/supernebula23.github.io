@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>Count Masters 3D - Rebalanced & Fun</title>
+    <title>Count Masters 3D - Easy & Fun God Mode</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Inter:wght@600;800&display=swap" rel="stylesheet">
@@ -53,7 +53,7 @@
             
             <div class="bg-slate-800/90 backdrop-blur-md px-5 py-2 rounded-full border border-slate-700 shadow-xl text-white flex items-center space-x-2">
                 <span class="text-[10px] text-slate-400 uppercase tracking-wider">Crowd</span>
-                <span id="crowd-count-display" class="text-2xl font-black text-amber-400 leading-none">1</span>
+                <span id="crowd-count-display" class="text-2xl font-black text-amber-400 leading-none">20</span>
             </div>
         </div>
 
@@ -68,9 +68,9 @@
         <div id="start-screen" class="ui-interactive fixed inset-0 flex flex-col items-center justify-center bg-black/50 backdrop-blur-sm z-20 transition-opacity duration-300 p-4">
             <div class="text-center p-6 bg-slate-800/95 rounded-3xl border border-slate-700 shadow-2xl max-w-xs w-full transform hover:scale-105 transition-transform">
                 <h1 class="text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-500 mb-2">COUNT MASTERS</h1>
-                <p class="text-slate-300 text-xs mb-4 leading-relaxed">Multiply your crowd, dodge the traps, and conquer the staircases!</p>
+                <p class="text-slate-300 text-xs mb-4 leading-relaxed">God Mode Active! Build a massive swarm and obliterate everything in your path!</p>
                 <button id="start-btn" class="w-full py-3.5 bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white text-lg font-bold rounded-2xl shadow-lg shadow-cyan-500/30 active:scale-95 transition-all">
-                    TAP TO PLAY
+                    TAP TO CRUSH IT
                 </button>
             </div>
         </div>
@@ -79,7 +79,7 @@
         <div id="end-modal" class="ui-interactive hidden fixed inset-0 flex flex-col items-center justify-center bg-black/60 backdrop-blur-md z-30 p-4">
             <div class="text-center p-6 bg-slate-800/95 rounded-3xl border border-slate-700 shadow-2xl max-w-xs w-full">
                 <h2 id="modal-title" class="text-3xl font-black text-amber-400 mb-2">VICTORY!</h2>
-                <p id="modal-sub" class="text-slate-300 text-sm mb-4">You reached the staircase!</p>
+                <p id="modal-sub" class="text-slate-300 text-sm mb-4">You dominated the course!</p>
                 
                 <div id="earnings-container" class="bg-slate-900/80 p-3 rounded-2xl border border-slate-700 mb-6 text-left space-y-1">
                     <div class="flex justify-between text-xs text-slate-400">
@@ -98,7 +98,7 @@
                 </div>
 
                 <button id="restart-btn" class="w-full py-3.5 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-white text-lg font-bold rounded-2xl shadow-lg shadow-emerald-500/30 active:scale-95 transition-all">
-                    CONTINUE
+                    NEXT LEVEL
                 </button>
             </div>
         </div>
@@ -178,8 +178,8 @@
         let gameState = 'START';
         let currentLevel = 1;
         let totalCoins = 0;
-        let levelLength = 400;
-        let forwardSpeed = 0.22;
+        let levelLength = 350;
+        let forwardSpeed = 0.20;
         let playerX = 0;
         let playerZ = 0;
         let targetPlayerX = 0;
@@ -287,7 +287,7 @@
             renderer.shadowMap.type = THREE.PCFSoftShadowMap;
             container.appendChild(renderer.domElement);
 
-            scene.add(new THREE.AmbientLight(0xffffff, 0.75));
+            scene.add(new THREE.AmbientLight(0xffffff, 0.8));
 
             const dirLight = new THREE.DirectionalLight(0xffffff, 0.85);
             dirLight.position.set(20, 40, -20);
@@ -418,19 +418,18 @@
             playerX = 0; playerZ = 0; targetPlayerX = 0;
             finishClimbTimer = 0; highestStairReached = 1;
 
-            levelLength = 350 + (currentLevel * 40);
-            forwardSpeed = 0.22 + Math.min(0.10, (currentLevel - 1) * 0.015);
+            levelLength = 320 + (currentLevel * 30);
+            forwardSpeed = 0.20 + Math.min(0.06, (currentLevel - 1) * 0.01);
 
-            // Level Progression Dynamics
-            const trackWidth = Math.max(8.0, 12.0 - (currentLevel - 1) * 0.5);
-            const bridgeChance = currentLevel === 1 ? 0 : Math.min(0.35, 0.08 + currentLevel * 0.05);
+            // Wide tracks, ultra forgiving
+            const trackWidth = 14.0;
+            const bridgeChance = currentLevel < 4 ? 0 : 0.15;
 
             let zCursor = 0;
             while (zCursor < levelLength) {
                 if (zCursor > 60 && Math.random() < bridgeChance && zCursor < levelLength - 80) {
-                    const bridgeWidth = Math.max(3.2, 5.0 - currentLevel * 0.2);
-                    buildTrackPiece(zCursor, 30, bridgeWidth, true);
-                    zCursor += 30;
+                    buildTrackPiece(zCursor, 25, 7.0, true);
+                    zCursor += 25;
                 } else {
                     buildTrackPiece(zCursor, 50, trackWidth, false);
                     zCursor += 50;
@@ -438,49 +437,27 @@
             }
             buildTrackPiece(levelLength, 40, trackWidth, false);
 
-            addCrowdMember(0, 0);
+            // START WITH A BIG SWARM!
+            for (let i = 0; i < 20; i++) {
+                addCrowdMember((Math.random() - 0.5) * 2, (Math.random() - 0.5) * 2);
+            }
 
-            // PROCEDURAL LEVEL SPANNING
-            let currentZ = 35;
+            // EASY PROCEDURAL GENERATION
+            let currentZ = 40;
             while (currentZ < levelLength - 50) {
-                const upcomingBridge = bridgeSections.find(b => b.startZ >= currentZ && b.startZ < currentZ + 40);
+                let randType = Math.random();
 
-                if (upcomingBridge) {
-                    spawnProceduralGatePair(upcomingBridge.startZ - 12);
-                    if (currentLevel >= 3) {
-                        spawnPendulumHammer(upcomingBridge.startZ + 15);
-                    }
-                    currentZ = upcomingBridge.endZ + 15;
+                if (randType < 0.6) {
+                    spawnProceduralGatePair(currentZ);
+                    currentZ += 32;
+                } else if (randType < 0.8) {
+                    spawnSawBlade(currentZ);
+                    currentZ += 32;
                 } else {
-                    let randType = Math.random();
-
-                    // Level 1: Mostly gates & small enemies, almost no high-hazard traps
-                    if (currentLevel === 1) {
-                        if (randType < 0.7) {
-                            spawnProceduralGatePair(currentZ);
-                            currentZ += 28;
-                        } else {
-                            spawnEnemyGroup(currentZ, 3);
-                            currentZ += 28;
-                        }
-                    } else {
-                        // Higher Levels
-                        if (randType < 0.45) {
-                            spawnProceduralGatePair(currentZ);
-                            currentZ += 24;
-                        } else if (randType < 0.75) {
-                            if (Math.random() > 0.5) {
-                                spawnSawBlade(currentZ);
-                            } else {
-                                spawnPendulumHammer(currentZ);
-                            }
-                            currentZ += 24;
-                        } else {
-                            const enemyCount = Math.floor(2 + currentLevel * 1.5 + Math.random() * 3);
-                            spawnEnemyGroup(currentZ, enemyCount);
-                            currentZ += 28;
-                        }
-                    }
+                    // Very tiny enemy groups that get completely overrun
+                    const enemyCount = Math.min(3, 1 + Math.floor(currentLevel * 0.5));
+                    spawnEnemyGroup(currentZ, enemyCount);
+                    currentZ += 32;
                 }
             }
 
@@ -492,28 +469,27 @@
             const gateGroup = new THREE.Group();
             gateGroup.position.z = zPos;
 
-            // In early levels, heavily favor positive gates (+ / *)
-            const isLeftPositive = currentLevel === 1 ? true : Math.random() > 0.35;
-            let leftOp = isLeftPositive ? (Math.random() > 0.4 ? '+' : '*') : '-';
-            let rightOp = !isLeftPositive ? (Math.random() > 0.4 ? '+' : '*') : '-';
+            // MASSIVE MULTIPLIERS AND HUGE PLUS GATES
+            let leftOp = Math.random() > 0.3 ? '+' : '*';
+            let rightOp = Math.random() > 0.3 ? '+' : '*';
 
-            let leftVal = leftOp === '+' ? Math.floor(5 + Math.random() * 15) : (leftOp === '*' ? 2 : Math.floor(2 + Math.random() * 4));
-            let rightVal = rightOp === '+' ? Math.floor(5 + Math.random() * 15) : (rightOp === '*' ? 2 : Math.floor(2 + Math.random() * 4));
+            let leftVal = leftOp === '+' ? Math.floor(20 + Math.random() * 30) : 3;
+            let rightVal = rightOp === '+' ? Math.floor(15 + Math.random() * 25) : 2;
 
             const leftData = { text: `${leftOp}${leftVal}`, val: leftVal, op: leftOp };
             const rightData = { text: `${rightOp}${rightVal}`, val: rightVal, op: rightOp };
 
-            const leftTex = createGateTexture(leftData.text, leftOp === '+' || leftOp === '*');
+            const leftTex = createGateTexture(leftData.text, true);
             const leftMat = new THREE.MeshBasicMaterial({ map: leftTex, transparent: true, side: THREE.DoubleSide });
-            const leftMesh = new THREE.Mesh(new THREE.PlaneGeometry(4.6, 3.2), leftMat);
-            leftMesh.position.set(-2.4, 2.0, 0);
+            const leftMesh = new THREE.Mesh(new THREE.PlaneGeometry(5.2, 3.2), leftMat);
+            leftMesh.position.set(-2.8, 2.0, 0);
             leftMesh.rotation.y = Math.PI;
             gateGroup.add(leftMesh);
 
-            const rightTex = createGateTexture(rightData.text, rightOp === '+' || rightOp === '*');
+            const rightTex = createGateTexture(rightData.text, true);
             const rightMat = new THREE.MeshBasicMaterial({ map: rightTex, transparent: true, side: THREE.DoubleSide });
-            const rightMesh = new THREE.Mesh(new THREE.PlaneGeometry(4.6, 3.2), rightMat);
-            rightMesh.position.set(2.4, 2.0, 0);
+            const rightMesh = new THREE.Mesh(new THREE.PlaneGeometry(5.2, 3.2), rightMat);
+            rightMesh.position.set(2.8, 2.0, 0);
             rightMesh.rotation.y = Math.PI;
             gateGroup.add(rightMesh);
 
@@ -527,7 +503,7 @@
             const sawGroup = new THREE.Group();
             sawGroup.position.set(0, 0.8, zPos);
 
-            const discGeo = new THREE.CylinderGeometry(1.1, 1.1, 0.08, 24);
+            const discGeo = new THREE.CylinderGeometry(0.8, 0.8, 0.08, 24);
             const discMat = new THREE.MeshStandardMaterial({ color: 0x94a3b8, metalness: 0.9, roughness: 0.1 });
             const disc = new THREE.Mesh(discGeo, discMat);
             disc.rotation.x = Math.PI / 2;
@@ -538,40 +514,7 @@
             obstacleEntities.push({
                 mesh: sawGroup, z: zPos, type: 'SAW',
                 dir: Math.random() > 0.5 ? 1 : -1,
-                speed: 0.04 + Math.min(0.04, currentLevel * 0.006)
-            });
-        }
-
-        function spawnPendulumHammer(zPos) {
-            const pendulumGroup = new THREE.Group();
-            pendulumGroup.position.set(0, 6.0, zPos);
-
-            const rodGeo = new THREE.CylinderGeometry(0.08, 0.08, 5.2);
-            const rodMat = new THREE.MeshStandardMaterial({ color: 0x475569 });
-            const rod = new THREE.Mesh(rodGeo, rodMat);
-            rod.position.y = -2.6;
-            pendulumGroup.add(rod);
-
-            const headGeo = new THREE.BoxGeometry(1.4, 0.9, 0.9);
-            const headMat = new THREE.MeshStandardMaterial({ color: 0xd97706, metalness: 0.7 });
-            const head = new THREE.Mesh(headGeo, headMat);
-            head.position.y = -5.2;
-            head.castShadow = true;
-            pendulumGroup.add(head);
-
-            // Ground Indicator Shadow
-            const shadowGeo = new THREE.PlaneGeometry(1.4, 1.0);
-            const shadowMat = new THREE.MeshBasicMaterial({ color: 0xef4444, transparent: true, opacity: 0.3, side: THREE.DoubleSide });
-            const shadowMesh = new THREE.Mesh(shadowGeo, shadowMat);
-            shadowMesh.rotation.x = -Math.PI / 2;
-            shadowMesh.position.set(0, -5.9, 0);
-            pendulumGroup.add(shadowMesh);
-
-            scene.add(pendulumGroup);
-            obstacleEntities.push({
-                mesh: pendulumGroup, z: zPos, type: 'PENDULUM',
-                swingSpeed: 0.025 + Math.min(0.025, currentLevel * 0.004),
-                angle: Math.random() * Math.PI
+                speed: 0.02
             });
         }
 
@@ -598,7 +541,7 @@
             
             for (let i = 0; i < 10; i++) {
                 const mult = i + 1;
-                const stairGeo = new THREE.BoxGeometry(10, 0.8 * mult, 3.5);
+                const stairGeo = new THREE.BoxGeometry(12, 0.8 * mult, 3.5);
                 const stairMat = new THREE.MeshPhongMaterial({ color: colors[i % colors.length] });
 
                 const canvas = document.createElement('canvas');
@@ -631,7 +574,7 @@
         }
 
         function updateCrowdPositions() {
-            const spacing = 0.52;
+            const spacing = 0.45;
             crowdMembers.forEach((m, idx) => {
                 if (idx === 0) {
                     m.offsetX = 0; m.offsetZ = 0;
@@ -674,33 +617,21 @@
             let targetCount = currentCount;
 
             if (gateData.op === '+') targetCount = currentCount + gateData.val;
-            if (gateData.op === '-') targetCount = Math.max(0, currentCount - gateData.val);
             if (gateData.op === '*') targetCount = currentCount * gateData.val;
 
-            const diff = targetCount - currentCount;
+            const diff = Math.min(100, targetCount - currentCount); // Cap added runners so browser doesn't lag
 
             if (diff > 0) {
                 for (let i = 0; i < diff; i++) {
-                    addCrowdMember((Math.random() - 0.5) * 1.5, (Math.random() - 0.5) * 1.5);
+                    addCrowdMember((Math.random() - 0.5) * 2, (Math.random() - 0.5) * 2);
                 }
-            } else if (diff < 0) {
-                const removeCount = Math.min(crowdMembers.length, Math.abs(diff));
-                for (let i = 0; i < removeCount; i++) {
-                    if (crowdMembers.length > 0) {
-                        const removed = crowdMembers.pop();
-                        spawnPopParticles(removed.mesh.position, 0x0284c7);
-                        disposeHierarchy(removed.mesh);
-                        scene.remove(removed.mesh);
-                    }
-                }
-                if (crowdMembers.length === 0) triggerGameOver(false);
             }
 
             audio.playGatePass();
         }
 
         function spawnPopParticles(pos, colorHex) {
-            const count = 6;
+            const count = 4;
             const pGroup = new THREE.Group();
             pGroup.position.copy(pos);
             const mat = new THREE.MeshBasicMaterial({ color: colorHex });
@@ -709,9 +640,9 @@
             for (let i = 0; i < count; i++) {
                 const pMesh = new THREE.Mesh(new THREE.SphereGeometry(0.1, 8, 8), mat);
                 pMesh.userData = {
-                    vx: (Math.random() - 0.5) * 0.25,
-                    vy: Math.random() * 0.25 + 0.1,
-                    vz: (Math.random() - 0.5) * 0.25
+                    vx: (Math.random() - 0.5) * 0.2,
+                    vy: Math.random() * 0.2 + 0.1,
+                    vz: (Math.random() - 0.5) * 0.2
                 };
                 pGroup.add(pMesh);
                 particles.push(pMesh);
@@ -732,8 +663,8 @@
             window.addEventListener('pointermove', (e) => {
                 if (!isPointerDown || gameState !== 'PLAYING') return;
                 const deltaX = (e.clientX - pointerStartX) / window.innerWidth;
-                targetPlayerX = playerStartX + deltaX * 10;
-                targetPlayerX = Math.max(-4.2, Math.min(4.2, targetPlayerX));
+                targetPlayerX = playerStartX + deltaX * 12;
+                targetPlayerX = Math.max(-5.5, Math.min(5.5, targetPlayerX));
             });
 
             window.addEventListener('pointerup', () => { isPointerDown = false; });
@@ -783,22 +714,10 @@
                 }
             }
 
-            // Falling Runners
-            for (let i = fallingRunners.length - 1; i >= 0; i--) {
-                const fr = fallingRunners[i];
-                fr.mesh.position.y -= 0.25;
-                fr.mesh.rotation.x += 0.1;
-                if (fr.mesh.position.y < -15) {
-                    disposeHierarchy(fr.mesh);
-                    scene.remove(fr.mesh);
-                    fallingRunners.splice(i, 1);
-                }
-            }
-
             if (gameState === 'PLAYING') {
-                if (keyLeft) targetPlayerX -= 0.20;
-                if (keyRight) targetPlayerX += 0.20;
-                targetPlayerX = Math.max(-4.2, Math.min(4.2, targetPlayerX));
+                if (keyLeft) targetPlayerX -= 0.25;
+                if (keyRight) targetPlayerX += 0.25;
+                targetPlayerX = Math.max(-5.5, Math.min(5.5, targetPlayerX));
 
                 playerX += (targetPlayerX - playerX) * 0.25;
                 playerZ += forwardSpeed;
@@ -807,26 +726,6 @@
                 document.getElementById('progress-bar').style.width = progressPercentage + '%';
 
                 updateCrowdPositions();
-
-                // Narrow Bridge Check
-                const currentBridge = bridgeSections.find(b => playerZ >= b.startZ && playerZ <= b.endZ);
-                if (currentBridge) {
-                    const toDrop = [];
-                    crowdMembers.forEach((m, idx) => {
-                        if (Math.abs(m.mesh.position.x) > currentBridge.halfWidth) {
-                            toDrop.push(idx);
-                        }
-                    });
-
-                    if (toDrop.length > 0) {
-                        toDrop.sort((a, b) => b - a).forEach(idx => {
-                            const removed = crowdMembers.splice(idx, 1)[0];
-                            fallingRunners.push(removed);
-                        });
-                        audio.playFall();
-                        if (crowdMembers.length === 0) triggerGameOver(false);
-                    }
-                }
 
                 // 1. Gates
                 gateEntities.forEach(gate => {
@@ -840,34 +739,17 @@
                     }
                 });
 
-                // 2. Obstacles
+                // 2. Obstacles (Tiny Hitboxes)
                 const runnersToRemove = new Set();
                 obstacleEntities.forEach(obs => {
                     if (obs.type === 'SAW') {
                         obs.mesh.position.x += obs.speed * obs.dir;
-                        if (obs.mesh.position.x > 3.0 || obs.mesh.position.x < -3.0) obs.dir *= -1;
+                        if (obs.mesh.position.x > 4.0 || obs.mesh.position.x < -4.0) obs.dir *= -1;
                         obs.mesh.children[0].rotation.z += 0.2;
 
-                        if (Math.abs(playerZ - obs.z) < 1.0) {
+                        if (Math.abs(playerZ - obs.z) < 0.6) {
                             crowdMembers.forEach((m, idx) => {
-                                if (Math.abs(m.mesh.position.x - obs.mesh.position.x) < 1.1) {
-                                    runnersToRemove.add(idx);
-                                }
-                            });
-                        }
-                    } else if (obs.type === 'PENDULUM') {
-                        obs.angle += obs.swingSpeed;
-                        const swingAngle = Math.sin(obs.angle) * 0.85;
-                        obs.mesh.rotation.z = swingAngle;
-
-                        // FIXED HITBOX: Hammer head actual position
-                        const hammerWorldX = Math.sin(swingAngle) * -5.2;
-                        const hammerHeightY = 6.0 - Math.cos(swingAngle) * 5.2;
-
-                        // CRITICAL FIX: Only detect hit if hammer head is near ground (Y <= 1.8)!
-                        if (hammerHeightY <= 1.8 && Math.abs(playerZ - obs.z) < 0.9) {
-                            crowdMembers.forEach((m, idx) => {
-                                if (Math.abs(m.mesh.position.x - hammerWorldX) < 0.95) {
+                                if (Math.abs(m.mesh.position.x - obs.mesh.position.x) < 0.7) {
                                     runnersToRemove.add(idx);
                                 }
                             });
@@ -886,25 +768,13 @@
                             audio.playPop();
                         }
                     });
-                    if (crowdMembers.length === 0) triggerGameOver(false);
                 }
 
-                // 3. Enemy Groups
+                // 3. Enemy Clashes (You wipe them out!)
                 enemyGroups.forEach(eg => {
                     if (eg.active) {
-                        const distToPlayer = eg.z - playerZ;
-                        if (distToPlayer < 14 && distToPlayer > 0) {
-                            eg.group.position.z -= 0.08;
-                            eg.members.forEach(m => {
-                                const ud = m.mesh.userData;
-                                const time = Date.now() * 0.012 + ud.animOffset;
-                                ud.leftLeg.rotation.x = Math.sin(time) * 0.75;
-                                ud.rightLeg.rotation.x = -Math.sin(time) * 0.75;
-                            });
-                        }
-
                         if (Math.abs(playerZ - eg.group.position.z) < 1.6) {
-                            if (crowdMembers.length > 0 && eg.members.length > 0) {
+                            while (eg.members.length > 0 && crowdMembers.length > 1) {
                                 const pRunner = crowdMembers.pop();
                                 const eRunner = eg.members.pop();
 
@@ -917,10 +787,8 @@
                                 eg.group.remove(eRunner.mesh);
 
                                 audio.playPop();
-
-                                if (eg.members.length === 0) eg.active = false;
-                                if (crowdMembers.length === 0) triggerGameOver(false);
                             }
+                            eg.active = false;
                         }
                     }
                 });
@@ -931,11 +799,11 @@
                     audio.playWin();
                 }
 
-                const crowdRadius = Math.sqrt(crowdMembers.length) * 0.52;
-                camera.position.x = playerX * 0.5;
-                camera.position.z = playerZ - 12 - crowdRadius * 0.5;
-                camera.position.y = 8 + crowdRadius * 0.4;
-                camera.lookAt(playerX * 0.3, 1.5, playerZ + 5);
+                const crowdRadius = Math.min(4.0, Math.sqrt(crowdMembers.length) * 0.4);
+                camera.position.x = playerX * 0.4;
+                camera.position.z = playerZ - 13 - crowdRadius;
+                camera.position.y = 9 + crowdRadius * 0.5;
+                camera.lookAt(playerX * 0.2, 1.5, playerZ + 5);
 
             } else if (gameState === 'FINISH_RUN') {
                 finishClimbTimer += 0.03;
@@ -985,7 +853,7 @@
 
                 title.innerText = 'VICTORY!';
                 title.className = 'text-4xl font-black text-emerald-400 mb-2';
-                sub.innerText = `You completed Level ${currentLevel}!`;
+                sub.innerText = `You dominated Level ${currentLevel}!`;
 
                 document.getElementById('finish-runners-count').innerText = remainingRunners;
                 document.getElementById('finish-multiplier').innerText = `${multiplier}x`;
@@ -994,12 +862,6 @@
 
                 currentLevel++;
                 document.getElementById('level-display').innerText = currentLevel;
-            } else {
-                audio.playLose();
-                title.innerText = 'GAME OVER';
-                title.className = 'text-4xl font-black text-rose-500 mb-2';
-                sub.innerText = 'Your crowd was defeated!';
-                earningsContainer.classList.add('hidden');
             }
 
             modal.classList.remove('hidden');

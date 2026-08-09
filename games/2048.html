@@ -118,7 +118,6 @@
       border-radius: 6px;
       width: 500px;
       height: 500px;
-      box-sizing: border-box;
     }
 
     .game-message {
@@ -258,6 +257,29 @@
     .tile-position-4-2 { transform: translate(363px, 121px); }
     .tile-position-4-3 { transform: translate(363px, 242px); }
     .tile-position-4-4 { transform: translate(363px, 363px); }
+
+    /* Animations */
+    .tile-new .tile-inner {
+      animation: appear 200ms ease 50ms;
+      animation-fill-mode: backwards;
+    }
+
+    .tile-merged .tile-inner {
+      z-index: 20;
+      animation: pop 200ms ease 100ms;
+      animation-fill-mode: backwards;
+    }
+
+    @keyframes appear {
+      0% { opacity: 0; transform: scale(0); }
+      100% { opacity: 1; transform: scale(1); }
+    }
+
+    @keyframes pop {
+      0% { transform: scale(1); }
+      50% { transform: scale(1.2); }
+      100% { transform: scale(1); }
+    }
 
     @keyframes fade-in {
       0% { opacity: 0; }
@@ -452,24 +474,45 @@
         while (container.firstChild) container.removeChild(container.firstChild);
       };
       HTMLActuator.prototype.addTile = function (tile) {
+        var self = this;
         var wrapper = document.createElement("div");
         var inner = document.createElement("div");
         
-        // Render position using 1-indexed (X is columns, Y is rows)
-        var positionClass = "tile-position-" + (tile.x + 1) + "-" + (tile.y + 1);
+        var position = tile.previousPosition || { x: tile.x, y: tile.y };
+        var positionClass = "tile-position-" + (position.x + 1) + "-" + (position.y + 1);
         var valueClass = tile.value <= 2048 ? "tile-" + tile.value : "tile-super";
 
-        wrapper.className = "tile " + valueClass + " " + positionClass;
-        inner.className = "tile-inner";
+        var classes = ["tile", valueClass, positionClass];
+
+        if (tile.value > 2048) classes.push("tile-super");
+
+        this.applyClasses(wrapper, classes);
+
+        inner.classList.add("tile-inner");
         inner.textContent = tile.value;
 
         if (tile.previousPosition) {
           window.requestAnimationFrame(function () {
-            wrapper.className = "tile " + valueClass + " tile-position-" + (tile.x + 1) + "-" + (tile.y + 1);
+            classes[2] = "tile-position-" + (tile.x + 1) + "-" + (tile.y + 1);
+            self.applyClasses(wrapper, classes);
           });
+        } else if (tile.mergedFrom) {
+          classes.push("tile-merged");
+          this.applyClasses(wrapper, classes);
+
+          tile.mergedFrom.forEach(function (merged) {
+            self.addTile(merged);
+          });
+        } else {
+          classes.push("tile-new");
+          this.applyClasses(wrapper, classes);
         }
+
         wrapper.appendChild(inner);
         this.tileContainer.appendChild(wrapper);
+      };
+      HTMLActuator.prototype.applyClasses = function (element, classes) {
+        element.className = classes.join(" ");
       };
       HTMLActuator.prototype.updateScore = function (score) {
         this.clearContainer(this.scoreContainer);

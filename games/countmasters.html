@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>Count Masters 3D - Narrow Bridges & Fixed Hammers</title>
+    <title>Count Masters 3D - Rebalanced & Fun</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Inter:wght@600;800&display=swap" rel="stylesheet">
@@ -38,14 +38,14 @@
 
     <!-- HUD & UI Overlay -->
     <div class="ui-overlay fixed inset-0 flex flex-col justify-between p-4 z-10">
-        <!-- Top Header: Level, Crowd & Coins -->
+        <!-- Top Header -->
         <div class="flex justify-between items-center w-full max-w-md mx-auto mt-2 px-2">
             <div class="bg-slate-800/90 backdrop-blur-md px-4 py-2 rounded-full border border-slate-700 shadow-xl text-white">
                 <span class="text-[10px] text-slate-400 uppercase tracking-wider block leading-none mb-1">Level</span>
                 <span id="level-display" class="text-xl font-extrabold text-cyan-400 leading-none">1</span>
             </div>
 
-            <!-- Total Coins Counter -->
+            <!-- Coins -->
             <div class="bg-slate-800/90 backdrop-blur-md px-4 py-2 rounded-full border border-slate-700 shadow-xl text-white flex items-center space-x-2">
                 <span class="text-xl">🪙</span>
                 <span id="total-coins-display" class="text-xl font-extrabold text-yellow-400 leading-none">0</span>
@@ -64,11 +64,11 @@
             </div>
         </div>
 
-        <!-- Start Game Screen -->
+        <!-- Start Screen -->
         <div id="start-screen" class="ui-interactive fixed inset-0 flex flex-col items-center justify-center bg-black/50 backdrop-blur-sm z-20 transition-opacity duration-300 p-4">
             <div class="text-center p-6 bg-slate-800/95 rounded-3xl border border-slate-700 shadow-2xl max-w-xs w-full transform hover:scale-105 transition-transform">
                 <h1 class="text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-500 mb-2">COUNT MASTERS</h1>
-                <p class="text-slate-300 text-xs mb-4 leading-relaxed">Watch out for <b>Narrow Bridges</b>! Pick minus gates to shrink your crowd so you don't fall off!</p>
+                <p class="text-slate-300 text-xs mb-4 leading-relaxed">Multiply your crowd, dodge the traps, and conquer the staircases!</p>
                 <button id="start-btn" class="w-full py-3.5 bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white text-lg font-bold rounded-2xl shadow-lg shadow-cyan-500/30 active:scale-95 transition-all">
                     TAP TO PLAY
                 </button>
@@ -106,84 +106,65 @@
 
     <script>
         class SoundSystem {
-            constructor() {
-                this.ctx = null;
-            }
+            constructor() { this.ctx = null; }
             init() {
-                if (!this.ctx) {
-                    this.ctx = new (window.AudioContext || window.webkitAudioContext)();
-                }
+                if (!this.ctx) this.ctx = new (window.AudioContext || window.webkitAudioContext)();
             }
             playGatePass() {
                 if (!this.ctx) return;
-                const osc = this.ctx.createOscillator();
-                const gain = this.ctx.createGain();
+                const osc = this.ctx.createOscillator(), gain = this.ctx.createGain();
                 osc.type = 'sine';
                 osc.frequency.setValueAtTime(523.25, this.ctx.currentTime);
                 osc.frequency.exponentialRampToValueAtTime(1046.50, this.ctx.currentTime + 0.15);
                 gain.gain.setValueAtTime(0.3, this.ctx.currentTime);
                 gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.15);
-                osc.connect(gain);
-                gain.connect(this.ctx.destination);
-                osc.start();
-                osc.stop(this.ctx.currentTime + 0.15);
+                osc.connect(gain); gain.connect(this.ctx.destination);
+                osc.start(); osc.stop(this.ctx.currentTime + 0.15);
             }
             playPop() {
                 if (!this.ctx) return;
-                const osc = this.ctx.createOscillator();
-                const gain = this.ctx.createGain();
+                const osc = this.ctx.createOscillator(), gain = this.ctx.createGain();
                 osc.type = 'triangle';
                 osc.frequency.setValueAtTime(320, this.ctx.currentTime);
                 osc.frequency.exponentialRampToValueAtTime(80, this.ctx.currentTime + 0.08);
                 gain.gain.setValueAtTime(0.2, this.ctx.currentTime);
                 gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.08);
-                osc.connect(gain);
-                gain.connect(this.ctx.destination);
-                osc.start();
-                osc.stop(this.ctx.currentTime + 0.08);
+                osc.connect(gain); gain.connect(this.ctx.destination);
+                osc.start(); osc.stop(this.ctx.currentTime + 0.08);
             }
             playFall() {
                 if (!this.ctx) return;
-                const osc = this.ctx.createOscillator();
-                const gain = this.ctx.createGain();
+                const osc = this.ctx.createOscillator(), gain = this.ctx.createGain();
                 osc.type = 'sawtooth';
                 osc.frequency.setValueAtTime(280, this.ctx.currentTime);
                 osc.frequency.exponentialRampToValueAtTime(60, this.ctx.currentTime + 0.25);
                 gain.gain.setValueAtTime(0.2, this.ctx.currentTime);
                 gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.25);
-                osc.connect(gain);
-                gain.connect(this.ctx.destination);
-                osc.start();
-                osc.stop(this.ctx.currentTime + 0.25);
+                osc.connect(gain); gain.connect(this.ctx.destination);
+                osc.start(); osc.stop(this.ctx.currentTime + 0.25);
             }
             playWin() {
                 if (!this.ctx) return;
-                const notes = [523.25, 659.25, 783.99, 1046.50];
-                notes.forEach((freq, idx) => {
-                    const osc = this.ctx.createOscillator();
-                    const gain = this.ctx.createGain();
+                [523.25, 659.25, 783.99, 1046.50].forEach((freq, idx) => {
+                    const osc = this.ctx.createOscillator(), gain = this.ctx.createGain();
                     osc.type = 'triangle';
                     osc.frequency.setValueAtTime(freq, this.ctx.currentTime + idx * 0.1);
                     gain.gain.setValueAtTime(0.25, this.ctx.currentTime + idx * 0.1);
                     gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + idx * 0.1 + 0.25);
-                    osc.connect(gain);
-                    gain.connect(this.ctx.destination);
+                    osc.connect(gain); gain.connect(this.ctx.destination);
                     osc.start(this.ctx.currentTime + idx * 0.1);
                     osc.stop(this.ctx.currentTime + idx * 0.1 + 0.25);
                 });
             }
             playLose() {
                 if (!this.ctx) return;
-                const notes = [400, 350, 300, 220];
-                notes.forEach((freq, idx) => {
-                    const osc = this.ctx.createOscillator();
-                    const gain = this.ctx.createGain();
+                [400, 350, 300, 220].forEach((freq, idx) => {
+                    const osc = this.ctx.createOscillator(), gain = this.ctx.createGain();
                     osc.type = 'sawtooth';
                     osc.frequency.setValueAtTime(freq, this.ctx.currentTime + idx * 0.12);
                     gain.gain.setValueAtTime(0.2, this.ctx.currentTime + idx * 0.12);
                     gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + idx * 0.12 + 0.2);
-                    osc.connect(gain);
-                    gain.connect(this.ctx.destination);
+                    osc.connect(gain); gain.connect(this.ctx.destination);
                     osc.start(this.ctx.currentTime + idx * 0.12);
                     osc.stop(this.ctx.currentTime + idx * 0.12 + 0.2);
                 });
@@ -197,9 +178,8 @@
         let gameState = 'START';
         let currentLevel = 1;
         let totalCoins = 0;
-        let levelLength = 500;
-        let baseSpeed = 0.25;
-        let forwardSpeed = 0.25;
+        let levelLength = 400;
+        let forwardSpeed = 0.22;
         let playerX = 0;
         let playerZ = 0;
         let targetPlayerX = 0;
@@ -224,17 +204,16 @@
 
         function createSmoothCapsuleGeometry(radius, length) {
             const group = new THREE.Group();
-
-            const cylinderGeo = new THREE.CylinderGeometry(radius, radius, length, 16, 1, true);
+            const cylinderGeo = new THREE.CylinderGeometry(radius, radius, length, 12, 1, true);
             const cylinder = new THREE.Mesh(cylinderGeo);
             group.add(cylinder);
 
-            const topSphereGeo = new THREE.SphereGeometry(radius, 16, 12, 0, Math.PI * 2, 0, Math.PI / 2);
+            const topSphereGeo = new THREE.SphereGeometry(radius, 12, 8, 0, Math.PI * 2, 0, Math.PI / 2);
             const topCap = new THREE.Mesh(topSphereGeo);
             topCap.position.y = length / 2;
             group.add(topCap);
 
-            const botSphereGeo = new THREE.SphereGeometry(radius, 16, 12, 0, Math.PI * 2, Math.PI / 2, Math.PI / 2);
+            const botSphereGeo = new THREE.SphereGeometry(radius, 12, 8, 0, Math.PI * 2, Math.PI / 2, Math.PI / 2);
             const botCap = new THREE.Mesh(botSphereGeo);
             botCap.position.y = -length / 2;
             group.add(botCap);
@@ -245,7 +224,7 @@
         function createCharacterMesh(material) {
             const runnerGroup = new THREE.Group();
 
-            const headGeo = new THREE.SphereGeometry(0.42, 24, 24);
+            const headGeo = new THREE.SphereGeometry(0.40, 16, 16);
             headGeo.scale(1.0, 1.15, 1.0);
             const head = new THREE.Mesh(headGeo, material);
             head.position.y = 1.45;
@@ -253,59 +232,38 @@
             runnerGroup.add(head);
 
             const torsoContainer = createSmoothCapsuleGeometry(0.24, 0.38);
-            torsoContainer.children.forEach(mesh => {
-                mesh.material = material;
-                mesh.castShadow = true;
-            });
+            torsoContainer.children.forEach(mesh => { mesh.material = material; mesh.castShadow = true; });
             torsoContainer.position.y = 0.85;
             runnerGroup.add(torsoContainer);
 
             const createLimbMesh = (r, l) => {
                 const limbGroup = createSmoothCapsuleGeometry(r, l);
-                limbGroup.children.forEach(m => {
-                    m.material = material;
-                    m.castShadow = true;
-                });
+                limbGroup.children.forEach(m => { m.material = material; m.castShadow = true; });
                 return limbGroup;
             };
 
-            const leftLegPivot = new THREE.Group();
-            leftLegPivot.position.set(-0.16, 0.58, 0);
-            const leftLegMesh = createLimbMesh(0.12, 0.35);
-            leftLegMesh.position.y = -0.20;
-            leftLegPivot.add(leftLegMesh);
-            runnerGroup.add(leftLegPivot);
+            const leftLegPivot = new THREE.Group(); leftLegPivot.position.set(-0.16, 0.58, 0);
+            const leftLegMesh = createLimbMesh(0.12, 0.35); leftLegMesh.position.y = -0.20;
+            leftLegPivot.add(leftLegMesh); runnerGroup.add(leftLegPivot);
 
-            const rightLegPivot = new THREE.Group();
-            rightLegPivot.position.set(0.16, 0.58, 0);
-            const rightLegMesh = createLimbMesh(0.12, 0.35);
-            rightLegMesh.position.y = -0.20;
-            rightLegPivot.add(rightLegMesh);
-            runnerGroup.add(rightLegPivot);
+            const rightLegPivot = new THREE.Group(); rightLegPivot.position.set(0.16, 0.58, 0);
+            const rightLegMesh = createLimbMesh(0.12, 0.35); rightLegMesh.position.y = -0.20;
+            rightLegPivot.add(rightLegMesh); runnerGroup.add(rightLegPivot);
 
-            const leftArmPivot = new THREE.Group();
-            leftArmPivot.position.set(-0.28, 0.98, 0);
-            const leftArmMesh = createLimbMesh(0.11, 0.32);
-            leftArmMesh.position.y = -0.18;
-            leftArmPivot.add(leftArmMesh);
-            leftArmPivot.rotation.z = Math.PI / 6;
+            const leftArmPivot = new THREE.Group(); leftArmPivot.position.set(-0.28, 0.98, 0);
+            const leftArmMesh = createLimbMesh(0.11, 0.32); leftArmMesh.position.y = -0.18;
+            leftArmPivot.add(leftArmMesh); leftArmPivot.rotation.z = Math.PI / 6;
             runnerGroup.add(leftArmPivot);
 
-            const rightArmPivot = new THREE.Group();
-            rightArmPivot.position.set(0.28, 0.98, 0);
-            const rightArmMesh = createLimbMesh(0.11, 0.32);
-            rightArmMesh.position.y = -0.18;
-            rightArmPivot.add(rightArmMesh);
-            rightArmPivot.rotation.z = -Math.PI / 6;
+            const rightArmPivot = new THREE.Group(); rightArmPivot.position.set(0.28, 0.98, 0);
+            const rightArmMesh = createLimbMesh(0.11, 0.32); rightArmMesh.position.y = -0.18;
+            rightArmPivot.add(rightArmMesh); rightArmPivot.rotation.z = -Math.PI / 6;
             runnerGroup.add(rightArmPivot);
 
             runnerGroup.userData = {
-                leftLeg: leftLegPivot,
-                rightLeg: rightLegPivot,
-                leftArm: leftArmPivot,
-                rightArm: rightArmPivot,
-                head: head,
-                animOffset: Math.random() * Math.PI * 2
+                leftLeg: leftLegPivot, rightLeg: rightLegPivot,
+                leftArm: leftArmPivot, rightArm: rightArmPivot,
+                head: head, animOffset: Math.random() * Math.PI * 2
             };
 
             return runnerGroup;
@@ -329,10 +287,9 @@
             renderer.shadowMap.type = THREE.PCFSoftShadowMap;
             container.appendChild(renderer.domElement);
 
-            const ambientLight = new THREE.AmbientLight(0xffffff, 0.7);
-            scene.add(ambientLight);
+            scene.add(new THREE.AmbientLight(0xffffff, 0.75));
 
-            const dirLight = new THREE.DirectionalLight(0xffffff, 0.9);
+            const dirLight = new THREE.DirectionalLight(0xffffff, 0.85);
             dirLight.position.set(20, 40, -20);
             dirLight.castShadow = true;
             dirLight.shadow.mapSize.width = 2048;
@@ -340,10 +297,8 @@
             dirLight.shadow.camera.near = 0.5;
             dirLight.shadow.camera.far = 250;
             const d = 40;
-            dirLight.shadow.camera.left = -d;
-            dirLight.shadow.camera.right = d;
-            dirLight.shadow.camera.top = d;
-            dirLight.shadow.camera.bottom = -d;
+            dirLight.shadow.camera.left = -d; dirLight.shadow.camera.right = d;
+            dirLight.shadow.camera.top = d; dirLight.shadow.camera.bottom = -d;
             scene.add(dirLight);
 
             blueMaterial = new THREE.MeshPhongMaterial({ color: 0x0284c7, shininess: 90, specular: 0x38bdf8 });
@@ -360,17 +315,14 @@
 
         function createGateTexture(label, isPositive) {
             const canvas = document.createElement('canvas');
-            canvas.width = 512;
-            canvas.height = 384;
+            canvas.width = 512; canvas.height = 384;
             const ctx = canvas.getContext('2d');
 
             const grad = ctx.createLinearGradient(0, 0, 0, canvas.height);
             if (isPositive) {
-                grad.addColorStop(0, '#0284c7');
-                grad.addColorStop(1, '#0369a1');
+                grad.addColorStop(0, '#0284c7'); grad.addColorStop(1, '#0369a1');
             } else {
-                grad.addColorStop(0, '#f43f5e');
-                grad.addColorStop(1, '#be123c');
+                grad.addColorStop(0, '#f43f5e'); grad.addColorStop(1, '#be123c');
             }
             ctx.fillStyle = grad;
             ctx.fillRect(0, 0, canvas.width, canvas.height);
@@ -381,30 +333,21 @@
 
             ctx.fillStyle = '#ffffff';
             ctx.font = '900 110px "Fredoka One", "Inter", sans-serif';
-            ctx.textAlign = 'center';
-            ctx.textBaseline = 'middle';
-            ctx.shadowColor = 'rgba(0,0,0,0.4)';
-            ctx.shadowBlur = 10;
-            ctx.shadowOffsetY = 5;
+            ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+            ctx.shadowColor = 'rgba(0,0,0,0.4)'; ctx.shadowBlur = 10; ctx.shadowOffsetY = 5;
 
             ctx.fillText(label, canvas.width / 2, canvas.height / 2);
-
             return new THREE.CanvasTexture(canvas);
         }
 
         function disposeHierarchy(parent) {
             while (parent.children.length > 0) {
                 const child = parent.children[0];
-                if (child.children && child.children.length > 0) {
-                    disposeHierarchy(child);
-                }
+                if (child.children && child.children.length > 0) disposeHierarchy(child);
                 if (child.geometry) child.geometry.dispose();
                 if (child.material) {
                     if (Array.isArray(child.material)) {
-                        child.material.forEach(m => {
-                            if (m.map) m.map.dispose();
-                            m.dispose();
-                        });
+                        child.material.forEach(m => { if (m.map) m.map.dispose(); m.dispose(); });
                     } else {
                         if (child.material.map) child.material.map.dispose();
                         child.material.dispose();
@@ -415,52 +358,28 @@
         }
 
         function clearSceneEntities() {
-            crowdMembers.forEach(m => {
-                disposeHierarchy(m.mesh);
-                scene.remove(m.mesh);
-            });
+            crowdMembers.forEach(m => { disposeHierarchy(m.mesh); scene.remove(m.mesh); });
             crowdMembers = [];
 
-            fallingRunners.forEach(fr => {
-                disposeHierarchy(fr.mesh);
-                scene.remove(fr.mesh);
-            });
+            fallingRunners.forEach(fr => { disposeHierarchy(fr.mesh); scene.remove(fr.mesh); });
             fallingRunners = [];
 
-            enemyGroups.forEach(eg => {
-                disposeHierarchy(eg.group);
-                scene.remove(eg.group);
-            });
+            enemyGroups.forEach(eg => { disposeHierarchy(eg.group); scene.remove(eg.group); });
             enemyGroups = [];
 
-            gateEntities.forEach(g => {
-                disposeHierarchy(g.group);
-                scene.remove(g.group);
-            });
+            gateEntities.forEach(g => { disposeHierarchy(g.group); scene.remove(g.group); });
             gateEntities = [];
 
-            obstacleEntities.forEach(o => {
-                disposeHierarchy(o.mesh);
-                scene.remove(o.mesh);
-            });
+            obstacleEntities.forEach(o => { disposeHierarchy(o.mesh); scene.remove(o.mesh); });
             obstacleEntities = [];
 
-            finishStairs.forEach(s => {
-                disposeHierarchy(s.mesh);
-                scene.remove(s.mesh);
-            });
+            finishStairs.forEach(s => { disposeHierarchy(s.mesh); scene.remove(s.mesh); });
             finishStairs = [];
 
-            particleSystems.forEach(p => {
-                disposeHierarchy(p.mesh);
-                scene.remove(p.mesh);
-            });
+            particleSystems.forEach(p => { disposeHierarchy(p.mesh); scene.remove(p.mesh); });
             particleSystems = [];
 
-            trackMeshes.forEach(tm => {
-                disposeHierarchy(tm);
-                scene.remove(tm);
-            });
+            trackMeshes.forEach(tm => { disposeHierarchy(tm); scene.remove(tm); });
             trackMeshes = [];
             bridgeSections = [];
         }
@@ -479,13 +398,11 @@
                 const railMat = new THREE.MeshPhongMaterial({ color: 0x38bdf8 });
                 const leftRail = new THREE.Mesh(railGeo, railMat);
                 leftRail.position.set(-width / 2 - 0.2, 0.3, startZ + length / 2);
-                scene.add(leftRail);
-                trackMeshes.push(leftRail);
+                scene.add(leftRail); trackMeshes.push(leftRail);
 
                 const rightRail = new THREE.Mesh(railGeo, railMat);
                 rightRail.position.set(width / 2 + 0.2, 0.3, startZ + length / 2);
-                scene.add(rightRail);
-                trackMeshes.push(rightRail);
+                scene.add(rightRail); trackMeshes.push(rightRail);
             } else {
                 bridgeSections.push({
                     startZ: startZ,
@@ -498,59 +415,71 @@
         function setupLevel() {
             clearSceneEntities();
 
-            playerX = 0;
-            playerZ = 0;
-            targetPlayerX = 0;
-            finishClimbTimer = 0;
-            highestStairReached = 1;
+            playerX = 0; playerZ = 0; targetPlayerX = 0;
+            finishClimbTimer = 0; highestStairReached = 1;
 
-            levelLength = 450 + (currentLevel * 50);
-            forwardSpeed = baseSpeed + Math.min(0.12, currentLevel * 0.008);
+            levelLength = 350 + (currentLevel * 40);
+            forwardSpeed = 0.22 + Math.min(0.10, (currentLevel - 1) * 0.015);
 
-            // Construct Track with dynamic layout
+            // Level Progression Dynamics
+            const trackWidth = Math.max(8.0, 12.0 - (currentLevel - 1) * 0.5);
+            const bridgeChance = currentLevel === 1 ? 0 : Math.min(0.35, 0.08 + currentLevel * 0.05);
+
             let zCursor = 0;
             while (zCursor < levelLength) {
-                if (zCursor > 60 && Math.random() < 0.25 && zCursor < levelLength - 80) {
-                    // Create Narrow Bridge Chokepoint
-                    buildTrackPiece(zCursor, 30, 2.8, true);
+                if (zCursor > 60 && Math.random() < bridgeChance && zCursor < levelLength - 80) {
+                    const bridgeWidth = Math.max(3.2, 5.0 - currentLevel * 0.2);
+                    buildTrackPiece(zCursor, 30, bridgeWidth, true);
                     zCursor += 30;
                 } else {
-                    buildTrackPiece(zCursor, 50, 10, false);
+                    buildTrackPiece(zCursor, 50, trackWidth, false);
                     zCursor += 50;
                 }
             }
-            buildTrackPiece(levelLength, 40, 10, false);
+            buildTrackPiece(levelLength, 40, trackWidth, false);
 
-            // Initial Crowd
             addCrowdMember(0, 0);
 
-            // PROCEDURAL HASSLES & STRATEGIC GATES
+            // PROCEDURAL LEVEL SPANNING
             let currentZ = 35;
             while (currentZ < levelLength - 50) {
-                // Check if approaching a bridge
                 const upcomingBridge = bridgeSections.find(b => b.startZ >= currentZ && b.startZ < currentZ + 40);
 
                 if (upcomingBridge) {
-                    // Force a gate choice before narrow bridge: High positive vs Small negative!
-                    spawnTacticalBridgeGatePair(upcomingBridge.startZ - 12);
-                    // Spawn fair pendulum on the bridge
-                    spawnPendulumHammer(upcomingBridge.startZ + 15);
+                    spawnProceduralGatePair(upcomingBridge.startZ - 12);
+                    if (currentLevel >= 3) {
+                        spawnPendulumHammer(upcomingBridge.startZ + 15);
+                    }
                     currentZ = upcomingBridge.endZ + 15;
                 } else {
                     let randType = Math.random();
-                    if (randType < 0.45) {
-                        spawnProceduralGatePair(currentZ);
-                        currentZ += 24;
-                    } else if (randType < 0.75) {
-                        if (Math.random() > 0.5) {
-                            spawnSawBlade(currentZ, 0.06 + Math.min(0.04, currentLevel * 0.005));
+
+                    // Level 1: Mostly gates & small enemies, almost no high-hazard traps
+                    if (currentLevel === 1) {
+                        if (randType < 0.7) {
+                            spawnProceduralGatePair(currentZ);
+                            currentZ += 28;
                         } else {
-                            spawnPendulumHammer(currentZ);
+                            spawnEnemyGroup(currentZ, 3);
+                            currentZ += 28;
                         }
-                        currentZ += 22;
                     } else {
-                        spawnEnemyGroup(currentZ, Math.floor(3 + Math.random() * 6));
-                        currentZ += 26;
+                        // Higher Levels
+                        if (randType < 0.45) {
+                            spawnProceduralGatePair(currentZ);
+                            currentZ += 24;
+                        } else if (randType < 0.75) {
+                            if (Math.random() > 0.5) {
+                                spawnSawBlade(currentZ);
+                            } else {
+                                spawnPendulumHammer(currentZ);
+                            }
+                            currentZ += 24;
+                        } else {
+                            const enemyCount = Math.floor(2 + currentLevel * 1.5 + Math.random() * 3);
+                            spawnEnemyGroup(currentZ, enemyCount);
+                            currentZ += 28;
+                        }
                     }
                 }
             }
@@ -559,47 +488,17 @@
             updateCrowdDisplay();
         }
 
-        function spawnTacticalBridgeGatePair(zPos) {
-            const leftData = { text: '+20', val: 20, op: '+' };
-            const rightData = { text: '-8', val: 8, op: '-' };
-
-            const gateGroup = new THREE.Group();
-            gateGroup.position.z = zPos;
-
-            const leftTex = createGateTexture(leftData.text, true);
-            const leftMat = new THREE.MeshBasicMaterial({ map: leftTex, transparent: true, side: THREE.DoubleSide });
-            const leftMesh = new THREE.Mesh(new THREE.PlaneGeometry(4.6, 3.2), leftMat);
-            leftMesh.position.set(-2.4, 2.0, 0);
-            leftMesh.rotation.y = Math.PI;
-            gateGroup.add(leftMesh);
-
-            const rightTex = createGateTexture(rightData.text, false);
-            const rightMat = new THREE.MeshBasicMaterial({ map: rightTex, transparent: true, side: THREE.DoubleSide });
-            const rightMesh = new THREE.Mesh(new THREE.PlaneGeometry(4.6, 3.2), rightMat);
-            rightMesh.position.set(2.4, 2.0, 0);
-            rightMesh.rotation.y = Math.PI;
-            gateGroup.add(rightMesh);
-
-            scene.add(gateGroup);
-            gateEntities.push({
-                group: gateGroup,
-                z: zPos,
-                passed: false,
-                leftData: leftData,
-                rightData: rightData
-            });
-        }
-
         function spawnProceduralGatePair(zPos) {
             const gateGroup = new THREE.Group();
             gateGroup.position.z = zPos;
 
-            const isLeftPositive = Math.random() > 0.4;
-            let leftOp = isLeftPositive ? (Math.random() > 0.5 ? '+' : '*') : '-';
-            let rightOp = !isLeftPositive ? (Math.random() > 0.5 ? '+' : '*') : '-';
+            // In early levels, heavily favor positive gates (+ / *)
+            const isLeftPositive = currentLevel === 1 ? true : Math.random() > 0.35;
+            let leftOp = isLeftPositive ? (Math.random() > 0.4 ? '+' : '*') : '-';
+            let rightOp = !isLeftPositive ? (Math.random() > 0.4 ? '+' : '*') : '-';
 
-            let leftVal = leftOp === '+' ? Math.floor(4 + Math.random() * 8) : (leftOp === '*' ? 2 : Math.floor(2 + Math.random() * 5));
-            let rightVal = rightOp === '+' ? Math.floor(4 + Math.random() * 8) : (rightOp === '*' ? 2 : Math.floor(2 + Math.random() * 5));
+            let leftVal = leftOp === '+' ? Math.floor(5 + Math.random() * 15) : (leftOp === '*' ? 2 : Math.floor(2 + Math.random() * 4));
+            let rightVal = rightOp === '+' ? Math.floor(5 + Math.random() * 15) : (rightOp === '*' ? 2 : Math.floor(2 + Math.random() * 4));
 
             const leftData = { text: `${leftOp}${leftVal}`, val: leftVal, op: leftOp };
             const rightData = { text: `${rightOp}${rightVal}`, val: rightVal, op: rightOp };
@@ -620,19 +519,15 @@
 
             scene.add(gateGroup);
             gateEntities.push({
-                group: gateGroup,
-                z: zPos,
-                passed: false,
-                leftData: leftData,
-                rightData: rightData
+                group: gateGroup, z: zPos, passed: false, leftData: leftData, rightData: rightData
             });
         }
 
-        function spawnSawBlade(zPos, speed) {
+        function spawnSawBlade(zPos) {
             const sawGroup = new THREE.Group();
             sawGroup.position.set(0, 0.8, zPos);
 
-            const discGeo = new THREE.CylinderGeometry(1.2, 1.2, 0.08, 24);
+            const discGeo = new THREE.CylinderGeometry(1.1, 1.1, 0.08, 24);
             const discMat = new THREE.MeshStandardMaterial({ color: 0x94a3b8, metalness: 0.9, roughness: 0.1 });
             const disc = new THREE.Mesh(discGeo, discMat);
             disc.rotation.x = Math.PI / 2;
@@ -641,11 +536,9 @@
 
             scene.add(sawGroup);
             obstacleEntities.push({
-                mesh: sawGroup,
-                z: zPos,
-                type: 'SAW',
+                mesh: sawGroup, z: zPos, type: 'SAW',
                 dir: Math.random() > 0.5 ? 1 : -1,
-                speed: speed
+                speed: 0.04 + Math.min(0.04, currentLevel * 0.006)
             });
         }
 
@@ -659,16 +552,16 @@
             rod.position.y = -2.6;
             pendulumGroup.add(rod);
 
-            const headGeo = new THREE.BoxGeometry(1.5, 1.0, 1.0);
+            const headGeo = new THREE.BoxGeometry(1.4, 0.9, 0.9);
             const headMat = new THREE.MeshStandardMaterial({ color: 0xd97706, metalness: 0.7 });
             const head = new THREE.Mesh(headGeo, headMat);
             head.position.y = -5.2;
             head.castShadow = true;
             pendulumGroup.add(head);
 
-            // Telegraphed Danger Zone Shadow on floor
-            const shadowGeo = new THREE.PlaneGeometry(1.5, 1.2);
-            const shadowMat = new THREE.MeshBasicMaterial({ color: 0xef4444, transparent: true, opacity: 0.35, side: THREE.DoubleSide });
+            // Ground Indicator Shadow
+            const shadowGeo = new THREE.PlaneGeometry(1.4, 1.0);
+            const shadowMat = new THREE.MeshBasicMaterial({ color: 0xef4444, transparent: true, opacity: 0.3, side: THREE.DoubleSide });
             const shadowMesh = new THREE.Mesh(shadowGeo, shadowMat);
             shadowMesh.rotation.x = -Math.PI / 2;
             shadowMesh.position.set(0, -5.9, 0);
@@ -676,11 +569,8 @@
 
             scene.add(pendulumGroup);
             obstacleEntities.push({
-                mesh: pendulumGroup,
-                headMesh: head,
-                z: zPos,
-                type: 'PENDULUM',
-                swingSpeed: 0.035 + Math.random() * 0.015,
+                mesh: pendulumGroup, z: zPos, type: 'PENDULUM',
+                swingSpeed: 0.025 + Math.min(0.025, currentLevel * 0.004),
                 angle: Math.random() * Math.PI
             });
         }
@@ -712,29 +602,18 @@
                 const stairMat = new THREE.MeshPhongMaterial({ color: colors[i % colors.length] });
 
                 const canvas = document.createElement('canvas');
-                canvas.width = 512;
-                canvas.height = 256;
+                canvas.width = 512; canvas.height = 256;
                 const ctx = canvas.getContext('2d');
-
-                ctx.fillStyle = '#ffffff';
-                ctx.fillRect(0, 0, 512, 256);
-
-                ctx.translate(256, 128);
-                ctx.scale(-1, -1);
-
-                ctx.fillStyle = '#0f172a';
-                ctx.font = '900 130px "Fredoka One", sans-serif';
-                ctx.textAlign = 'center';
-                ctx.textBaseline = 'middle';
+                ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 0, 512, 256);
+                ctx.translate(256, 128); ctx.scale(-1, -1);
+                ctx.fillStyle = '#0f172a'; ctx.font = '900 130px "Fredoka One", sans-serif';
+                ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
                 ctx.fillText(`${mult}x`, 0, 0);
 
                 const tex = new THREE.CanvasTexture(canvas);
                 const stepFaceMat = new THREE.MeshBasicMaterial({ map: tex });
+                const faceMaterials = [stairMat, stairMat, stairMat, stairMat, stairMat, stepFaceMat];
 
-                const faceMaterials = [
-                    stairMat, stairMat, stairMat, stairMat,
-                    stairMat, stepFaceMat
-                ];
                 const stair = new THREE.Mesh(stairGeo, faceMaterials);
                 stair.position.set(0, (0.8 * mult) / 2, startZ + i * 3.5);
                 stair.receiveShadow = true;
@@ -748,20 +627,14 @@
             const mesh = createCharacterMesh(blueMaterial);
             mesh.position.set(playerX + offsetX, 0, playerZ + offsetZ);
             scene.add(mesh);
-
-            crowdMembers.push({
-                mesh: mesh,
-                offsetX: offsetX,
-                offsetZ: offsetZ
-            });
+            crowdMembers.push({ mesh: mesh, offsetX: offsetX, offsetZ: offsetZ });
         }
 
         function updateCrowdPositions() {
             const spacing = 0.52;
             crowdMembers.forEach((m, idx) => {
                 if (idx === 0) {
-                    m.offsetX = 0;
-                    m.offsetZ = 0;
+                    m.offsetX = 0; m.offsetZ = 0;
                 } else {
                     const phi = idx * 137.5 * (Math.PI / 180);
                     const r = spacing * Math.sqrt(idx);
@@ -803,7 +676,6 @@
             if (gateData.op === '+') targetCount = currentCount + gateData.val;
             if (gateData.op === '-') targetCount = Math.max(0, currentCount - gateData.val);
             if (gateData.op === '*') targetCount = currentCount * gateData.val;
-            if (gateData.op === '/') targetCount = Math.max(0, Math.floor(currentCount / gateData.val));
 
             const diff = targetCount - currentCount;
 
@@ -821,9 +693,7 @@
                         scene.remove(removed.mesh);
                     }
                 }
-                if (crowdMembers.length === 0) {
-                    triggerGameOver(false);
-                }
+                if (crowdMembers.length === 0) triggerGameOver(false);
             }
 
             audio.playGatePass();
@@ -913,12 +783,11 @@
                 }
             }
 
-            // Falling Runners Animation
+            // Falling Runners
             for (let i = fallingRunners.length - 1; i >= 0; i--) {
                 const fr = fallingRunners[i];
                 fr.mesh.position.y -= 0.25;
                 fr.mesh.rotation.x += 0.1;
-                fr.mesh.rotation.z += 0.1;
                 if (fr.mesh.position.y < -15) {
                     disposeHierarchy(fr.mesh);
                     scene.remove(fr.mesh);
@@ -939,7 +808,7 @@
 
                 updateCrowdPositions();
 
-                // Check for Narrow Bridge Fall-off
+                // Narrow Bridge Check
                 const currentBridge = bridgeSections.find(b => playerZ >= b.startZ && playerZ <= b.endZ);
                 if (currentBridge) {
                     const toDrop = [];
@@ -955,13 +824,11 @@
                             fallingRunners.push(removed);
                         });
                         audio.playFall();
-                        if (crowdMembers.length === 0) {
-                            triggerGameOver(false);
-                        }
+                        if (crowdMembers.length === 0) triggerGameOver(false);
                     }
                 }
 
-                // 1. Gate Collisions
+                // 1. Gates
                 gateEntities.forEach(gate => {
                     if (!gate.passed && playerZ >= gate.z) {
                         gate.passed = true;
@@ -973,19 +840,17 @@
                     }
                 });
 
-                // 2. Obstacle Collisions
+                // 2. Obstacles
                 const runnersToRemove = new Set();
                 obstacleEntities.forEach(obs => {
                     if (obs.type === 'SAW') {
                         obs.mesh.position.x += obs.speed * obs.dir;
-                        if (obs.mesh.position.x > 3.0 || obs.mesh.position.x < -3.0) {
-                            obs.dir *= -1;
-                        }
+                        if (obs.mesh.position.x > 3.0 || obs.mesh.position.x < -3.0) obs.dir *= -1;
                         obs.mesh.children[0].rotation.z += 0.2;
 
-                        if (Math.abs(playerZ - obs.z) < 1.2) {
+                        if (Math.abs(playerZ - obs.z) < 1.0) {
                             crowdMembers.forEach((m, idx) => {
-                                if (Math.abs(m.mesh.position.x - obs.mesh.position.x) < 1.3) {
+                                if (Math.abs(m.mesh.position.x - obs.mesh.position.x) < 1.1) {
                                     runnersToRemove.add(idx);
                                 }
                             });
@@ -995,11 +860,14 @@
                         const swingAngle = Math.sin(obs.angle) * 0.85;
                         obs.mesh.rotation.z = swingAngle;
 
+                        // FIXED HITBOX: Hammer head actual position
                         const hammerWorldX = Math.sin(swingAngle) * -5.2;
+                        const hammerHeightY = 6.0 - Math.cos(swingAngle) * 5.2;
 
-                        if (Math.abs(playerZ - obs.z) < 1.0) {
+                        // CRITICAL FIX: Only detect hit if hammer head is near ground (Y <= 1.8)!
+                        if (hammerHeightY <= 1.8 && Math.abs(playerZ - obs.z) < 0.9) {
                             crowdMembers.forEach((m, idx) => {
-                                if (Math.abs(m.mesh.position.x - hammerWorldX) < 1.1) {
+                                if (Math.abs(m.mesh.position.x - hammerWorldX) < 0.95) {
                                     runnersToRemove.add(idx);
                                 }
                             });
@@ -1018,17 +886,14 @@
                             audio.playPop();
                         }
                     });
-                    if (crowdMembers.length === 0) {
-                        triggerGameOver(false);
-                    }
+                    if (crowdMembers.length === 0) triggerGameOver(false);
                 }
 
-                // 3. Enemy Clashes
+                // 3. Enemy Groups
                 enemyGroups.forEach(eg => {
                     if (eg.active) {
                         const distToPlayer = eg.z - playerZ;
-                        
-                        if (distToPlayer < 16 && distToPlayer > 0) {
+                        if (distToPlayer < 14 && distToPlayer > 0) {
                             eg.group.position.z -= 0.08;
                             eg.members.forEach(m => {
                                 const ud = m.mesh.userData;
@@ -1038,7 +903,7 @@
                             });
                         }
 
-                        if (Math.abs(playerZ - eg.group.position.z) < 1.8) {
+                        if (Math.abs(playerZ - eg.group.position.z) < 1.6) {
                             if (crowdMembers.length > 0 && eg.members.length > 0) {
                                 const pRunner = crowdMembers.pop();
                                 const eRunner = eg.members.pop();
@@ -1053,13 +918,8 @@
 
                                 audio.playPop();
 
-                                if (eg.members.length === 0) {
-                                    eg.active = false;
-                                }
-
-                                if (crowdMembers.length === 0) {
-                                    triggerGameOver(false);
-                                }
+                                if (eg.members.length === 0) eg.active = false;
+                                if (crowdMembers.length === 0) triggerGameOver(false);
                             }
                         }
                     }

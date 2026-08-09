@@ -203,10 +203,10 @@
       border-radius: 12px;
       padding: 24px;
       width: 90%;
-      max-width: 400px;
+      max-width: 440px;
       display: flex;
       flex-direction: column;
-      gap: 16px;
+      gap: 14px;
       text-align: center;
     }
 
@@ -230,6 +230,21 @@
       font-size: 10px;
       border-radius: 6px;
       outline: none;
+    }
+
+    .profile-stats-box {
+      background: #0b1d28;
+      border: 2px solid #000;
+      border-radius: 6px;
+      padding: 12px;
+      text-align: left;
+      font-size: 8px;
+      line-height: 1.8;
+      color: #b0cadb;
+    }
+
+    .profile-stats-box span {
+      color: var(--neon-cyan);
     }
 
     .xp-progress-bar {
@@ -503,7 +518,7 @@
           <h3>FLAPPY BIRD</h3>
           <p>The iconic arcade flapper. Tap or press space to flap through endless retro pipes and score big!</p>
           <div class="card-actions">
-            <a class="play-btn" href="https://supernebula23.github.io/games/flappybird/index.html" onclick="trackPlay('arcade', 10)">
+            <a class="play-btn" href="https://supernebula23.github.io/games/flappybird/index.html" onclick="trackPlay('FLAPPY BIRD', 'arcade', 10)">
               <span class="play-btn-text">PLAY (+10 XP)</span>
             </a>
           </div>
@@ -515,7 +530,7 @@
           <h3>SNAKE</h3>
           <p>Eat apples, grow your length, and set persistent high scores in this iconic arcade game!</p>
           <div class="card-actions">
-            <a class="play-btn" href="https://supernebula23.github.io/games/snake.html" onclick="trackPlay('arcade', 10)">
+            <a class="play-btn" href="https://supernebula23.github.io/games/snake.html" onclick="trackPlay('SNAKE', 'arcade', 10)">
               <span class="play-btn-text">PLAY (+10 XP)</span>
             </a>
           </div>
@@ -527,7 +542,7 @@
           <h3>MARTIAN MIKE</h3>
           <p>Run, jump, and dodge hazards across challenging Martian landscapes in this retro platformer!</p>
           <div class="card-actions">
-            <a class="play-btn" href="https://supernebula23.github.io/games/MartianMike/Martian%20Mike.html" onclick="trackPlay('platformer', 10)">
+            <a class="play-btn" href="https://supernebula23.github.io/games/MartianMike/Martian%20Mike.html" onclick="trackPlay('MARTIAN MIKE', 'platformer', 10)">
               <span class="play-btn-text">PLAY (+10 XP)</span>
             </a>
           </div>
@@ -539,7 +554,7 @@
           <h3>SPACE DEFENDER</h3>
           <p>Blast through invading alien armadas in this action-packed 8-bit galactic shooter!</p>
           <div class="card-actions">
-            <a class="play-btn" href="https://supernebula23.github.io/games/space_defender.html" onclick="trackPlay('arcade', 10)">
+            <a class="play-btn" href="https://supernebula23.github.io/games/space_defender.html" onclick="trackPlay('SPACE DEFENDER', 'arcade', 10)">
               <span class="play-btn-text">PLAY (+10 XP)</span>
             </a>
           </div>
@@ -551,7 +566,7 @@
           <h3>STACK</h3>
           <p>Stack blocks as high as you can in this skill-based precision timing game!</p>
           <div class="card-actions">
-            <a class="play-btn" href="https://supernebula23.github.io/games/stack.html" onclick="trackPlay('arcade', 10)">
+            <a class="play-btn" href="https://supernebula23.github.io/games/stack.html" onclick="trackPlay('STACK', 'arcade', 10)">
               <span class="play-btn-text">PLAY (+10 XP)</span>
             </a>
           </div>
@@ -563,7 +578,7 @@
           <h3>2048</h3>
           <p>Join the numbers and reach the 2048 tile in this highly addictive sliding block puzzle!</p>
           <div class="card-actions">
-            <a class="play-btn" href="https://supernebula23.github.io/games/2048.html" onclick="trackPlay('puzzle', 10)">
+            <a class="play-btn" href="https://supernebula23.github.io/games/2048.html" onclick="trackPlay('2048', 'puzzle', 10)">
               <span class="play-btn-text">PLAY (+10 XP)</span>
             </a>
           </div>
@@ -575,7 +590,7 @@
           <h3>TOWER DEFENSE</h3>
           <p>Build and upgrade defense towers to defend your realm against waves of incoming enemies!</p>
           <div class="card-actions">
-            <a class="play-btn" href="https://supernebula23.github.io/games/towerdefense.html" onclick="trackPlay('strategy', 10)">
+            <a class="play-btn" href="https://supernebula23.github.io/games/towerdefense.html" onclick="trackPlay('TOWER DEFENSE', 'strategy', 10)">
               <span class="play-btn-text">PLAY (+10 XP)</span>
             </a>
           </div>
@@ -587,7 +602,7 @@
           <h3>AMONG US</h3>
           <p>Uncover the imposter or sabotage the spaceship crew in this mini web edition!</p>
           <div class="card-actions">
-            <a class="play-btn" href="https://supernebula23.github.io/games/amongus.html" onclick="trackPlay('survival', 10)">
+            <a class="play-btn" href="https://supernebula23.github.io/games/amongus.html" onclick="trackPlay('AMONG US', 'survival', 10)">
               <span class="play-btn-text">PLAY (+10 XP)</span>
             </a>
           </div>
@@ -599,7 +614,7 @@
           <h3>GUESS THE COLOR</h3>
           <p>Test your visual precision! Match hex codes and color shades before time runs out!</p>
           <div class="card-actions">
-            <a class="play-btn" href="https://supernebula23.github.io/games/guessthecolor.html" onclick="trackPlay('puzzle', 10)">
+            <a class="play-btn" href="https://supernebula23.github.io/games/guessthecolor.html" onclick="trackPlay('GUESS THE COLOR', 'puzzle', 10)">
               <span class="play-btn-text">PLAY (+10 XP)</span>
             </a>
           </div>
@@ -611,7 +626,7 @@
           <h3>BATTLESHIP</h3>
           <p>Position your fleet and sink your opponent's ships in intense naval grid warfare!</p>
           <div class="card-actions">
-            <a class="play-btn" href="https://supernebula23.github.io/games/battleship.html" onclick="trackPlay('strategy', 10)">
+            <a class="play-btn" href="https://supernebula23.github.io/games/battleship.html" onclick="trackPlay('BATTLESHIP', 'strategy', 10)">
               <span class="play-btn-text">PLAY (+10 XP)</span>
             </a>
           </div>
@@ -623,7 +638,7 @@
           <h3>FRUIT MERGE BONANZA</h3>
           <p>Drop and combine matching fruits to create bigger ones! Made by ScaryEnderman45.</p>
           <div class="card-actions">
-            <a class="play-btn" href="https://supernebula23.github.io/games/fruitmerge.html" onclick="trackPlay('puzzle', 10)">
+            <a class="play-btn" href="https://supernebula23.github.io/games/fruitmerge.html" onclick="trackPlay('FRUIT MERGE BONANZA', 'puzzle', 10)">
               <span class="play-btn-text">PLAY (+10 XP)</span>
             </a>
           </div>
@@ -635,7 +650,7 @@
           <h3>DOTS AND BOXES</h3>
           <p>Connect the dots, complete boxes, and outsmart your opponent to claim the grid!</p>
           <div class="card-actions">
-            <a class="play-btn" href="https://supernebula23.github.io/games/dotsandboxes.html" onclick="trackPlay('strategy', 10)">
+            <a class="play-btn" href="https://supernebula23.github.io/games/dotsandboxes.html" onclick="trackPlay('DOTS AND BOXES', 'strategy', 10)">
               <span class="play-btn-text">PLAY (+10 XP)</span>
             </a>
           </div>
@@ -647,7 +662,7 @@
           <h3>CLAW MACHINE MASTER</h3>
           <p>Test your precision timing! Grab plushies and prizes before time runs out! Made by ScaryEnderman45.</p>
           <div class="card-actions">
-            <a class="play-btn" href="https://supernebula23.github.io/games/arcade_claw_machine_master.html" onclick="trackPlay('arcade', 10)">
+            <a class="play-btn" href="https://supernebula23.github.io/games/arcade_claw_machine_master.html" onclick="trackPlay('CLAW MACHINE MASTER', 'arcade', 10)">
               <span class="play-btn-text">PLAY (+10 XP)</span>
             </a>
           </div>
@@ -659,7 +674,7 @@
           <h3>ASTEROID DEFENDER</h3>
           <p>Navigate deep space, destroy incoming cosmic rocks, and survive stellar nova storms! Made by ScaryEnderman45.</p>
           <div class="card-actions">
-            <a class="play-btn" href="https://supernebula23.github.io/games/asteroid_defender_stellar_nova.html" onclick="trackPlay('arcade', 10)">
+            <a class="play-btn" href="https://supernebula23.github.io/games/asteroid_defender_stellar_nova.html" onclick="trackPlay('ASTEROID DEFENDER', 'arcade', 10)">
               <span class="play-btn-text">PLAY (+10 XP)</span>
             </a>
           </div>
@@ -671,7 +686,7 @@
           <h3>BASKETBALL ARCADE</h3>
           <p>Aim, shoot, and rack up high scores in this fast-paced hoop challenge! Made by ScaryEnderman45.</p>
           <div class="card-actions">
-            <a class="play-btn" href="https://supernebula23.github.io/games/basketball_arcade_challenge.html" onclick="trackPlay('arcade', 10)">
+            <a class="play-btn" href="https://supernebula23.github.io/games/basketball_arcade_challenge.html" onclick="trackPlay('BASKETBALL ARCADE', 'arcade', 10)">
               <span class="play-btn-text">PLAY (+10 XP)</span>
             </a>
           </div>
@@ -683,7 +698,7 @@
           <h3>BRIDGE RACE</h3>
           <p>Collect color blocks, construct bridges, and outpace rivals to cross the finish line first! Made by ScaryEnderman45.</p>
           <div class="card-actions">
-            <a class="play-btn" href="https://supernebula23.github.io/games/bridgerace.html" onclick="trackPlay('racing', 10)">
+            <a class="play-btn" href="https://supernebula23.github.io/games/bridgerace.html" onclick="trackPlay('BRIDGE RACE', 'racing', 10)">
               <span class="play-btn-text">PLAY (+10 XP)</span>
             </a>
           </div>
@@ -695,7 +710,7 @@
           <h3>FACTORY SORT</h3>
           <p>Sort assembly items along busy conveyor belts in this fast-paced logic organizer! Made by ScaryEnderman45.</p>
           <div class="card-actions">
-            <a class="play-btn" href="https://supernebula23.github.io/games/factorysort.html" onclick="trackPlay('puzzle', 10)">
+            <a class="play-btn" href="https://supernebula23.github.io/games/factorysort.html" onclick="trackPlay('FACTORY SORT', 'puzzle', 10)">
               <span class="play-btn-text">PLAY (+10 XP)</span>
             </a>
           </div>
@@ -707,7 +722,7 @@
           <h3>FARM GAME</h3>
           <p>Plant seeds, harvest crops, manage resources, and build up your dream farmstead! Made by ScaryEnderman45.</p>
           <div class="card-actions">
-            <a class="play-btn" href="https://supernebula23.github.io/games/farmgame.html" onclick="trackPlay('simulation', 10)">
+            <a class="play-btn" href="https://supernebula23.github.io/games/farmgame.html" onclick="trackPlay('FARM GAME', 'simulation', 10)">
               <span class="play-btn-text">PLAY (+10 XP)</span>
             </a>
           </div>
@@ -719,7 +734,7 @@
           <h3>NEON CAR DODGE</h3>
           <p>Speed through glowing synthwave tracks and dodge oncoming traffic at high speeds! Made by ScaryEnderman45.</p>
           <div class="card-actions">
-            <a class="play-btn" href="https://supernebula23.github.io/games/NeonCarDodge.html" onclick="trackPlay('racing', 10)">
+            <a class="play-btn" href="https://supernebula23.github.io/games/NeonCarDodge.html" onclick="trackPlay('NEON CAR DODGE', 'racing', 10)">
               <span class="play-btn-text">PLAY (+10 XP)</span>
             </a>
           </div>
@@ -731,7 +746,7 @@
           <h3>THRILL WORLD TYCOON</h3>
           <p>Design epic rides, manage amusement park operations, and build a global park empire! Made by ScaryEnderman45.</p>
           <div class="card-actions">
-            <a class="play-btn" href="https://supernebula23.github.io/games/thrillworldtycoon.html" onclick="trackPlay('tycoon', 10)">
+            <a class="play-btn" href="https://supernebula23.github.io/games/thrillworldtycoon.html" onclick="trackPlay('THRILL WORLD TYCOON', 'tycoon', 10)">
               <span class="play-btn-text">PLAY (+10 XP)</span>
             </a>
           </div>
@@ -743,7 +758,7 @@
           <h3>TOWN DEFENDER</h3>
           <p>Fortify village walls and command defenses to protect citizens from invading hordes! Made by ScaryEnderman45.</p>
           <div class="card-actions">
-            <a class="play-btn" href="https://supernebula23.github.io/games/towndefender.html" onclick="trackPlay('strategy', 10)">
+            <a class="play-btn" href="https://supernebula23.github.io/games/towndefender.html" onclick="trackPlay('TOWN DEFENDER', 'strategy', 10)">
               <span class="play-btn-text">PLAY (+10 XP)</span>
             </a>
           </div>
@@ -755,7 +770,7 @@
           <h3>ZOMBIE BASE DEFENSE</h3>
           <p>Barricade base perimeters, upgrade weaponry, and survive endless night waves of undead! Made by ScaryEnderman45.</p>
           <div class="card-actions">
-            <a class="play-btn" href="https://supernebula23.github.io/games/zombiebasedefense.html" onclick="trackPlay('survival', 10)">
+            <a class="play-btn" href="https://supernebula23.github.io/games/zombiebasedefense.html" onclick="trackPlay('ZOMBIE BASE DEFENSE', 'survival', 10)">
               <span class="play-btn-text">PLAY (+10 XP)</span>
             </a>
           </div>
@@ -767,7 +782,7 @@
           <h3>COUNT MASTERS</h3>
           <p>Multiply your crowd, dodge obstacles, and defeat rival runners to crush the castle!</p>
           <div class="card-actions">
-            <a class="play-btn" href="https://supernebula23.github.io/games/countmasters.html" onclick="trackPlay('arcade', 10)">
+            <a class="play-btn" href="https://supernebula23.github.io/games/countmasters.html" onclick="trackPlay('COUNT MASTERS', 'arcade', 10)">
               <span class="play-btn-text">PLAY (+10 XP)</span>
             </a>
           </div>
@@ -779,7 +794,7 @@
           <h3>LOOT LEDGER</h3>
           <p>Balance treasuries, claim rewards, and out-smart rival guilds! Made by ScaryEnderman45.</p>
           <div class="card-actions">
-            <a class="play-btn" href="https://supernebula23.github.io/games/lootledger.html" onclick="trackPlay('strategy', 10)">
+            <a class="play-btn" href="https://supernebula23.github.io/games/lootledger.html" onclick="trackPlay('LOOT LEDGER', 'strategy', 10)">
               <span class="play-btn-text">PLAY (+10 XP)</span>
             </a>
           </div>
@@ -791,7 +806,7 @@
           <h3>NEON DASH</h3>
           <p>Sprint and jump through fast retro neon geometry obstacles! Made by ScaryEnderman45.</p>
           <div class="card-actions">
-            <a class="play-btn" href="https://supernebula23.github.io/games/neondash.html" onclick="trackPlay('platformer', 10)">
+            <a class="play-btn" href="https://supernebula23.github.io/games/neondash.html" onclick="trackPlay('NEON DASH', 'platformer', 10)">
               <span class="play-btn-text">PLAY (+10 XP)</span>
             </a>
           </div>
@@ -803,7 +818,7 @@
           <h3>POCKET COMPANION</h3>
           <p>Raise, feed, and play with your virtual retro pet! Made by ScaryEnderman45.</p>
           <div class="card-actions">
-            <a class="play-btn" href="https://supernebula23.github.io/games/pocket_companion_virtual_pet.html" onclick="trackPlay('simulation', 10)">
+            <a class="play-btn" href="https://supernebula23.github.io/games/pocket_companion_virtual_pet.html" onclick="trackPlay('POCKET COMPANION', 'simulation', 10)">
               <span class="play-btn-text">PLAY (+10 XP)</span>
             </a>
           </div>
@@ -815,7 +830,7 @@
           <h3>SOKOBAN 2048</h3>
           <p>Push tiles together in grid dungeons to combine number blocks! Made by ScaryEnderman45.</p>
           <div class="card-actions">
-            <a class="play-btn" href="https://supernebula23.github.io/games/sokoban_2048.html" onclick="trackPlay('puzzle', 10)">
+            <a class="play-btn" href="https://supernebula23.github.io/games/sokoban_2048.html" onclick="trackPlay('SOKOBAN 2048', 'puzzle', 10)">
               <span class="play-btn-text">PLAY (+10 XP)</span>
             </a>
           </div>
@@ -842,6 +857,13 @@
         <div class="xp-progress-fill" id="xpFill"></div>
       </div>
 
+      <!-- NEW PROFILE STATS PANEL -->
+      <div class="profile-stats-box">
+        <div>MOST PLAYED GAME: <span id="statMostPlayed">NONE</span></div>
+        <div>FAVORITE CATEGORY: <span id="statFavCategory">NONE</span></div>
+        <div>TOTAL PLAYS: <span id="statTotalPlays">0</span></div>
+      </div>
+
       <button class="modal-btn" onclick="saveProfile()">SAVE & CLOSE</button>
     </div>
   </div>
@@ -857,8 +879,13 @@
 
     function getAccount() {
       const saved = localStorage.getItem('sn_user_account');
-      if (saved) return JSON.parse(saved);
-      return { username: 'PLAYER 1', xp: 0, categoryStats: {} };
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (!parsed.gameStats) parsed.gameStats = {};
+        if (!parsed.categoryStats) parsed.categoryStats = {};
+        return parsed;
+      }
+      return { username: 'PLAYER 1', xp: 0, categoryStats: {}, gameStats: {} };
     }
 
     function saveAccountData(data) {
@@ -866,10 +893,14 @@
       updateUI();
     }
 
-    function trackPlay(category, baseXP) {
+    function trackPlay(gameTitle, category, baseXP) {
       const acc = getAccount();
       
-      // Track category preference for recommended section
+      // Track specific game play counts
+      if (!acc.gameStats) acc.gameStats = {};
+      acc.gameStats[gameTitle] = (acc.gameStats[gameTitle] || 0) + 1;
+
+      // Track category counts
       if (!acc.categoryStats) acc.categoryStats = {};
       acc.categoryStats[category] = (acc.categoryStats[category] || 0) + 1;
 
@@ -918,7 +949,35 @@
         btn.textContent = isVip ? 'PLAY (+20 XP 👑)' : 'PLAY (+10 XP)';
       });
 
+      renderProfileStats(acc);
       renderRecommendations();
+    }
+
+    function renderProfileStats(acc) {
+      let topGame = 'NONE';
+      let maxGamePlays = 0;
+      let totalPlays = 0;
+
+      for (const [game, count] of Object.entries(acc.gameStats || {})) {
+        totalPlays += count;
+        if (count > maxGamePlays) {
+          maxGamePlays = count;
+          topGame = game;
+        }
+      }
+
+      let topCategory = 'NONE';
+      let maxCatPlays = 0;
+      for (const [cat, count] of Object.entries(acc.categoryStats || {})) {
+        if (count > maxCatPlays) {
+          maxCatPlays = count;
+          topCategory = cat.toUpperCase();
+        }
+      }
+
+      document.getElementById('statMostPlayed').textContent = maxGamePlays > 0 ? `${topGame} (${maxGamePlays}x)` : 'NONE';
+      document.getElementById('statFavCategory').textContent = topCategory;
+      document.getElementById('statTotalPlays').textContent = totalPlays;
     }
 
     function handleSearchAndFilter() {
@@ -945,40 +1004,53 @@
       const acc = getAccount();
       const recSection = document.getElementById('recommended-section');
       const recGrid = document.getElementById('recommendedGrid');
-      
-      if (!acc.categoryStats) return;
 
-      let topCategory = null;
-      let maxCount = 0;
-      for (const [cat, count] of Object.entries(acc.categoryStats)) {
-        if (count > maxCount) {
-          maxCount = count;
-          topCategory = cat;
-        }
-      }
+      const totalPlays = Object.values(acc.gameStats || {}).reduce((a, b) => a + b, 0);
 
-      if (!topCategory) {
+      // Hide recommendations if player hasn't played games yet
+      if (totalPlays === 0) {
         recSection.style.display = 'none';
         return;
       }
 
-      const mainCards = document.querySelectorAll('#mainGamesGrid .game-card');
-      recGrid.innerHTML = '';
-      let count = 0;
-
-      mainCards.forEach(card => {
-        if (card.getAttribute('data-category') === topCategory && count < 3) {
-          const clone = card.cloneNode(true);
-          recGrid.appendChild(clone);
-          count++;
+      let topCategory = null;
+      let maxCatCount = 0;
+      for (const [cat, count] of Object.entries(acc.categoryStats || {})) {
+        if (count > maxCatCount) {
+          maxCatCount = count;
+          topCategory = cat;
         }
+      }
+
+      const mainCards = Array.from(document.querySelectorAll('#mainGamesGrid .game-card'));
+      
+      // Calculate relevance scores for games across all categories
+      const scoredCards = mainCards.map(card => {
+        const title = card.querySelector('h3').textContent;
+        const cat = card.getAttribute('data-category');
+        const plays = acc.gameStats[title] || 0;
+
+        let score = 0;
+        if (cat === topCategory) score += 5;       // Category affinity boost
+        if (plays > 0) score += Math.min(plays, 5); // Play history boost
+        score += Math.random() * 2;                 // Slight randomness to surface cross-category variety
+
+        return { card, score };
       });
 
-      if (count > 0) {
-        recSection.style.display = 'block';
-      } else {
-        recSection.style.display = 'none';
-      }
+      // Sort cards highest to lowest score
+      scoredCards.sort((a, b) => b.score - a.score);
+
+      recGrid.innerHTML = '';
+      // Pick top 4 recommendations
+      const recommendations = scoredCards.slice(0, 4);
+
+      recommendations.forEach(item => {
+        const clone = item.card.cloneNode(true);
+        recGrid.appendChild(clone);
+      });
+
+      recSection.style.display = recommendations.length > 0 ? 'block' : 'none';
     }
 
     function openAccountModal() {

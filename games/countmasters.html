@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>Count Masters 3D - Procedural Edition</title>
+    <title>Count Masters 3D - Beatable & Random</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Inter:wght@600;800&display=swap" rel="stylesheet">
@@ -206,12 +206,6 @@
         let finishStairs = [];
         let particleSystems = [];
         let trackMesh = null;
-
-        // Simple Seeded Randomizer for reproducible levels when needed
-        function seededRandom(seed) {
-            let x = Math.sin(seed++) * 10000;
-            return x - Math.floor(x);
-        }
 
         function createSmoothCapsuleGeometry(radius, length) {
             const group = new THREE.Group();
@@ -431,9 +425,9 @@
             finishClimbTimer = 0;
             highestStairReached = 1;
 
-            // DYNAMIC DIFFICULTY SCALING
-            levelLength = 160 + (currentLevel * 20); // Track grows longer
-            forwardSpeed = baseSpeed + Math.min(0.12, currentLevel * 0.015); // Speed increases with level
+            // Dynamic Level Scaling
+            levelLength = 160 + (currentLevel * 15);
+            forwardSpeed = baseSpeed + Math.min(0.10, currentLevel * 0.01);
 
             // 1. Build Dynamic Track
             const trackGeo = new THREE.BoxGeometry(10, 1, levelLength + 60);
@@ -455,48 +449,57 @@
             // 2. Initial Crowd Member
             addCrowdMember(0, 0);
 
-            // 3. PROCEDURAL LEVEL GENERATION
-            let currentZ = 25;
-            let seed = currentLevel * 999;
+            // 3. FULLY RANDOM & GUARANTEED SOLVABLE PROCEDURAL GENERATION
+            let currentZ = 30;
+            let maxPossibleCrowd = 1; // Tracks the theoretical max crowd if player chooses perfectly
 
-            while (currentZ < levelLength - 25) {
-                let randVal = seededRandom(seed++);
-                
-                if (randVal < 0.4) {
-                    // Spawn Dynamic Math Gate Pair
-                    spawnProceduralGatePair(currentZ, seed);
-                    currentZ += 25 + Math.floor(seededRandom(seed++) * 10);
-                } else if (randVal < 0.7) {
-                    // Spawn Saw Obstacle (moves faster at higher levels)
-                    spawnSawBlade(currentZ, 0.08 + Math.min(0.08, currentLevel * 0.008));
-                    currentZ += 20 + Math.floor(seededRandom(seed++) * 10);
+            while (currentZ < levelLength - 30) {
+                let randType = Math.random();
+
+                if (randType < 0.50) {
+                    // Spawn Math Gate Pair (Guaranteed at least 1 positive option)
+                    maxPossibleCrowd = spawnProceduralGatePair(currentZ, maxPossibleCrowd);
+                    currentZ += 32;
+                } else if (randType < 0.75) {
+                    // Spawn Saw Blade Obstacle
+                    spawnSawBlade(currentZ, 0.07 + Math.min(0.06, currentLevel * 0.005));
+                    currentZ += 28;
                 } else {
-                    // Spawn Enemy Group (larger size at higher levels)
-                    let enemySize = Math.floor(5 + (currentLevel * 2.5) + (seededRandom(seed++) * 6));
+                    // Spawn Enemy Group (Scaled strictly lower than max possible crowd size)
+                    let maxAllowedEnemies = Math.max(2, Math.floor(maxPossibleCrowd * 0.65));
+                    let enemySize = Math.max(2, Math.floor(1 + Math.random() * maxAllowedEnemies));
+
                     spawnEnemyGroup(currentZ, enemySize);
-                    currentZ += 30 + Math.floor(seededRandom(seed++) * 10);
+                    maxPossibleCrowd = Math.max(1, maxPossibleCrowd - enemySize);
+                    currentZ += 35;
                 }
             }
 
-            // 4. Build Multiplier Finish Staircase
+            // 4. Multiplier Finish Staircase
             spawnFinishStaircase(levelLength);
 
             updateCrowdDisplay();
         }
 
-        function spawnProceduralGatePair(zPos, seed) {
+        function spawnProceduralGatePair(zPos, maxCrowd) {
             const gateGroup = new THREE.Group();
             gateGroup.position.z = zPos;
 
-            // Generate procedurally scaled operations
-            const posOps = ['+', '*'];
-            const negOps = ['-', '/'];
+            // Ensure at least ONE side is a positive modifier (+ or *) so level is solvable
+            const isLeftPositive = Math.random() > 0.5;
 
-            const leftOp = posOps[Math.floor(seededRandom(seed++) * posOps.length)];
-            let rightOp = seededRandom(seed++) > 0.4 ? negOps[Math.floor(seededRandom(seed++) * negOps.length)] : posOps[Math.floor(seededRandom(seed++) * posOps.length)];
+            let leftOp = isLeftPositive ? (Math.random() > 0.5 ? '+' : '*') : '-';
+            let rightOp = !isLeftPositive ? (Math.random() > 0.5 ? '+' : '*') : '-';
 
-            let leftVal = leftOp === '+' ? Math.floor(5 + seededRandom(seed++) * 15 + currentLevel * 2) : Math.floor(2 + seededRandom(seed++) * 2);
-            let rightVal = rightOp === '+' ? Math.floor(3 + seededRandom(seed++) * 10) : (rightOp === '-' ? Math.floor(5 + seededRandom(seed++) * 15) : 2);
+            let leftVal, rightVal;
+
+            if (leftOp === '+') leftVal = Math.floor(5 + Math.random() * 10 + currentLevel);
+            else if (leftOp === '*') leftVal = 2;
+            else leftVal = Math.floor(2 + Math.random() * 5);
+
+            if (rightOp === '+') rightVal = Math.floor(5 + Math.random() * 10 + currentLevel);
+            else if (rightOp === '*') rightVal = 2;
+            else rightVal = Math.floor(2 + Math.random() * 5);
 
             const leftData = { text: `${leftOp}${leftVal}`, val: leftVal, op: leftOp };
             const rightData = { text: `${rightOp}${rightVal}`, val: rightVal, op: rightOp };
@@ -524,6 +527,11 @@
                 leftData: leftData,
                 rightData: rightData
             });
+
+            // Calculate theoretical max crowd yield on optimal path
+            let optVal1 = leftOp === '+' ? maxCrowd + leftVal : (leftOp === '*' ? maxCrowd * leftVal : Math.max(1, maxCrowd - leftVal));
+            let optVal2 = rightOp === '+' ? maxCrowd + rightVal : (rightOp === '*' ? maxCrowd * rightVal : Math.max(1, maxCrowd - rightVal));
+            return Math.max(optVal1, optVal2);
         }
 
         function spawnSawBlade(zPos, speed) {
@@ -587,7 +595,6 @@
                 stair.position.set(0, (0.8 * mult) / 2, startZ + i * 3.0);
                 stair.receiveShadow = true;
                 
-                // Add multiplier text to the front face of each step
                 const tex = createStairTexture(`${mult}x`);
                 const labelMat = new THREE.MeshBasicMaterial({ map: tex });
                 const labelGeo = new THREE.PlaneGeometry(3, 0.6);
@@ -832,7 +839,7 @@
                         const distToPlayer = eg.z - playerZ;
                         
                         if (distToPlayer < 16 && distToPlayer > 0) {
-                            eg.group.position.z -= 0.1;
+                            eg.group.position.z -= 0.08;
                             eg.members.forEach(m => {
                                 const ud = m.mesh.userData;
                                 const time = Date.now() * 0.012 + ud.animOffset;
@@ -899,7 +906,6 @@
                 camera.position.y = targetY + 7;
                 camera.lookAt(0, targetY + 2, playerZ + 5);
 
-                // Finish run complete or ran out of stairs
                 if (finishClimbTimer > 3.0 || stairIndex >= 9) {
                     triggerGameOver(true);
                 }

@@ -20,6 +20,11 @@
       --neon-magenta: #ff00ff;
     }
 
+    body.theme-cyan { --border-accent: #00ffff; }
+    body.theme-pink { --border-accent: #ff00ff; }
+    body.theme-green { --border-accent: #73bf2e; }
+    body.theme-gold { --border-accent: #f8b800; }
+
     * {
       box-sizing: border-box;
       margin: 0;
@@ -105,12 +110,43 @@
       box-shadow: 0 1px 0 #000;
     }
 
+    /* FEATURED HERO GAME OF THE DAY */
+    .featured-hero {
+      width: 100%;
+      max-width: 960px;
+      background: linear-gradient(135deg, #152d3e 0%, #0b1d28 100%);
+      border: 3px solid var(--text-gold);
+      border-radius: 12px;
+      padding: 20px;
+      margin-bottom: 24px;
+      display: flex;
+      gap: 20px;
+      align-items: center;
+      box-shadow: 0 6px 0 #000;
+    }
+
+    .featured-icon {
+      font-size: 48px;
+      background: #0b1d28;
+      padding: 16px;
+      border-radius: 12px;
+      border: 3px solid #000;
+      box-shadow: 0 3px 0 #000;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .featured-info { flex: 1; }
+    .featured-info h2 { font-size: 13px; color: var(--text-gold); margin-bottom: 8px; text-shadow: 2px 2px 0 #000; }
+    .featured-info p { font-size: 8px; color: #b0cadb; line-height: 1.6; margin-bottom: 14px; }
+
     .controls-bar {
       width: 100%;
       max-width: 960px;
       display: flex;
       gap: 12px;
-      margin-bottom: 24px;
+      margin-bottom: 12px;
       flex-wrap: wrap;
     }
 
@@ -165,10 +201,39 @@
       color: #fff;
     }
 
+    .tag-container {
+      width: 100%;
+      max-width: 960px;
+      display: flex;
+      gap: 8px;
+      overflow-x: auto;
+      padding-bottom: 6px;
+      margin-bottom: 24px;
+      scrollbar-width: thin;
+    }
+
+    .tag-btn {
+      background: #0b1d28;
+      border: 2px solid #000;
+      border-radius: 4px;
+      color: var(--neon-cyan);
+      font-family: 'Press Start 2P', cursive;
+      font-size: 8px;
+      padding: 8px 12px;
+      cursor: pointer;
+      white-space: nowrap;
+      box-shadow: 0 2px 0 #000;
+    }
+
+    .tag-btn:hover, .tag-btn.active {
+      background: var(--border-accent);
+      color: #fff;
+    }
+
     .section-heading {
       width: 100%;
       max-width: 960px;
-      font-size: 13px;
+      font-size: 12px;
       color: var(--neon-cyan);
       text-shadow: 2px 2px 0 #000;
       margin-bottom: 16px;
@@ -203,11 +268,13 @@
       border-radius: 12px;
       padding: 24px;
       width: 90%;
-      max-width: 440px;
+      max-width: 480px;
       display: flex;
       flex-direction: column;
       gap: 14px;
       text-align: center;
+      max-height: 90vh;
+      overflow-y: auto;
     }
 
     .modal-card h2 {
@@ -232,6 +299,41 @@
       outline: none;
     }
 
+    .avatar-picker {
+      display: flex;
+      gap: 8px;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+
+    .avatar-opt {
+      font-size: 20px;
+      padding: 8px;
+      background: #0b1d28;
+      border: 2px solid #000;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+
+    .avatar-opt.selected {
+      border-color: var(--text-gold);
+      background: var(--border-accent);
+    }
+
+    .theme-picker {
+      display: flex;
+      gap: 8px;
+      justify-content: space-between;
+    }
+
+    .theme-btn {
+      flex: 1;
+      height: 24px;
+      border: 2px solid #000;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+
     .profile-stats-box {
       background: #0b1d28;
       border: 2px solid #000;
@@ -245,6 +347,42 @@
 
     .profile-stats-box span {
       color: var(--neon-cyan);
+    }
+
+    .achievements-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      text-align: left;
+    }
+
+    .achievement-item {
+      background: #0b1d28;
+      border: 2px solid #000;
+      border-radius: 6px;
+      padding: 8px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 8px;
+    }
+
+    .achievement-item.unlocked {
+      border-color: var(--text-gold);
+      background: #1e3a29;
+    }
+
+    .achievement-icon {
+      font-size: 18px;
+    }
+
+    .achievement-info {
+      flex: 1;
+    }
+
+    .achievement-title {
+      color: var(--text-gold);
+      margin-bottom: 2px;
     }
 
     .xp-progress-bar {
@@ -313,20 +451,19 @@
       color: #fff;
       text-shadow: 3px 3px 0 var(--border-accent), 6px 6px 0 #000;
       line-height: 1.4;
-      margin-bottom: 12px;
+      margin-bottom: 8px;
     }
 
     .hero-banner p {
-      font-size: 11px;
+      font-size: 10px;
       color: #8faec4;
       letter-spacing: 1px;
-      line-height: 1.8;
     }
 
     .games-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-      gap: 18px;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 16px;
       width: 100%;
       margin-bottom: 30px;
     }
@@ -335,13 +472,13 @@
       background: var(--bg-card);
       border: 3px solid #000;
       border-radius: 10px;
-      padding: 16px;
+      padding: 14px;
       display: flex;
       flex-direction: column;
       align-items: center;
       text-align: center;
-      box-shadow: 0 6px 0 #000;
-      transition: transform 0.15s ease, box-shadow 0.15s ease;
+      box-shadow: 0 5px 0 #000;
+      transition: transform 0.15s ease, border-color 0.15s ease;
       position: relative;
       overflow: hidden;
     }
@@ -352,18 +489,18 @@
 
     .game-card:hover {
       transform: translateY(-3px);
-      box-shadow: 0 9px 0 #000;
+      box-shadow: 0 8px 0 #000;
       border-color: var(--border-accent);
     }
 
     .card-badge {
       position: absolute;
-      top: 10px;
-      right: 10px;
+      top: 8px;
+      right: 8px;
       background: #73bf2e;
       color: #000;
-      font-size: 7px;
-      padding: 3px 6px;
+      font-size: 6px;
+      padding: 3px 5px;
       border-radius: 4px;
       border: 1px solid #000;
       font-weight: bold;
@@ -375,23 +512,44 @@
     .card-badge.purple { background: var(--neon-magenta); color: #fff; }
     .card-badge.orange { background: #ff7700; color: #fff; }
 
+    .fav-btn {
+      position: absolute;
+      top: 8px;
+      left: 8px;
+      font-size: 14px;
+      cursor: pointer;
+      opacity: 0.4;
+      transition: transform 0.1s ease, opacity 0.1s ease;
+      z-index: 5;
+    }
+
+    .fav-btn:hover {
+      transform: scale(1.2);
+      opacity: 0.8;
+    }
+
+    .fav-btn.is-fav {
+      opacity: 1;
+      filter: drop-shadow(0 0 4px #ff0055);
+    }
+
     .card-icon {
-      width: 56px;
-      height: 56px;
+      width: 52px;
+      height: 52px;
       background: #0b1d28;
       border: 2px solid #000;
       border-radius: 8px;
       display: flex;
       align-items: center;
       justify-content: center;
-      margin-bottom: 12px;
-      font-size: 26px;
+      margin-bottom: 10px;
+      font-size: 24px;
     }
 
     .game-card h3 {
-      font-size: 11px;
+      font-size: 10px;
       color: var(--text-gold);
-      margin-bottom: 8px;
+      margin-bottom: 6px;
       text-shadow: 1px 1px 0 #000;
       line-height: 1.3;
     }
@@ -399,8 +557,8 @@
     .game-card p {
       font-size: 8px;
       color: #b0cadb;
-      line-height: 1.5;
-      margin-bottom: 14px;
+      line-height: 1.4;
+      margin-bottom: 12px;
       flex: 1;
     }
 
@@ -413,11 +571,11 @@
 
     .play-btn {
       width: 100%;
-      padding: 10px;
+      padding: 9px;
       background: var(--border-accent);
       color: #fff;
       font-family: 'Press Start 2P', cursive;
-      font-size: 9px;
+      font-size: 8px;
       border: 2px solid #000;
       border-radius: 6px;
       box-shadow: 0 3px 0 #000;
@@ -432,27 +590,15 @@
     .play-btn:hover {
       background: #e04e00;
       transform: translateY(-1px);
-      box-shadow: 0 4px 0 #000;
-    }
-
-    .play-btn:active {
-      transform: translateY(1px);
-      box-shadow: 0 1px 0 #000;
     }
 
     @media (max-width: 600px) {
-      header.site-header {
-        padding: 10px 14px;
-      }
-      .brand-title span {
-        display: none;
-      }
-      .category-select {
-        font-size: 8px;
-      }
-      .account-badge span {
-        display: none;
-      }
+      header.site-header { padding: 10px 14px; }
+      .brand-title span { display: none; }
+      .category-select { font-size: 8px; }
+      .account-badge span { display: none; }
+      .featured-hero { flex-direction: column; text-align: center; }
+      .games-grid { grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); }
     }
   </style>
 </head>
@@ -468,7 +614,7 @@
 
     <div class="header-right">
       <div class="account-badge" id="headerAccountBadge" onclick="openAccountModal()">
-        <span>👤</span>
+        <span id="badgeAvatar">👤</span>
         <div id="badgeUsername">PLAYER</div>
         <div class="vip-tag" id="headerVipTag">👑 VIP</div>
         <div style="color: var(--text-gold);" id="badgeLvl">LVL 1</div>
@@ -479,11 +625,23 @@
   <main class="content-area">
     <section id="home-view" class="view-section">
       <div class="hero-banner">
-        <h1>✨ SuperNebula Games ✨</h1>
-        <p>Select A Game!</p>
+        <h1>✨ SUPERNEBULA GAMES ✨</h1>
+        <p>CHOOSE YOUR GAME & EARN XP!</p>
       </div>
 
-      <!-- Search & Category Filters -->
+      <!-- GAME OF THE DAY HERO SLOT -->
+      <div class="featured-hero" id="gameOfTheDaySlot">
+        <div class="featured-icon" id="gotdIcon">🎲</div>
+        <div class="featured-info">
+          <h2 id="gotdTitle">🔥 GAME OF THE DAY</h2>
+          <p id="gotdDesc">Loading today's featured pick...</p>
+          <a class="play-btn" id="gotdLink" href="#" style="max-width: 200px;">
+            <span class="play-btn-text">PLAY (+10 XP)</span>
+          </a>
+        </div>
+      </div>
+
+      <!-- Controls & Search -->
       <div class="controls-bar">
         <input type="text" id="searchInput" class="search-input" placeholder="SEARCH GAMES..." oninput="handleSearchAndFilter()">
         <div class="category-select-wrapper">
@@ -502,8 +660,31 @@
         </div>
       </div>
 
+      <!-- Tag Filters -->
+      <div class="tag-container">
+        <button class="tag-btn active" onclick="filterByTag('all', this)">#ALL</button>
+        <button class="tag-btn" onclick="filterByTag('multiplayer', this)">#MULTIPLAYER</button>
+        <button class="tag-btn" onclick="filterByTag('retro', this)">#RETRO</button>
+        <button class="tag-btn" onclick="filterByTag('puzzle', this)">#PUZZLE</button>
+        <button class="tag-btn" onclick="filterByTag('3d', this)">#3D</button>
+        <button class="tag-btn" onclick="filterByTag('physics', this)">#PHYSICS</button>
+        <button class="tag-btn" onclick="filterByTag('runner', this)">#RUNNER</button>
+      </div>
+
+      <!-- RECENTLY PLAYED -->
+      <div id="recently-played-section" style="display: none; width: 100%;">
+        <h2 class="section-heading">🕒 RECENTLY PLAYED</h2>
+        <div class="games-grid" id="recentlyPlayedGrid"></div>
+      </div>
+
+      <!-- FAVORITES SECTION -->
+      <div id="favorites-section" style="display: none; width: 100%;">
+        <h2 class="section-heading">❤️ YOUR FAVORITES</h2>
+        <div class="games-grid" id="favoritesGrid"></div>
+      </div>
+
       <!-- RECOMMENDED FOR YOU SECTION -->
-      <div id="recommended-section" style="display: none; width: 100%;">
+      <div id="recommended-section" style="width: 100%;">
         <h2 class="section-heading">🔥 RECOMMENDED FOR YOU</h2>
         <div class="games-grid" id="recommendedGrid"></div>
       </div>
@@ -512,11 +693,12 @@
       <h2 class="section-heading" id="allGamesHeading">ALL GAMES</h2>
       <div class="games-grid" id="mainGamesGrid">
 
-        <div class="game-card" data-category="arcade" data-name="flappy bird">
+        <div class="game-card" data-category="arcade" data-tags="retro,arcade" data-name="flappy bird">
+          <div class="fav-btn" onclick="toggleFavorite('FLAPPY BIRD')">❤️</div>
           <span class="card-badge">OG CLASSIC</span>
           <div class="card-icon">🐤</div>
           <h3>FLAPPY BIRD</h3>
-          <p>The iconic arcade flapper. Tap or press space to flap through endless retro pipes and score big!</p>
+          <p>The iconic arcade flapper. Tap or press space to flap through endless retro pipes!</p>
           <div class="card-actions">
             <a class="play-btn" href="https://supernebula23.github.io/games/flappybird/index.html" onclick="trackPlay('FLAPPY BIRD', 'arcade', 10)">
               <span class="play-btn-text">PLAY (+10 XP)</span>
@@ -524,7 +706,8 @@
           </div>
         </div>
 
-        <div class="game-card" data-category="arcade" data-name="snake">
+        <div class="game-card" data-category="arcade" data-tags="retro,arcade" data-name="snake">
+          <div class="fav-btn" onclick="toggleFavorite('SNAKE')">❤️</div>
           <span class="card-badge">RETRO CLASSIC</span>
           <div class="card-icon">🐍</div>
           <h3>SNAKE</h3>
@@ -536,11 +719,12 @@
           </div>
         </div>
 
-        <div class="game-card" data-category="platformer" data-name="martian mike">
+        <div class="game-card" data-category="platformer" data-tags="runner,retro" data-name="martian mike">
+          <div class="fav-btn" onclick="toggleFavorite('MARTIAN MIKE')">❤️</div>
           <span class="card-badge orange">PLATFORMER</span>
           <div class="card-icon">👨‍🚀</div>
           <h3>MARTIAN MIKE</h3>
-          <p>Run, jump, and dodge hazards across challenging Martian landscapes in this retro platformer!</p>
+          <p>Run, jump, and dodge hazards across challenging Martian landscapes!</p>
           <div class="card-actions">
             <a class="play-btn" href="https://supernebula23.github.io/games/MartianMike/Martian%20Mike.html" onclick="trackPlay('MARTIAN MIKE', 'platformer', 10)">
               <span class="play-btn-text">PLAY (+10 XP)</span>
@@ -548,11 +732,12 @@
           </div>
         </div>
 
-        <div class="game-card" data-category="arcade" data-name="space defender">
+        <div class="game-card" data-category="arcade" data-tags="retro,shooter" data-name="space defender">
+          <div class="fav-btn" onclick="toggleFavorite('SPACE DEFENDER')">❤️</div>
           <span class="card-badge neon">RETRO SHOOTER</span>
           <div class="card-icon">👾</div>
           <h3>SPACE DEFENDER</h3>
-          <p>Blast through invading alien armadas in this action-packed 8-bit galactic shooter!</p>
+          <p>Blast through invading alien armadas in this action-packed galactic shooter!</p>
           <div class="card-actions">
             <a class="play-btn" href="https://supernebula23.github.io/games/space_defender.html" onclick="trackPlay('SPACE DEFENDER', 'arcade', 10)">
               <span class="play-btn-text">PLAY (+10 XP)</span>
@@ -560,7 +745,8 @@
           </div>
         </div>
 
-        <div class="game-card" data-category="arcade" data-name="stack">
+        <div class="game-card" data-category="arcade" data-tags="physics,arcade" data-name="stack">
+          <div class="fav-btn" onclick="toggleFavorite('STACK')">❤️</div>
           <span class="card-badge purple">ARCADE</span>
           <div class="card-icon">🥞</div>
           <h3>STACK</h3>
@@ -572,7 +758,8 @@
           </div>
         </div>
 
-        <div class="game-card" data-category="puzzle" data-name="2048">
+        <div class="game-card" data-category="puzzle" data-tags="puzzle,retro" data-name="2048">
+          <div class="fav-btn" onclick="toggleFavorite('2048')">❤️</div>
           <span class="card-badge gold">PUZZLE</span>
           <div class="card-icon">🔢</div>
           <h3>2048</h3>
@@ -584,7 +771,8 @@
           </div>
         </div>
 
-        <div class="game-card" data-category="strategy" data-name="tower defense">
+        <div class="game-card" data-category="strategy" data-tags="strategy" data-name="tower defense">
+          <div class="fav-btn" onclick="toggleFavorite('TOWER DEFENSE')">❤️</div>
           <span class="card-badge neon">STRATEGY</span>
           <div class="card-icon">🏰</div>
           <h3>TOWER DEFENSE</h3>
@@ -596,7 +784,8 @@
           </div>
         </div>
 
-        <div class="game-card" data-category="survival" data-name="among us">
+        <div class="game-card" data-category="survival" data-tags="multiplayer" data-name="among us">
+          <div class="fav-btn" onclick="toggleFavorite('AMONG US')">❤️</div>
           <span class="card-badge red">SURVIVAL</span>
           <div class="card-icon">🚀</div>
           <h3>AMONG US</h3>
@@ -608,7 +797,8 @@
           </div>
         </div>
 
-        <div class="game-card" data-category="puzzle" data-name="guess the color">
+        <div class="game-card" data-category="puzzle" data-tags="multiplayer,puzzle" data-name="guess the color">
+          <div class="fav-btn" onclick="toggleFavorite('GUESS THE COLOR')">❤️</div>
           <span class="card-badge neon">MULTIPLAYER</span>
           <div class="card-icon">🎨</div>
           <h3>GUESS THE COLOR</h3>
@@ -620,7 +810,8 @@
           </div>
         </div>
 
-        <div class="game-card" data-category="strategy" data-name="battleship">
+        <div class="game-card" data-category="strategy" data-tags="multiplayer,strategy" data-name="battleship">
+          <div class="fav-btn" onclick="toggleFavorite('BATTLESHIP')">❤️</div>
           <span class="card-badge neon">MULTIPLAYER</span>
           <div class="card-icon">🚢</div>
           <h3>BATTLESHIP</h3>
@@ -632,7 +823,8 @@
           </div>
         </div>
 
-        <div class="game-card" data-category="puzzle" data-name="fruit merge bonanza">
+        <div class="game-card" data-category="puzzle" data-tags="puzzle,physics" data-name="fruit merge bonanza">
+          <div class="fav-btn" onclick="toggleFavorite('FRUIT MERGE BONANZA')">❤️</div>
           <span class="card-badge gold">PUZZLE</span>
           <div class="card-icon">🍉</div>
           <h3>FRUIT MERGE BONANZA</h3>
@@ -644,7 +836,8 @@
           </div>
         </div>
 
-        <div class="game-card" data-category="strategy" data-name="dots and boxes">
+        <div class="game-card" data-category="strategy" data-tags="multiplayer" data-name="dots and boxes">
+          <div class="fav-btn" onclick="toggleFavorite('DOTS AND BOXES')">❤️</div>
           <span class="card-badge neon">MULTIPLAYER</span>
           <div class="card-icon">✏️</div>
           <h3>DOTS AND BOXES</h3>
@@ -656,11 +849,12 @@
           </div>
         </div>
 
-        <div class="game-card" data-category="arcade" data-name="claw machine master">
+        <div class="game-card" data-category="arcade" data-tags="arcade,physics" data-name="claw machine master">
+          <div class="fav-btn" onclick="toggleFavorite('CLAW MACHINE MASTER')">❤️</div>
           <span class="card-badge purple">ARCADE</span>
           <div class="card-icon">🕹️</div>
           <h3>CLAW MACHINE MASTER</h3>
-          <p>Test your precision timing! Grab plushies and prizes before time runs out! Made by ScaryEnderman45.</p>
+          <p>Test your precision timing! Grab plushies and prizes before time runs out!</p>
           <div class="card-actions">
             <a class="play-btn" href="https://supernebula23.github.io/games/arcade_claw_machine_master.html" onclick="trackPlay('CLAW MACHINE MASTER', 'arcade', 10)">
               <span class="play-btn-text">PLAY (+10 XP)</span>
@@ -668,11 +862,12 @@
           </div>
         </div>
 
-        <div class="game-card" data-category="arcade" data-name="asteroid defender">
+        <div class="game-card" data-category="arcade" data-tags="retro,shooter" data-name="asteroid defender">
+          <div class="fav-btn" onclick="toggleFavorite('ASTEROID DEFENDER')">❤️</div>
           <span class="card-badge neon">RETRO SHOOTER</span>
           <div class="card-icon">☄️</div>
           <h3>ASTEROID DEFENDER</h3>
-          <p>Navigate deep space, destroy incoming cosmic rocks, and survive stellar nova storms! Made by ScaryEnderman45.</p>
+          <p>Navigate deep space, destroy incoming cosmic rocks, and survive nova storms!</p>
           <div class="card-actions">
             <a class="play-btn" href="https://supernebula23.github.io/games/asteroid_defender_stellar_nova.html" onclick="trackPlay('ASTEROID DEFENDER', 'arcade', 10)">
               <span class="play-btn-text">PLAY (+10 XP)</span>
@@ -680,11 +875,12 @@
           </div>
         </div>
 
-        <div class="game-card" data-category="arcade" data-name="basketball arcade">
+        <div class="game-card" data-category="arcade" data-tags="arcade,physics" data-name="basketball arcade">
+          <div class="fav-btn" onclick="toggleFavorite('BASKETBALL ARCADE')">❤️</div>
           <span class="card-badge">RETRO CLASSIC</span>
           <div class="card-icon">🏀</div>
           <h3>BASKETBALL ARCADE</h3>
-          <p>Aim, shoot, and rack up high scores in this fast-paced hoop challenge! Made by ScaryEnderman45.</p>
+          <p>Aim, shoot, and rack up high scores in this fast-paced hoop challenge!</p>
           <div class="card-actions">
             <a class="play-btn" href="https://supernebula23.github.io/games/basketball_arcade_challenge.html" onclick="trackPlay('BASKETBALL ARCADE', 'arcade', 10)">
               <span class="play-btn-text">PLAY (+10 XP)</span>
@@ -692,11 +888,12 @@
           </div>
         </div>
 
-        <div class="game-card" data-category="racing" data-name="bridge race">
+        <div class="game-card" data-category="racing" data-tags="runner,3d" data-name="bridge race">
+          <div class="fav-btn" onclick="toggleFavorite('BRIDGE RACE')">❤️</div>
           <span class="card-badge orange">RACING</span>
           <div class="card-icon">🌉</div>
           <h3>BRIDGE RACE</h3>
-          <p>Collect color blocks, construct bridges, and outpace rivals to cross the finish line first! Made by ScaryEnderman45.</p>
+          <p>Collect color blocks, construct bridges, and outpace rivals to cross the finish line first!</p>
           <div class="card-actions">
             <a class="play-btn" href="https://supernebula23.github.io/games/bridgerace.html" onclick="trackPlay('BRIDGE RACE', 'racing', 10)">
               <span class="play-btn-text">PLAY (+10 XP)</span>
@@ -704,11 +901,12 @@
           </div>
         </div>
 
-        <div class="game-card" data-category="puzzle" data-name="factory sort">
+        <div class="game-card" data-category="puzzle" data-tags="puzzle" data-name="factory sort">
+          <div class="fav-btn" onclick="toggleFavorite('FACTORY SORT')">❤️</div>
           <span class="card-badge gold">PUZZLE</span>
           <div class="card-icon">🏭</div>
           <h3>FACTORY SORT</h3>
-          <p>Sort assembly items along busy conveyor belts in this fast-paced logic organizer! Made by ScaryEnderman45.</p>
+          <p>Sort assembly items along busy conveyor belts in this fast-paced logic organizer!</p>
           <div class="card-actions">
             <a class="play-btn" href="https://supernebula23.github.io/games/factorysort.html" onclick="trackPlay('FACTORY SORT', 'puzzle', 10)">
               <span class="play-btn-text">PLAY (+10 XP)</span>
@@ -716,11 +914,12 @@
           </div>
         </div>
 
-        <div class="game-card" data-category="simulation" data-name="farm game">
+        <div class="game-card" data-category="simulation" data-tags="retro" data-name="farm game">
+          <div class="fav-btn" onclick="toggleFavorite('FARM GAME')">❤️</div>
           <span class="card-badge">SIMULATION</span>
           <div class="card-icon">🚜</div>
           <h3>FARM GAME</h3>
-          <p>Plant seeds, harvest crops, manage resources, and build up your dream farmstead! Made by ScaryEnderman45.</p>
+          <p>Plant seeds, harvest crops, manage resources, and build up your dream farmstead!</p>
           <div class="card-actions">
             <a class="play-btn" href="https://supernebula23.github.io/games/farmgame.html" onclick="trackPlay('FARM GAME', 'simulation', 10)">
               <span class="play-btn-text">PLAY (+10 XP)</span>
@@ -728,11 +927,12 @@
           </div>
         </div>
 
-        <div class="game-card" data-category="racing" data-name="neon car dodge">
+        <div class="game-card" data-category="racing" data-tags="3d,runner" data-name="neon car dodge">
+          <div class="fav-btn" onclick="toggleFavorite('NEON CAR DODGE')">❤️</div>
           <span class="card-badge neon">RACING</span>
           <div class="card-icon">🏎️</div>
           <h3>NEON CAR DODGE</h3>
-          <p>Speed through glowing synthwave tracks and dodge oncoming traffic at high speeds! Made by ScaryEnderman45.</p>
+          <p>Speed through glowing synthwave tracks and dodge oncoming traffic at high speeds!</p>
           <div class="card-actions">
             <a class="play-btn" href="https://supernebula23.github.io/games/NeonCarDodge.html" onclick="trackPlay('NEON CAR DODGE', 'racing', 10)">
               <span class="play-btn-text">PLAY (+10 XP)</span>
@@ -740,11 +940,12 @@
           </div>
         </div>
 
-        <div class="game-card" data-category="tycoon" data-name="thrill world tycoon">
+        <div class="game-card" data-category="tycoon" data-tags="strategy" data-name="thrill world tycoon">
+          <div class="fav-btn" onclick="toggleFavorite('THRILL WORLD TYCOON')">❤️</div>
           <span class="card-badge purple">TYCOON</span>
           <div class="card-icon">🎢</div>
           <h3>THRILL WORLD TYCOON</h3>
-          <p>Design epic rides, manage amusement park operations, and build a global park empire! Made by ScaryEnderman45.</p>
+          <p>Design epic rides, manage amusement park operations, and build a global park empire!</p>
           <div class="card-actions">
             <a class="play-btn" href="https://supernebula23.github.io/games/thrillworldtycoon.html" onclick="trackPlay('THRILL WORLD TYCOON', 'tycoon', 10)">
               <span class="play-btn-text">PLAY (+10 XP)</span>
@@ -752,11 +953,12 @@
           </div>
         </div>
 
-        <div class="game-card" data-category="strategy" data-name="town defender">
+        <div class="game-card" data-category="strategy" data-tags="strategy" data-name="town defender">
+          <div class="fav-btn" onclick="toggleFavorite('TOWN DEFENDER')">❤️</div>
           <span class="card-badge neon">STRATEGY</span>
           <div class="card-icon">🛡️</div>
           <h3>TOWN DEFENDER</h3>
-          <p>Fortify village walls and command defenses to protect citizens from invading hordes! Made by ScaryEnderman45.</p>
+          <p>Fortify village walls and command defenses to protect citizens from invading hordes!</p>
           <div class="card-actions">
             <a class="play-btn" href="https://supernebula23.github.io/games/towndefender.html" onclick="trackPlay('TOWN DEFENDER', 'strategy', 10)">
               <span class="play-btn-text">PLAY (+10 XP)</span>
@@ -764,11 +966,12 @@
           </div>
         </div>
 
-        <div class="game-card" data-category="survival" data-name="zombie base defense">
+        <div class="game-card" data-category="survival" data-tags="3d,shooter" data-name="zombie base defense">
+          <div class="fav-btn" onclick="toggleFavorite('ZOMBIE BASE DEFENSE')">❤️</div>
           <span class="card-badge red">SURVIVAL</span>
           <div class="card-icon">🧟</div>
           <h3>ZOMBIE BASE DEFENSE</h3>
-          <p>Barricade base perimeters, upgrade weaponry, and survive endless night waves of undead! Made by ScaryEnderman45.</p>
+          <p>Barricade base perimeters, upgrade weaponry, and survive endless night waves of undead!</p>
           <div class="card-actions">
             <a class="play-btn" href="https://supernebula23.github.io/games/zombiebasedefense.html" onclick="trackPlay('ZOMBIE BASE DEFENSE', 'survival', 10)">
               <span class="play-btn-text">PLAY (+10 XP)</span>
@@ -776,11 +979,12 @@
           </div>
         </div>
 
-        <div class="game-card" data-category="arcade" data-name="brick invaders arcade">
+        <div class="game-card" data-category="arcade" data-tags="retro,arcade" data-name="brick invaders arcade">
+          <div class="fav-btn" onclick="toggleFavorite('BRICK INVADERS ARCADE')">❤️</div>
           <span class="card-badge purple">ARCADE</span>
           <div class="card-icon">🧱</div>
           <h3>BRICK INVADERS ARCADE</h3>
-          <p>Blast through rows of space bricks in this arcade shooter crossover! Made by ScaryEnderman45.</p>
+          <p>Blast through rows of space bricks in this arcade shooter crossover!</p>
           <div class="card-actions">
             <a class="play-btn" href="https://supernebula23.github.io/games/brick_invaders_arcade.html" onclick="trackPlay('BRICK INVADERS ARCADE', 'arcade', 10)">
               <span class="play-btn-text">PLAY (+10 XP)</span>
@@ -788,11 +992,12 @@
           </div>
         </div>
 
-        <div class="game-card" data-category="strategy" data-name="castle warfare frontline battle">
+        <div class="game-card" data-category="strategy" data-tags="3d,strategy" data-name="castle warfare frontline battle">
+          <div class="fav-btn" onclick="toggleFavorite('CASTLE WARFARE')">❤️</div>
           <span class="card-badge neon">STRATEGY</span>
           <div class="card-icon">⚔️</div>
           <h3>CASTLE WARFARE</h3>
-          <p>Command frontline forces and conquer enemy strongholds! Made by ScaryEnderman45.</p>
+          <p>Command frontline forces and conquer enemy strongholds!</p>
           <div class="card-actions">
             <a class="play-btn" href="https://supernebula23.github.io/games/castle_warfare_frontline_battle.html" onclick="trackPlay('CASTLE WARFARE', 'strategy', 10)">
               <span class="play-btn-text">PLAY (+10 XP)</span>
@@ -800,11 +1005,12 @@
           </div>
         </div>
 
-        <div class="game-card" data-category="arcade" data-name="cybermage 3d arena">
+        <div class="game-card" data-category="arcade" data-tags="3d,arcade" data-name="cybermage 3d arena">
+          <div class="fav-btn" onclick="toggleFavorite('CYBERMAGE 3D ARENA')">❤️</div>
           <span class="card-badge purple">ARCADE</span>
           <div class="card-icon">🧙‍♂️</div>
           <h3>CYBERMAGE 3D ARENA</h3>
-          <p>Cast futuristic spells and duel opponents in a 3D arena! Made by ScaryEnderman45.</p>
+          <p>Cast futuristic spells and duel opponents in a 3D arena!</p>
           <div class="card-actions">
             <a class="play-btn" href="https://supernebula23.github.io/games/cybermage_3d_arena.html" onclick="trackPlay('CYBERMAGE 3D ARENA', 'arcade', 10)">
               <span class="play-btn-text">PLAY (+10 XP)</span>
@@ -812,11 +1018,12 @@
           </div>
         </div>
 
-        <div class="game-card" data-category="racing" data-name="neon speedrunner 3d">
+        <div class="game-card" data-category="racing" data-tags="3d,runner" data-name="neon speedrunner 3d">
+          <div class="fav-btn" onclick="toggleFavorite('NEON SPEEDRUNNER 3D')">❤️</div>
           <span class="card-badge orange">RACING</span>
           <div class="card-icon">🏎️</div>
           <h3>NEON SPEEDRUNNER 3D</h3>
-          <p>Sprint through glowing 3D obstacles at breakneck speeds! Made by ScaryEnderman45.</p>
+          <p>Sprint through glowing 3D obstacles at breakneck speeds!</p>
           <div class="card-actions">
             <a class="play-btn" href="https://supernebula23.github.io/games/neon_speedrunner_3d.html" onclick="trackPlay('NEON SPEEDRUNNER 3D', 'racing', 10)">
               <span class="play-btn-text">PLAY (+10 XP)</span>
@@ -824,11 +1031,12 @@
           </div>
         </div>
 
-        <div class="game-card" data-category="survival" data-name="shadow escape stealth infiltrator">
+        <div class="game-card" data-category="survival" data-tags="runner" data-name="shadow escape stealth infiltrator">
+          <div class="fav-btn" onclick="toggleFavorite('SHADOW ESCAPE')">❤️</div>
           <span class="card-badge red">SURVIVAL</span>
           <div class="card-icon">🥷</div>
           <h3>SHADOW ESCAPE</h3>
-          <p>Sneak past guards and security systems in stealth infiltration missions! Made by ScaryEnderman45.</p>
+          <p>Sneak past guards and security systems in stealth infiltration missions!</p>
           <div class="card-actions">
             <a class="play-btn" href="https://supernebula23.github.io/games/shadow_escape_stealth_infiltrator.html" onclick="trackPlay('SHADOW ESCAPE', 'survival', 10)">
               <span class="play-btn-text">PLAY (+10 XP)</span>
@@ -836,11 +1044,12 @@
           </div>
         </div>
 
-        <div class="game-card" data-category="simulation" data-name="wobble master physics balance game">
+        <div class="game-card" data-category="simulation" data-tags="physics,3d" data-name="wobble master physics balance game">
+          <div class="fav-btn" onclick="toggleFavorite('WOBBLE MASTER')">❤️</div>
           <span class="card-badge">SIMULATION</span>
           <div class="card-icon">⚖️</div>
           <h3>WOBBLE MASTER</h3>
-          <p>Test your balance and master physics challenges! Made by ScaryEnderman45.</p>
+          <p>Test your balance and master physics challenges!</p>
           <div class="card-actions">
             <a class="play-btn" href="https://supernebula23.github.io/games/wobble_master_physics_balance_game.html" onclick="trackPlay('WOBBLE MASTER', 'simulation', 10)">
               <span class="play-btn-text">PLAY (+10 XP)</span>
@@ -848,23 +1057,25 @@
           </div>
         </div>
 
-        <div class="game-card" data-category="arcade" data-name="crowd master">
+        <div class="game-card" data-category="arcade" data-tags="runner" data-name="crowd master">
+          <div class="fav-btn" onclick="toggleFavorite('CROWD MASTER')">❤️</div>
           <span class="card-badge orange">RUNNER</span>
           <div class="card-icon">👥</div>
           <h3>CROWD MASTER</h3>
-          <p>Multiply your crowd, dodge obstacles, and defeat rival runners to crush the castle! Made by ScaryEnderman45.</p>
+          <p>Multiply your crowd, dodge obstacles, and defeat rival runners to crush the castle!</p>
           <div class="card-actions">
-            <a class="play-btn" href="https://supernebula23.github.io/games/countmasters.html" onclick="trackPlay('arcade', 10)">
+            <a class="play-btn" href="https://supernebula23.github.io/games/countmasters.html" onclick="trackPlay('CROWD MASTER', 'arcade', 10)">
               <span class="play-btn-text">PLAY (+10 XP)</span>
             </a>
           </div>
         </div>
 
-        <div class="game-card" data-category="strategy" data-name="loot ledger">
+        <div class="game-card" data-category="strategy" data-tags="strategy" data-name="loot ledger">
+          <div class="fav-btn" onclick="toggleFavorite('LOOT LEDGER')">❤️</div>
           <span class="card-badge gold">STRATEGY</span>
           <div class="card-icon">💰</div>
           <h3>LOOT LEDGER</h3>
-          <p>Balance treasuries, claim rewards, and out-smart rival guilds! Made by ScaryEnderman45.</p>
+          <p>Balance treasuries, claim rewards, and out-smart rival guilds!</p>
           <div class="card-actions">
             <a class="play-btn" href="https://supernebula23.github.io/games/lootledger.html" onclick="trackPlay('LOOT LEDGER', 'strategy', 10)">
               <span class="play-btn-text">PLAY (+10 XP)</span>
@@ -872,11 +1083,12 @@
           </div>
         </div>
 
-        <div class="game-card" data-category="platformer" data-name="neon dash">
+        <div class="game-card" data-category="platformer" data-tags="runner,retro" data-name="neon dash">
+          <div class="fav-btn" onclick="toggleFavorite('NEON DASH')">❤️</div>
           <span class="card-badge neon">PLATFORMER</span>
           <div class="card-icon">⚡</div>
           <h3>NEON DASH</h3>
-          <p>Sprint and jump through fast retro neon geometry obstacles! Made by ScaryEnderman45.</p>
+          <p>Sprint and jump through fast retro neon geometry obstacles!</p>
           <div class="card-actions">
             <a class="play-btn" href="https://supernebula23.github.io/games/neondash.html" onclick="trackPlay('NEON DASH', 'platformer', 10)">
               <span class="play-btn-text">PLAY (+10 XP)</span>
@@ -884,11 +1096,12 @@
           </div>
         </div>
 
-        <div class="game-card" data-category="simulation" data-name="pocket companion">
+        <div class="game-card" data-category="simulation" data-tags="retro" data-name="pocket companion">
+          <div class="fav-btn" onclick="toggleFavorite('POCKET COMPANION')">❤️</div>
           <span class="card-badge">PET SIM</span>
           <div class="card-icon">🐱</div>
           <h3>POCKET COMPANION</h3>
-          <p>Raise, feed, and play with your virtual retro pet! Made by ScaryEnderman45.</p>
+          <p>Raise, feed, and play with your virtual retro pet!</p>
           <div class="card-actions">
             <a class="play-btn" href="https://supernebula23.github.io/games/pocket_companion_virtual_pet.html" onclick="trackPlay('POCKET COMPANION', 'simulation', 10)">
               <span class="play-btn-text">PLAY (+10 XP)</span>
@@ -896,11 +1109,12 @@
           </div>
         </div>
 
-        <div class="game-card" data-category="puzzle" data-name="sokoban 2048">
+        <div class="game-card" data-category="puzzle" data-tags="puzzle,retro" data-name="sokoban 2048">
+          <div class="fav-btn" onclick="toggleFavorite('SOKOBAN 2048')">❤️</div>
           <span class="card-badge purple">PUZZLE</span>
           <div class="card-icon">📦</div>
           <h3>SOKOBAN 2048</h3>
-          <p>Push tiles together in grid dungeons to combine number blocks! Made by ScaryEnderman45.</p>
+          <p>Push tiles together in grid dungeons to combine number blocks!</p>
           <div class="card-actions">
             <a class="play-btn" href="https://supernebula23.github.io/games/sokoban_2048.html" onclick="trackPlay('SOKOBAN 2048', 'puzzle', 10)">
               <span class="play-btn-text">PLAY (+10 XP)</span>
@@ -913,12 +1127,34 @@
     </section>
   </main>
 
-  <!-- Account Modal -->
+  <!-- Profile & Achievements Modal -->
   <div class="modal-overlay" id="accountModal">
     <div class="modal-card">
-      <h2>PLAYER PROFILE <span id="modalVipBadge" style="display:none; color: var(--text-gold);">👑 VIP</span></h2>
+      <h2>EDIT PROFILE <span id="modalVipBadge" style="display:none; color: var(--text-gold);">👑 VIP</span></h2>
+      
+      <label>AVATAR ICON:</label>
+      <div class="avatar-picker">
+        <div class="avatar-opt" onclick="selectAvatar('👤')">👤</div>
+        <div class="avatar-opt" onclick="selectAvatar('👾')">👾</div>
+        <div class="avatar-opt" onclick="selectAvatar('🤖')">🤖</div>
+        <div class="avatar-opt" onclick="selectAvatar('🐱')">🐱</div>
+        <div class="avatar-opt" onclick="selectAvatar('🥷')">🥷</div>
+        <div class="avatar-opt" onclick="selectAvatar('🚀')">🚀</div>
+        <div class="avatar-opt" onclick="selectAvatar('👑')">👑</div>
+        <div class="avatar-opt" onclick="selectAvatar('🔥')">🔥</div>
+      </div>
+
       <label for="usernameInput">DISPLAY NAME:</label>
       <input type="text" id="usernameInput" maxlength="20" placeholder="ENTER NAME">
+
+      <label>THEME ACCENT:</label>
+      <div class="theme-picker">
+        <div class="theme-btn" style="background: #f85800;" onclick="selectTheme('default')"></div>
+        <div class="theme-btn" style="background: #00ffff;" onclick="selectTheme('cyan')"></div>
+        <div class="theme-btn" style="background: #ff00ff;" onclick="selectTheme('pink')"></div>
+        <div class="theme-btn" style="background: #73bf2e;" onclick="selectTheme('green')"></div>
+        <div class="theme-btn" style="background: #f8b800;" onclick="selectTheme('gold')"></div>
+      </div>
 
       <div style="text-align: left; font-size: 9px; color: var(--text-gold); margin-top: 5px; display: flex; justify-content: space-between;">
         <div><span id="modalLvl">LEVEL 1</span> - <span id="modalXp">0 XP</span></div>
@@ -929,6 +1165,15 @@
         <div class="xp-progress-fill" id="xpFill"></div>
       </div>
 
+      <div class="profile-stats-box">
+        <div>MOST PLAYED: <span id="statMostPlayed">NONE</span></div>
+        <div>TOP GENRE: <span id="statFavCategory">NONE</span></div>
+        <div>TOTAL PLAYS: <span id="statTotalPlays">0</span></div>
+      </div>
+
+      <label>🏆 ACHIEVEMENTS:</label>
+      <div class="achievements-list" id="achievementsList"></div>
+
       <button class="modal-btn" onclick="saveProfile()">SAVE & CLOSE</button>
     </div>
   </div>
@@ -936,6 +1181,18 @@
   <script>
     const XP_PER_LEVEL = 100;
     const VIP_USERS = ['scaryghost14', 'scaryenderman45', 'imtiny'];
+    let tempAvatar = '👤';
+    let tempTheme = 'default';
+    let activeTagFilter = 'all';
+
+    const ACHIEVEMENTS = [
+      { id: 'first_play', title: 'FIRST STEPS', desc: 'Play your first game', icon: '🎮', check: acc => (Object.values(acc.gameStats || {}).reduce((a,b)=>a+b,0)) >= 1 },
+      { id: 'gamer_10', title: 'GAMER FANATIC', desc: 'Play games 10 times', icon: '🕹️', check: acc => (Object.values(acc.gameStats || {}).reduce((a,b)=>a+b,0)) >= 10 },
+      { id: 'lvl_5', title: 'LEVEL 5 PIONEER', desc: 'Reach Level 5', icon: '⭐', check: acc => (Math.floor(acc.xp / XP_PER_LEVEL) + 1) >= 5 },
+      { id: 'fav_3', title: 'COLLECTOR', desc: 'Favorite 3 games', icon: '❤️', check: acc => (acc.favorites || []).length >= 3 },
+      { id: 'arcade_master', title: 'ARCADE MASTER', desc: 'Play 5 Arcade games', icon: '👾', check: acc => (acc.categoryStats?.arcade || 0) >= 5 },
+      { id: 'vip_club', title: 'VIP CLUB', desc: 'Unlock VIP perks', icon: '👑', check: acc => isVipName(acc.username) }
+    ];
 
     function isVipName(name) {
       if (!name) return false;
@@ -948,9 +1205,13 @@
         const parsed = JSON.parse(saved);
         if (!parsed.gameStats) parsed.gameStats = {};
         if (!parsed.categoryStats) parsed.categoryStats = {};
+        if (!parsed.history) parsed.history = [];
+        if (!parsed.favorites) parsed.favorites = [];
+        if (!parsed.avatar) parsed.avatar = '👤';
+        if (!parsed.theme) parsed.theme = 'default';
         return parsed;
       }
-      return { username: 'PLAYER 1', xp: 0, categoryStats: {}, gameStats: {} };
+      return { username: 'PLAYER 1', avatar: '👤', theme: 'default', xp: 0, categoryStats: {}, gameStats: {}, history: [], favorites: [] };
     }
 
     function saveAccountData(data) {
@@ -958,20 +1219,61 @@
       updateUI();
     }
 
+    function updateGameOfTheDay() {
+      const mainCards = Array.from(document.querySelectorAll('#mainGamesGrid .game-card'));
+      if (mainCards.length === 0) return;
+
+      // Calculate days elapsed since epoch to get a daily index
+      const now = new Date();
+      const daysSinceEpoch = Math.floor(now.getTime() / (1000 * 60 * 60 * 24));
+      const dailyIndex = daysSinceEpoch % mainCards.length;
+
+      const selectedCard = mainCards[dailyIndex];
+      const title = selectedCard.querySelector('h3').textContent;
+      const desc = selectedCard.querySelector('p').textContent;
+      const icon = selectedCard.querySelector('.card-icon').textContent;
+      const playBtn = selectedCard.querySelector('.play-btn');
+      const href = playBtn.getAttribute('href');
+      const cat = selectedCard.getAttribute('data-category');
+
+      document.getElementById('gotdTitle').textContent = `🔥 GAME OF THE DAY: ${title}`;
+      document.getElementById('gotdDesc').textContent = desc;
+      document.getElementById('gotdIcon').textContent = icon;
+      
+      const gotdLink = document.getElementById('gotdLink');
+      gotdLink.setAttribute('href', href);
+      gotdLink.onclick = () => trackPlay(title, cat, 10);
+    }
+
     function trackPlay(gameTitle, category, baseXP) {
       const acc = getAccount();
       
-      // Track specific game play counts
       if (!acc.gameStats) acc.gameStats = {};
       acc.gameStats[gameTitle] = (acc.gameStats[gameTitle] || 0) + 1;
 
-      // Track category counts
       if (!acc.categoryStats) acc.categoryStats = {};
       acc.categoryStats[category] = (acc.categoryStats[category] || 0) + 1;
 
-      // Add XP
+      if (!acc.history) acc.history = [];
+      acc.history = acc.history.filter(title => title !== gameTitle);
+      acc.history.unshift(gameTitle);
+      if (acc.history.length > 10) acc.history.pop();
+
       const finalAmount = isVipName(acc.username) ? baseXP * 2 : baseXP;
       acc.xp += finalAmount;
+
+      saveAccountData(acc);
+    }
+
+    function toggleFavorite(gameTitle) {
+      const acc = getAccount();
+      if (!acc.favorites) acc.favorites = [];
+
+      if (acc.favorites.includes(gameTitle)) {
+        acc.favorites = acc.favorites.filter(t => t !== gameTitle);
+      } else {
+        acc.favorites.push(gameTitle);
+      }
 
       saveAccountData(acc);
     }
@@ -982,6 +1284,9 @@
       const currentLevelXP = acc.xp % XP_PER_LEVEL;
       const isVip = isVipName(acc.username);
 
+      document.body.className = acc.theme ? `theme-${acc.theme}` : '';
+
+      document.getElementById('badgeAvatar').textContent = acc.avatar || '👤';
       document.getElementById('badgeUsername').textContent = acc.username;
       document.getElementById('badgeLvl').textContent = `LVL ${level}`;
 
@@ -1014,14 +1319,170 @@
         btn.textContent = isVip ? 'PLAY (+20 XP 👑)' : 'PLAY (+10 XP)';
       });
 
+      const favBtns = document.querySelectorAll('.fav-btn');
+      favBtns.forEach(btn => {
+        const card = btn.closest('.game-card');
+        if(!card) return;
+        const title = card.querySelector('h3').textContent;
+        if ((acc.favorites || []).includes(title)) {
+          btn.classList.add('is-fav');
+        } else {
+          btn.classList.remove('is-fav');
+        }
+      });
+
+      tempAvatar = acc.avatar || '👤';
+      tempTheme = acc.theme || 'default';
+      highlightSelectedAvatar();
+
+      updateGameOfTheDay();
       renderProfileStats(acc);
-      renderRecommendations();
+      renderAchievements(acc);
+      renderRecentlyPlayed(acc);
+      renderFavorites(acc);
+      renderRecommendations(acc);
+    }
+
+    function selectAvatar(emoji) {
+      tempAvatar = emoji;
+      highlightSelectedAvatar();
+    }
+
+    function highlightSelectedAvatar() {
+      const opts = document.querySelectorAll('.avatar-opt');
+      opts.forEach(opt => {
+        if (opt.textContent === tempAvatar) opt.classList.add('selected');
+        else opt.classList.remove('selected');
+      });
+    }
+
+    function selectTheme(themeName) {
+      tempTheme = themeName;
+      document.body.className = themeName === 'default' ? '' : `theme-${themeName}`;
+    }
+
+    function filterByTag(tag, btnEl) {
+      activeTagFilter = tag;
+      document.querySelectorAll('.tag-btn').forEach(b => b.classList.remove('active'));
+      btnEl.classList.add('active');
+      handleSearchAndFilter();
+    }
+
+    function handleSearchAndFilter() {
+      const searchVal = document.getElementById('searchInput').value.toLowerCase().trim();
+      const categoryVal = document.getElementById('categoryFilter').value;
+      const cards = document.querySelectorAll('#mainGamesGrid .game-card');
+
+      cards.forEach(card => {
+        const name = card.getAttribute('data-name');
+        const cat = card.getAttribute('data-category');
+        const tags = (card.getAttribute('data-tags') || '').split(',');
+
+        const matchesSearch = name.includes(searchVal);
+        const matchesCat = (categoryVal === 'all' || cat === categoryVal);
+        const matchesTag = (activeTagFilter === 'all' || tags.includes(activeTagFilter));
+
+        if (matchesSearch && matchesCat && matchesTag) {
+          card.classList.remove('hidden');
+        } else {
+          card.classList.add('hidden');
+        }
+      });
+    }
+
+    function renderRecentlyPlayed(acc) {
+      const section = document.getElementById('recently-played-section');
+      const grid = document.getElementById('recentlyPlayedGrid');
+      grid.innerHTML = '';
+
+      if (!acc.history || acc.history.length === 0) {
+        section.style.display = 'none';
+        return;
+      }
+
+      const mainCards = Array.from(document.querySelectorAll('#mainGamesGrid .game-card'));
+      const recentTitles = acc.history.slice(0, 5);
+
+      recentTitles.forEach(title => {
+        const match = mainCards.find(c => c.querySelector('h3').textContent === title);
+        if (match) grid.appendChild(match.cloneNode(true));
+      });
+
+      section.style.display = grid.children.length > 0 ? 'block' : 'none';
+    }
+
+    function renderFavorites(acc) {
+      const section = document.getElementById('favorites-section');
+      const grid = document.getElementById('favoritesGrid');
+      grid.innerHTML = '';
+
+      if (!acc.favorites || acc.favorites.length === 0) {
+        section.style.display = 'none';
+        return;
+      }
+
+      const mainCards = Array.from(document.querySelectorAll('#mainGamesGrid .game-card'));
+
+      acc.favorites.forEach(title => {
+        const match = mainCards.find(c => c.querySelector('h3').textContent === title);
+        if (match) grid.appendChild(match.cloneNode(true));
+      });
+
+      section.style.display = grid.children.length > 0 ? 'block' : 'none';
+    }
+
+    function renderRecommendations(acc) {
+      const recSection = document.getElementById('recommended-section');
+      const recGrid = document.getElementById('recommendedGrid');
+      const mainCards = Array.from(document.querySelectorAll('#mainGamesGrid .game-card'));
+
+      const totalPlays = Object.values(acc.gameStats || {}).reduce((a, b) => a + b, 0);
+
+      let topCategory = null;
+      let maxCatCount = 0;
+      for (const [cat, count] of Object.entries(acc.categoryStats || {})) {
+        if (count > maxCatCount) {
+          maxCatCount = count;
+          topCategory = cat;
+        }
+      }
+
+      const scoredCards = mainCards.map(card => {
+        const title = card.querySelector('h3').textContent;
+        const cat = card.getAttribute('data-category');
+        const plays = acc.gameStats[title] || 0;
+        const isFavorite = (acc.favorites || []).includes(title);
+
+        let score = 0;
+        if (isFavorite) score += 15;
+
+        if (totalPlays > 0) {
+          if (cat === topCategory) score += 10;
+          if (plays > 0) score += Math.min(plays * 2, 8);
+          const recentIdx = (acc.history || []).indexOf(title);
+          if (recentIdx !== -1) score += Math.max(5 - recentIdx, 1);
+        } else {
+          if (['FLAPPY BIRD', 'SNAKE', '2048', 'MARTIAN MIKE', 'SPACE DEFENDER'].includes(title)) {
+            score += 15;
+          }
+        }
+
+        score += Math.random() * 2;
+        return { card, score };
+      });
+
+      scoredCards.sort((a, b) => b.score - a.score);
+
+      recGrid.innerHTML = '';
+      scoredCards.slice(0, 5).forEach(item => {
+        recGrid.appendChild(item.card.cloneNode(true));
+      });
+
+      recSection.style.display = 'block';
     }
 
     function renderProfileStats(acc) {
-      let topGame = 'NONE';
-      let maxGamePlays = 0;
-      let totalPlays = 0;
+      let topGame = 'NONE', maxGamePlays = 0, totalPlays = 0;
 
       for (const [game, count] of Object.entries(acc.gameStats || {})) {
         totalPlays += count;
@@ -1031,8 +1492,7 @@
         }
       }
 
-      let topCategory = 'NONE';
-      let maxCatPlays = 0;
+      let topCategory = 'NONE', maxCatPlays = 0;
       for (const [cat, count] of Object.entries(acc.categoryStats || {})) {
         if (count > maxCatPlays) {
           maxCatPlays = count;
@@ -1045,77 +1505,23 @@
       document.getElementById('statTotalPlays').textContent = totalPlays;
     }
 
-    function handleSearchAndFilter() {
-      const searchVal = document.getElementById('searchInput').value.toLowerCase().trim();
-      const categoryVal = document.getElementById('categoryFilter').value;
-      const cards = document.querySelectorAll('#mainGamesGrid .game-card');
+    function renderAchievements(acc) {
+      const list = document.getElementById('achievementsList');
+      list.innerHTML = '';
 
-      cards.forEach(card => {
-        const name = card.getAttribute('data-name');
-        const cat = card.getAttribute('data-category');
-
-        const matchesSearch = name.includes(searchVal);
-        const matchesCat = (categoryVal === 'all' || cat === categoryVal);
-
-        if (matchesSearch && matchesCat) {
-          card.classList.remove('hidden');
-        } else {
-          card.classList.add('hidden');
-        }
+      ACHIEVEMENTS.forEach(ach => {
+        const unlocked = ach.check(acc);
+        const div = document.createElement('div');
+        div.className = `achievement-item ${unlocked ? 'unlocked' : ''}`;
+        div.innerHTML = `
+          <div class="achievement-icon">${ach.icon}</div>
+          <div class="achievement-info">
+            <div class="achievement-title">${ach.title} ${unlocked ? '✓' : ''}</div>
+            <div style="color: #b0cadb;">${ach.desc}</div>
+          </div>
+        `;
+        list.appendChild(div);
       });
-    }
-
-    function renderRecommendations() {
-      const acc = getAccount();
-      const recSection = document.getElementById('recommended-section');
-      const recGrid = document.getElementById('recommendedGrid');
-
-      const totalPlays = Object.values(acc.gameStats || {}).reduce((a, b) => a + b, 0);
-
-      // Hide recommendations if player hasn't played games yet
-      if (totalPlays === 0) {
-        recSection.style.display = 'none';
-        return;
-      }
-
-      let topCategory = null;
-      let maxCatCount = 0;
-      for (const [cat, count] of Object.entries(acc.categoryStats || {})) {
-        if (count > maxCatCount) {
-          maxCatCount = count;
-          topCategory = cat;
-        }
-      }
-
-      const mainCards = Array.from(document.querySelectorAll('#mainGamesGrid .game-card'));
-      
-      // Calculate relevance scores for games across all categories
-      const scoredCards = mainCards.map(card => {
-        const title = card.querySelector('h3').textContent;
-        const cat = card.getAttribute('data-category');
-        const plays = acc.gameStats[title] || 0;
-
-        let score = 0;
-        if (cat === topCategory) score += 5;       // Category affinity boost
-        if (plays > 0) score += Math.min(plays, 5); // Play history boost
-        score += Math.random() * 2;                 // Slight randomness to surface cross-category variety
-
-        return { card, score };
-      });
-
-      // Sort cards highest to lowest score
-      scoredCards.sort((a, b) => b.score - a.score);
-
-      recGrid.innerHTML = '';
-      // Pick top 4 recommendations
-      const recommendations = scoredCards.slice(0, 4);
-
-      recommendations.forEach(item => {
-        const clone = item.card.cloneNode(true);
-        recGrid.appendChild(clone);
-      });
-
-      recSection.style.display = recommendations.length > 0 ? 'block' : 'none';
     }
 
     function openAccountModal() {
@@ -1127,6 +1533,8 @@
       const acc = getAccount();
       const inputVal = document.getElementById('usernameInput').value.trim();
       if (inputVal) acc.username = inputVal;
+      acc.avatar = tempAvatar;
+      acc.theme = tempTheme;
       saveAccountData(acc);
       document.getElementById('accountModal').classList.remove('active');
     }

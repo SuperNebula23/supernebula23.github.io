@@ -1,0 +1,1258 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full bg-slate-950 text-slate-100 font-sans">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>CYBER ARENA 1v1 - P2P Multiplayer</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- PeerJS CDN -->
+  <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
+  <!-- FontAwesome Icons CDN -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@500;700&display=swap');
+    
+    body {
+      font-family: 'Rajdhani', sans-serif;
+      touch-action: manipulation;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+
+    .font-orbitron {
+      font-family: 'Orbitron', sans-serif;
+    }
+
+    /* Custom glowing shadow effects */
+    .glow-cyan {
+      box-shadow: 0 0 20px rgba(6, 182, 212, 0.4);
+    }
+    .glow-pink {
+      box-shadow: 0 0 20px rgba(236, 72, 153, 0.4);
+    }
+    .text-glow-cyan {
+      text-shadow: 0 0 10px rgba(6, 182, 212, 0.7);
+    }
+    .text-glow-pink {
+      text-shadow: 0 0 10px rgba(236, 72, 153, 0.7);
+    }
+
+    /* Custom scrollbar */
+    ::-webkit-scrollbar {
+      width: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #090d16;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #1e293b;
+      border-radius: 3px;
+    }
+
+    canvas {
+      image-rendering: pixelated;
+    }
+  </style>
+</head>
+<body class="h-full flex flex-col justify-between overflow-x-hidden bg-slate-950 text-slate-100 selection:bg-cyan-500 selection:text-black">
+
+  <!-- Top Navigation / Header -->
+  <header class="border-b border-slate-800 bg-slate-900/80 backdrop-blur px-4 py-3 sticky top-0 z-50">
+    <div class="max-w-6xl mx-auto flex flex-wrap items-center justify-between gap-3">
+      <div class="flex items-center space-x-3">
+        <div class="w-9 h-9 rounded-lg bg-gradient-to-br from-cyan-500 to-pink-500 flex items-center justify-center font-orbitron font-black text-black text-xl shadow-lg shadow-cyan-500/20">
+          <i class="fa-solid font-black fa-crosshairs text-slate-950"></i>
+        </div>
+        <div>
+          <h1 class="font-orbitron font-black text-xl tracking-wider bg-gradient-to-r from-cyan-400 via-teal-300 to-pink-500 bg-clip-text text-transparent">
+            CYBER ARENA <span class="text-xs px-2 py-0.5 rounded bg-cyan-950 text-cyan-400 border border-cyan-800 font-mono tracking-normal ml-1">P2P</span>
+          </h1>
+        </div>
+      </div>
+
+      <!-- Controls & Status Badge -->
+      <div class="flex items-center space-x-2 sm:space-x-4">
+        <div id="status-badge" class="px-3 py-1.5 rounded-full text-xs font-semibold flex items-center space-x-2 bg-amber-500/10 text-amber-400 border border-amber-500/30">
+          <span class="w-2 h-2 rounded-full bg-amber-400 animate-pulse"></span>
+          <span id="status-text">Practice Bot Active</span>
+        </div>
+
+        <button onclick="showMenu()" class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs border border-slate-700 transition flex items-center space-x-1.5">
+          <i class="fa-solid fa-bars text-cyan-400"></i>
+          <span class="hidden sm:inline">Menu</span>
+        </button>
+
+        <button id="sfx-toggle-btn" onclick="toggleAudio()" class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs border border-slate-700 transition flex items-center space-x-1.5">
+          <i id="sfx-icon" class="fa-solid fa-volume-high text-cyan-400"></i>
+          <span class="hidden sm:inline">SFX</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Game Container -->
+  <main class="flex-grow flex flex-col items-center justify-center p-2 sm:p-4 max-w-6xl w-full mx-auto">
+    
+    <!-- Top HUD Scorebar -->
+    <div class="w-full max-w-4xl grid grid-cols-2 gap-3 sm:gap-6 mb-3">
+      <!-- Player 1 HUD -->
+      <div class="bg-slate-900/90 border border-cyan-500/30 rounded-xl p-2 sm:p-3 relative overflow-hidden glow-cyan">
+        <div id="p1-damage-flash" class="absolute inset-0 bg-cyan-500/10 opacity-0 transition-opacity pointer-events-none"></div>
+        <div class="flex justify-between items-center mb-1">
+          <span class="font-orbitron font-bold text-xs sm:text-sm text-cyan-400 flex items-center gap-1.5">
+            <i class="fa-solid fa-user"></i> <span id="p1-name-display">YOU (P1)</span>
+          </span>
+          <span id="p1-score" class="font-orbitron font-black text-lg sm:text-xl text-cyan-300">0 KILLS</span>
+        </div>
+        <div class="w-full bg-slate-950 h-3.5 rounded-full overflow-hidden border border-cyan-900 p-0.5">
+          <div id="p1-hp-bar" class="h-full bg-gradient-to-r from-teal-400 to-cyan-500 rounded-full transition-all duration-150" style="width: 100%;"></div>
+        </div>
+      </div>
+
+      <!-- Player 2 / Bot HUD -->
+      <div class="bg-slate-900/90 border border-pink-500/30 rounded-xl p-2 sm:p-3 relative overflow-hidden glow-pink">
+        <div id="p2-damage-flash" class="absolute inset-0 bg-pink-500/10 opacity-0 transition-opacity pointer-events-none"></div>
+        <div class="flex justify-between items-center mb-1">
+          <span id="p2-name-display" class="font-orbitron font-bold text-xs sm:text-sm text-pink-400 flex items-center gap-1.5">
+            <i class="fa-solid fa-robot"></i> BOT (AI)
+          </span>
+          <span id="p2-score" class="font-orbitron font-black text-lg sm:text-xl text-pink-300">0 KILLS</span>
+        </div>
+        <div class="w-full bg-slate-950 h-3.5 rounded-full overflow-hidden border border-pink-900 p-0.5">
+          <div id="p2-hp-bar" class="h-full bg-gradient-to-r from-pink-500 to-rose-500 rounded-full transition-all duration-150" style="width: 100%;"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Canvas Wrapper with Overlay UI -->
+    <div class="relative w-full max-w-4xl aspect-[16/10] sm:aspect-[16/9] bg-slate-900 rounded-2xl overflow-hidden border-2 border-slate-800 shadow-2xl flex items-center justify-center">
+      <!-- Game Canvas -->
+      <canvas id="gameCanvas" class="w-full h-full cursor-crosshair block"></canvas>
+
+      <!-- Center Banner Notification Toast -->
+      <div id="toast-notify" class="absolute top-4 left-1/2 -translate-x-1/2 px-4 py-2 rounded-xl bg-slate-900/90 border border-cyan-500/50 text-cyan-300 font-orbitron text-xs sm:text-sm shadow-xl backdrop-blur transition-all duration-300 opacity-0 -translate-y-4 pointer-events-none z-20 flex items-center space-x-2">
+        <i class="fa-solid fa-bell text-cyan-400"></i>
+        <span id="toast-text">Notice message</span>
+      </div>
+
+      <!-- Start Overlay / Menu -->
+      <div id="menu-overlay" class="absolute inset-0 bg-slate-950/85 backdrop-blur-md z-30 flex flex-col items-center justify-center p-6 text-center transition-all duration-300">
+        <div class="max-w-md w-full space-y-6">
+          
+          <div>
+            <span class="text-xs uppercase font-bold tracking-widest text-cyan-400">Pure WebRTC • Zero Server Hosting</span>
+            <h2 class="font-orbitron font-black text-3xl sm:text-4xl tracking-wide bg-gradient-to-r from-cyan-400 via-teal-200 to-pink-500 bg-clip-text text-transparent mt-1">
+              CYBER DUALITY
+            </h2>
+            <p class="text-slate-400 text-sm mt-2">
+              Fast-paced 2D top-down arena combat. Play vs AI bot or jump into peer-to-peer multiplayer!
+            </p>
+          </div>
+
+          <!-- Action Buttons -->
+          <div class="space-y-3">
+            <button onclick="startQuickPlay()" class="w-full py-3.5 px-6 rounded-xl bg-gradient-to-r from-cyan-500 to-teal-500 hover:from-cyan-400 hover:to-teal-400 text-slate-950 font-orbitron font-black tracking-wider text-sm transition transform hover:-translate-y-0.5 shadow-lg shadow-cyan-500/25 flex items-center justify-center space-x-2">
+              <i class="fa-solid fa-bolt text-lg"></i>
+              <span>QUICK MATCH (FIND GAME)</span>
+            </button>
+
+            <div class="grid grid-cols-2 gap-3">
+              <button onclick="createPrivateLobby()" class="py-3 px-4 rounded-xl bg-slate-900 hover:bg-slate-800 border border-pink-500/40 hover:border-pink-500 text-pink-400 font-orbitron font-bold text-xs transition flex items-center justify-center space-x-1.5">
+                <i class="fa-solid fa-lock"></i>
+                <span>PRIVATE ROOM</span>
+              </button>
+
+              <button onclick="playSoloVsBot()" class="py-3 px-4 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-700 hover:border-slate-500 text-slate-300 font-orbitron font-bold text-xs transition flex items-center justify-center space-x-1.5">
+                <i class="fa-solid fa-robot text-cyan-400"></i>
+                <span>SOLO VS BOT</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Join by Direct Room Code -->
+          <div class="pt-2 border-t border-slate-800/80">
+            <div class="flex space-x-2">
+              <input type="text" id="direct-code-input" placeholder="Paste Private Room Code..." class="flex-1 bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-cyan-500 font-mono">
+              <button onclick="joinDirectCode()" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-cyan-400 border border-slate-700 rounded-xl font-orbitron font-bold text-xs transition">
+                JOIN
+              </button>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- In-Game Share Link Bar (Shows when hosting) -->
+      <div id="share-link-bar" class="hidden absolute bottom-3 left-3 right-3 sm:left-auto sm:right-3 bg-slate-900/90 border border-pink-500/40 rounded-xl p-2.5 backdrop-blur z-20 flex items-center justify-between space-x-3 max-w-md shadow-2xl">
+        <div class="text-left overflow-hidden">
+          <div class="text-[10px] text-pink-400 uppercase font-bold tracking-wider">Invite Player 2</div>
+          <div id="share-url-text" class="text-xs font-mono text-slate-300 truncate">Generating URL...</div>
+        </div>
+        <button onclick="copyInviteLink()" class="px-3 py-1.5 bg-pink-500 hover:bg-pink-400 text-slate-950 rounded-lg font-orbitron font-bold text-xs transition shrink-0 flex items-center space-x-1">
+          <i class="fa-solid fa-copy"></i>
+          <span>COPY LINK</span>
+        </button>
+      </div>
+
+    </div>
+
+    <!-- Instructions & Controls Banner -->
+    <div class="w-full max-w-4xl mt-4 grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs text-slate-400">
+      <div class="bg-slate-900/60 border border-slate-800 rounded-xl p-3 flex items-center space-x-3">
+        <div class="w-8 h-8 rounded-lg bg-slate-800 flex items-center justify-center text-cyan-400 shrink-0 font-bold">
+          <i class="fa-solid fa-keyboard"></i>
+        </div>
+        <div>
+          <span class="font-bold text-slate-200 block">Movement</span>
+          <span>WASD or Arrow Keys</span>
+        </div>
+      </div>
+
+      <div class="bg-slate-900/60 border border-slate-800 rounded-xl p-3 flex items-center space-x-3">
+        <div class="w-8 h-8 rounded-lg bg-slate-800 flex items-center justify-center text-pink-400 shrink-0 font-bold">
+          <i class="fa-solid fa-mouse-pointer"></i>
+        </div>
+        <div>
+          <span class="font-bold text-slate-200 block">Aim & Fire</span>
+          <span>Move Mouse & Left Click</span>
+        </div>
+      </div>
+
+      <div class="bg-slate-900/60 border border-slate-800 rounded-xl p-3 flex items-center space-x-3">
+        <div class="w-8 h-8 rounded-lg bg-slate-800 flex items-center justify-center text-teal-400 shrink-0 font-bold">
+          <i class="fa-solid fa-shield-halved"></i>
+        </div>
+        <div>
+          <span class="font-bold text-slate-200 block">Cover & Strategy</span>
+          <span>Hide behind neon obstacles</span>
+        </div>
+      </div>
+    </div>
+
+  </main>
+
+  <!-- Footer -->
+  <footer class="border-t border-slate-900 py-3 text-center text-slate-600 text-xs">
+    <span>CYBER ARENA P2P • Built with PeerJS & HTML5 Canvas</span>
+  </footer>
+
+  <script>
+    // Global safety listener for sandboxed iframe WebSocket SecurityErrors
+    window.addEventListener('unhandledrejection', (event) => {
+      if (event.reason && (event.reason.name === 'SecurityError' || String(event.reason).includes('WebSocket') || String(event.reason).includes('Peer'))) {
+        event.preventDefault();
+        console.warn('Caught WebSocket SecurityError in sandboxed environment. Falling back gracefully.');
+        showToast('Network sandbox active: Switched to Local/Bot Mode');
+        updateStatusBadge('Offline Bot / Local Active', 'amber');
+      }
+    });
+
+    /* =========================================================================
+       AUDIO SYNTHESIZER (WEB AUDIO API)
+       ========================================================================= */
+    let audioCtx = null;
+    let soundEnabled = true;
+
+    function initAudio() {
+      if (!audioCtx) {
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        audioCtx = new AudioContext();
+      }
+      if (audioCtx.state === 'suspended') {
+        audioCtx.resume();
+      }
+    }
+
+    function toggleAudio() {
+      soundEnabled = !soundEnabled;
+      const icon = document.getElementById('sfx-icon');
+      if (soundEnabled) {
+        icon.className = "fa-solid fa-volume-high text-cyan-400";
+        showToast("Sound Effects Enabled");
+      } else {
+        icon.className = "fa-solid fa-volume-xmark text-slate-500";
+        showToast("Sound Effects Muted");
+      }
+    }
+
+    function playSound(type) {
+      if (!soundEnabled) return;
+      initAudio();
+      if (!audioCtx) return;
+
+      const now = audioCtx.currentTime;
+
+      if (type === 'laser') {
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(800, now);
+        osc.frequency.exponentialRampToValueAtTime(100, now + 0.12);
+        gain.gain.setValueAtTime(0.15, now);
+        gain.gain.linearRampToValueAtTime(0.01, now + 0.12);
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.start(now);
+        osc.stop(now + 0.12);
+      } 
+      else if (type === 'hit') {
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = 'square';
+        osc.frequency.setValueAtTime(180, now);
+        osc.frequency.linearRampToValueAtTime(50, now + 0.08);
+        gain.gain.setValueAtTime(0.2, now);
+        gain.gain.linearRampToValueAtTime(0.01, now + 0.08);
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.start(now);
+        osc.stop(now + 0.08);
+      }
+      else if (type === 'explosion') {
+        // Noise buffer explosion
+        const bufferSize = audioCtx.sampleRate * 0.3;
+        const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+        const output = buffer.getChannelData(0);
+        for (let i = 0; i < bufferSize; i++) {
+          output[i] = Math.random() * 2 - 1;
+        }
+        const noise = audioCtx.createBufferSource();
+        noise.buffer = buffer;
+        const filter = audioCtx.createBiquadFilter();
+        filter.type = 'lowpass';
+        filter.frequency.setValueAtTime(800, now);
+        filter.frequency.linearRampToValueAtTime(50, now + 0.3);
+
+        const gain = audioCtx.createGain();
+        gain.gain.setValueAtTime(0.3, now);
+        gain.gain.linearRampToValueAtTime(0.01, now + 0.3);
+
+        noise.connect(filter);
+        filter.connect(gain);
+        gain.connect(audioCtx.destination);
+        noise.start(now);
+      }
+      else if (type === 'join') {
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(300, now);
+        osc.frequency.exponentialRampToValueAtTime(600, now + 0.2);
+        gain.gain.setValueAtTime(0.2, now);
+        gain.gain.linearRampToValueAtTime(0.01, now + 0.25);
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.start(now);
+        osc.stop(now + 0.25);
+      }
+    }
+
+    /* =========================================================================
+       GLOBAL GAME CONSTANTS & STATE VARIABLES
+       ========================================================================= */
+    const CANVAS_WIDTH = 800;
+    const CANVAS_HEIGHT = 500;
+    const PLAYER_RADIUS = 16;
+    const BULLET_RADIUS = 4;
+    const MATCHMAKING_PREFIX = "cyber-dual-arena-v1-room-";
+    const MAX_PUBLIC_ROOMS = 5;
+
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+    canvas.width = CANVAS_WIDTH;
+    canvas.height = CANVAS_HEIGHT;
+
+    // Networking State
+    let peer = null;
+    let conn = null;
+    let isHost = true;
+    let isConnected = false;
+    let currentRoomId = null;
+
+    // Game Entities
+    let keys = {};
+    let mouse = { x: CANVAS_WIDTH / 2, y: CANVAS_HEIGHT / 2, down: false };
+    
+    let botActive = true;
+    let botShootTimer = 0;
+
+    let players = {
+      p1: {
+        x: 120, y: CANVAS_HEIGHT / 2,
+        vx: 0, vy: 0,
+        angle: 0,
+        hp: 100, maxHp: 100,
+        kills: 0,
+        color: '#06b6d4', // Cyan
+        trailColor: 'rgba(6, 182, 212, 0.4)',
+        cooldown: 0
+      },
+      p2: {
+        x: CANVAS_WIDTH - 120, y: CANVAS_HEIGHT / 2,
+        vx: 0, vy: 0,
+        angle: Math.PI,
+        hp: 100, maxHp: 100,
+        kills: 0,
+        color: '#ec4899', // Pink
+        trailColor: 'rgba(236, 72, 153, 0.4)',
+        cooldown: 0
+      }
+    };
+
+    let bullets = [];
+    let particles = [];
+    let floatingTexts = [];
+
+    // Map Obstacles (Rectangles)
+    const obstacles = [
+      { x: 180, y: 120, w: 60, h: 100 },
+      { x: 180, y: 280, w: 60, h: 100 },
+      { x: CANVAS_WIDTH - 240, y: 120, w: 60, h: 100 },
+      { x: CANVAS_WIDTH - 240, y: 280, w: 60, h: 100 },
+      { x: CANVAS_WIDTH / 2 - 35, y: CANVAS_HEIGHT / 2 - 50, w: 70, h: 100 }
+    ];
+
+    /* =========================================================================
+       TOAST & UI NOTIFICATIONS
+       ========================================================================= */
+    let toastTimeout;
+    function showToast(message) {
+      const toast = document.getElementById('toast-notify');
+      const text = document.getElementById('toast-text');
+      text.innerText = message;
+      toast.classList.remove('opacity-0', '-translate-y-4', 'pointer-events-none');
+      
+      clearTimeout(toastTimeout);
+      toastTimeout = setTimeout(() => {
+        toast.classList.add('opacity-0', '-translate-y-4', 'pointer-events-none');
+      }, 3000);
+    }
+
+    function updateStatusBadge(status, type = 'amber') {
+      const badge = document.getElementById('status-badge');
+      const text = document.getElementById('status-text');
+      text.innerText = status;
+
+      if (type === 'emerald') {
+        badge.className = "px-3 py-1.5 rounded-full text-xs font-semibold flex items-center space-x-2 bg-emerald-500/10 text-emerald-400 border border-emerald-500/30";
+      } else if (type === 'cyan') {
+        badge.className = "px-3 py-1.5 rounded-full text-xs font-semibold flex items-center space-x-2 bg-cyan-500/10 text-cyan-400 border border-cyan-500/30";
+      } else {
+        badge.className = "px-3 py-1.5 rounded-full text-xs font-semibold flex items-center space-x-2 bg-amber-500/10 text-amber-400 border border-amber-500/30";
+      }
+    }
+
+    /* =========================================================================
+       INPUT LISTENERS (KEYBOARD, MOUSE, TOUCH)
+       ========================================================================= */
+    window.addEventListener('keydown', (e) => {
+      keys[e.key.toLowerCase()] = true;
+      initAudio();
+    });
+
+    window.addEventListener('keyup', (e) => {
+      keys[e.key.toLowerCase()] = false;
+    });
+
+    canvas.addEventListener('mousemove', (e) => {
+      const rect = canvas.getBoundingClientRect();
+      const scaleX = CANVAS_WIDTH / rect.width;
+      const scaleY = CANVAS_HEIGHT / rect.height;
+      mouse.x = (e.clientX - rect.left) * scaleX;
+      mouse.y = (e.clientY - rect.top) * scaleY;
+    });
+
+    canvas.addEventListener('mousedown', (e) => {
+      if (e.button === 0) {
+        mouse.down = true;
+        initAudio();
+      }
+    });
+
+    window.addEventListener('mouseup', () => {
+      mouse.down = false;
+    });
+
+    // Touch Support
+    canvas.addEventListener('touchmove', (e) => {
+      e.preventDefault();
+      const rect = canvas.getBoundingClientRect();
+      const touch = e.touches[0];
+      const scaleX = CANVAS_WIDTH / rect.width;
+      const scaleY = CANVAS_HEIGHT / rect.height;
+      mouse.x = (touch.clientX - rect.left) * scaleX;
+      mouse.y = (touch.clientY - rect.top) * scaleY;
+      mouse.down = true;
+    }, { passive: false });
+
+    canvas.addEventListener('touchend', () => {
+      mouse.down = false;
+    });
+
+    /* =========================================================================
+       PEERJS & MULTIPLAYER MATCHMAKING LOGIC
+       ========================================================================= */
+    let localChannel = null;
+
+    function resetGameState() {
+      players.p1.hp = players.p1.maxHp;
+      players.p2.hp = players.p2.maxHp;
+      players.p1.kills = 0;
+      players.p2.kills = 0;
+      players.p1.x = 120;
+      players.p1.y = CANVAS_HEIGHT / 2;
+      players.p2.x = CANVAS_WIDTH - 120;
+      players.p2.y = CANVAS_HEIGHT / 2;
+      bullets = [];
+      particles = [];
+      floatingTexts = [];
+      updateHUD();
+    }
+
+    function showMenu() {
+      document.getElementById('menu-overlay').classList.remove('opacity-0', 'pointer-events-none');
+    }
+
+    function hideMenu() {
+      document.getElementById('menu-overlay').classList.add('opacity-0', 'pointer-events-none');
+    }
+
+    async function startQuickPlay() {
+      hideMenu();
+      resetGameState();
+      showToast("Searching for Quick Match...");
+      updateStatusBadge("Searching match...", "amber");
+
+      // Scan public rooms 1 to MAX_PUBLIC_ROOMS
+      for (let i = 1; i <= MAX_PUBLIC_ROOMS; i++) {
+        const targetId = MATCHMAKING_PREFIX + i;
+        const joined = await tryConnectClient(targetId);
+        if (joined) return;
+      }
+
+      // If no open game found, host public room 1 with bot fallback
+      setupPeerHost(MATCHMAKING_PREFIX + "1", false);
+    }
+
+    function createPrivateLobby() {
+      hideMenu();
+      resetGameState();
+      const privateCode = Math.random().toString(36).substring(2, 8);
+      setupPeerHost(privateCode, true);
+    }
+
+    function playSoloVsBot() {
+      hideMenu();
+      resetGameState();
+      botActive = true;
+      isConnected = false;
+      if (conn) {
+        try { conn.close(); } catch(e){}
+        conn = null;
+      }
+      updateStatusBadge("Solo vs Bot Active", "cyan");
+      document.getElementById('p2-name-display').innerHTML = '<i class="fa-solid fa-robot"></i> BOT (AI)';
+      document.getElementById('share-link-bar').classList.add('hidden');
+      showToast("Solo match against AI Bot started!");
+    }
+
+    async function joinDirectCode() {
+      let rawInput = document.getElementById('direct-code-input').value.trim();
+      if (!rawInput) {
+        showToast("Please enter a room code or link!");
+        return;
+      }
+
+      // Extract room query param if user pasted full URL
+      let targetCode = rawInput;
+      if (rawInput.includes('room=')) {
+        try {
+          const url = new URL(rawInput);
+          targetCode = url.searchParams.get('room') || rawInput;
+        } catch (e) {
+          const parts = rawInput.split('room=');
+          if (parts[1]) targetCode = parts[1].split('&')[0];
+        }
+      }
+
+      showToast("Connecting to room " + targetCode + "...");
+      updateStatusBadge("Connecting...", "amber");
+
+      const success = await tryConnectClient(targetCode);
+      if (success) {
+        hideMenu();
+        resetGameState();
+      } else {
+        showToast("Could not connect to room. Room may be full or offline.");
+        updateStatusBadge("Connection Failed", "amber");
+      }
+    }
+
+    function checkUrlForPrivateRoom() {
+      const urlParams = new URLSearchParams(window.location.search);
+      const room = urlParams.get('room');
+      if (room) {
+        document.getElementById('direct-code-input').value = room;
+        showToast("Private room link detected! Click JOIN.");
+      }
+    }
+
+    function tryConnectClient(targetRoomId) {
+      return new Promise((resolve) => {
+        try {
+          const tempPeer = new Peer();
+
+          tempPeer.on('open', () => {
+            const testConn = tempPeer.connect(targetRoomId, { reliable: true });
+            let connected = false;
+
+            testConn.on('open', () => {
+              connected = true;
+              peer = tempPeer;
+              conn = testConn;
+              isHost = false;
+              botActive = false;
+              isConnected = true;
+
+              setupConnectionData();
+              updateStatusBadge("1v1 P2P Match Active", "emerald");
+              showToast("Connected to Host! Game On!");
+              document.getElementById('p2-name-display').innerHTML = '<i class="fa-solid fa-user"></i> OPPONENT (P2)';
+              playSound('join');
+              resolve(true);
+            });
+
+            setTimeout(() => {
+              if (!connected) {
+                try { testConn.close(); } catch(e){}
+                try { tempPeer.destroy(); } catch(e){}
+                resolve(false);
+              }
+            }, 1200);
+          });
+
+          tempPeer.on('error', () => resolve(false));
+        } catch (err) {
+          console.warn("PeerJS unavailable in sandbox, trying local channel:", err);
+          tryConnectLocalBroadcast(targetRoomId).then(resolve);
+        }
+      });
+    }
+
+    function setupPeerHost(roomId, isPrivate) {
+      try {
+        peer = new Peer(roomId);
+
+        peer.on('open', (id) => {
+          currentRoomId = id;
+          if (isPrivate) {
+            updateStatusBadge("Private Lobby: Waiting...", "amber");
+            displayShareLink(id);
+            showToast("Private room created! Share your invite link.");
+          } else {
+            updateStatusBadge("Hosting Room 1 (Bot Active)...", "amber");
+          }
+          // Enable local broadcast sync as secondary listener
+          setupLocalBroadcastHost(id);
+        });
+
+        peer.on('connection', (connection) => {
+          conn = connection;
+          botActive = false; // Replace bot with human player!
+          isConnected = true;
+
+          setupConnectionData();
+          updateStatusBadge("1v1 P2P Match Active", "emerald");
+          showToast("Player 2 Joined the Game!");
+          document.getElementById('p2-name-display').innerHTML = '<i class="fa-solid fa-user"></i> PLAYER 2';
+          document.getElementById('share-link-bar').classList.add('hidden');
+          playSound('join');
+        });
+
+        peer.on('error', (err) => {
+          if (err.type === 'unavailable-id') {
+            showToast("Room busy, searching next room...");
+            setTimeout(startQuickPlay, 800);
+          } else {
+            setupLocalBroadcastHost(roomId);
+          }
+        });
+      } catch (err) {
+        console.warn("PeerJS WebSocket blocked in this environment. Falling back to Local Broadcast / Bot mode.", err);
+        setupLocalBroadcastHost(roomId);
+        if (isPrivate) displayShareLink(roomId);
+        showToast("Sandbox active: Playing against Bot (Local P2P ready)");
+      }
+    }
+
+    function setupLocalBroadcastHost(roomId) {
+      try {
+        if (localChannel) localChannel.close();
+        localChannel = new BroadcastChannel('cyber_arena_' + roomId);
+        localChannel.onmessage = (event) => {
+          const data = event.data;
+          if (data.type === 'CLIENT_HELLO') {
+            botActive = false;
+            isConnected = true;
+            localChannel.postMessage({ type: 'HOST_WELCOME' });
+            updateStatusBadge("Local 1v1 Match Active", "emerald");
+            showToast("Local Player 2 Joined!");
+            document.getElementById('p2-name-display').innerHTML = '<i class="fa-solid fa-user"></i> PLAYER 2';
+            playSound('join');
+          } else if (data.type === 'INPUT') {
+            players.p2.keys = data.keys;
+            players.p2.mouse = data.mouse;
+          }
+        };
+      } catch(e) {
+        console.warn("BroadcastChannel not supported", e);
+      }
+    }
+
+    function tryConnectLocalBroadcast(roomId) {
+      return new Promise((resolve) => {
+        try {
+          const bc = new BroadcastChannel('cyber_arena_' + roomId);
+          let handshaken = false;
+
+          bc.onmessage = (event) => {
+            if (event.data.type === 'HOST_WELCOME') {
+              handshaken = true;
+              isConnected = true;
+              isHost = false;
+              botActive = false;
+              localChannel = bc;
+
+              bc.onmessage = (e) => {
+                const data = e.data;
+                if (data.type === 'STATE') {
+                  players.p1 = data.players.p1;
+                  players.p2 = data.players.p2;
+                  bullets = data.bullets;
+                  particles = data.particles;
+                  floatingTexts = data.floatingTexts;
+                  updateHUD();
+                }
+                if (data.type === 'SFX') playSound(data.sfx);
+              };
+
+              updateStatusBadge("Local 1v1 Match Active", "emerald");
+              showToast("Connected to Local Host!");
+              document.getElementById('p2-name-display').innerHTML = '<i class="fa-solid fa-user"></i> OPPONENT (P2)';
+              playSound('join');
+              resolve(true);
+            }
+          };
+
+          bc.postMessage({ type: 'CLIENT_HELLO' });
+
+          setTimeout(() => {
+            if (!handshaken) {
+              bc.close();
+              resolve(false);
+            }
+          }, 800);
+        } catch(e) {
+          resolve(false);
+        }
+      });
+    }
+
+    function setupConnectionData() {
+      conn.on('data', (data) => {
+        if (isHost) {
+          // Host receives Client inputs
+          if (data.type === 'INPUT') {
+            players.p2.keys = data.keys;
+            players.p2.mouse = data.mouse;
+          }
+        } else {
+          // Client receives Host game state
+          if (data.type === 'STATE') {
+            players.p1 = data.players.p1;
+            players.p2 = data.players.p2;
+            bullets = data.bullets;
+            particles = data.particles;
+            floatingTexts = data.floatingTexts;
+            updateHUD();
+          }
+          if (data.type === 'SFX') {
+            playSound(data.sfx);
+          }
+        }
+      });
+
+      conn.on('close', () => {
+        isConnected = false;
+        botActive = true;
+        updateStatusBadge("Opponent Left (Bot Engaged)", "amber");
+        showToast("Opponent disconnected. AI Bot taken over.");
+        document.getElementById('p2-name-display').innerHTML = '<i class="fa-solid fa-robot"></i> BOT (AI)';
+      });
+    }
+
+    function displayShareLink(roomId) {
+      const shareBar = document.getElementById('share-link-bar');
+      const shareText = document.getElementById('share-url-text');
+      const shareUrl = window.location.origin + window.location.pathname + '?room=' + roomId;
+      shareText.innerText = shareUrl;
+      shareBar.classList.remove('hidden');
+    }
+
+    function copyInviteLink() {
+      const shareUrl = document.getElementById('share-url-text').innerText;
+      
+      // Fallback copy for iframe/restricted clipboard environments
+      const tempInput = document.createElement('input');
+      tempInput.value = shareUrl;
+      document.body.appendChild(tempInput);
+      tempInput.select();
+      document.execCommand('copy');
+      document.body.removeChild(tempInput);
+
+      showToast("Invite link copied to clipboard!");
+    }
+
+    /* =========================================================================
+       GAME UTILITIES & PHYSICS ENGINE
+       ========================================================================= */
+    function spawnParticle(x, y, color, count = 8) {
+      for (let i = 0; i < count; i++) {
+        const angle = Math.random() * Math.PI * 2;
+        const speed = Math.random() * 4 + 1;
+        particles.push({
+          x, y,
+          vx: Math.cos(angle) * speed,
+          vy: Math.sin(angle) * speed,
+          life: 1.0,
+          color
+        });
+      }
+    }
+
+    function spawnFloatingText(x, y, text, color) {
+      floatingTexts.push({
+        x, y, text, color,
+        life: 1.0,
+        vy: -1.5
+      });
+    }
+
+    function checkWallCollision(circle) {
+      let radius = PLAYER_RADIUS;
+      // Screen Bounds
+      if (circle.x - radius < 0) { circle.x = radius; circle.vx = 0; }
+      if (circle.x + radius > CANVAS_WIDTH) { circle.x = CANVAS_WIDTH - radius; circle.vx = 0; }
+      if (circle.y - radius < 0) { circle.y = radius; circle.vy = 0; }
+      if (circle.y + radius > CANVAS_HEIGHT) { circle.y = CANVAS_HEIGHT - radius; circle.vy = 0; }
+
+      // Rectangular Obstacles
+      obstacles.forEach(obs => {
+        let closestX = Math.max(obs.x, Math.min(circle.x, obs.x + obs.w));
+        let closestY = Math.max(obs.y, Math.min(circle.y, obs.y + obs.h));
+        let distX = circle.x - closestX;
+        let distY = circle.y - closestY;
+        let distance = Math.hypot(distX, distY);
+
+        if (distance < radius) {
+          let overlap = radius - distance;
+          if (distance === 0) {
+            circle.x += radius;
+          } else {
+            circle.x += (distX / distance) * overlap;
+            circle.y += (distY / distance) * overlap;
+          }
+        }
+      });
+    }
+
+    function bulletHitsObstacle(b) {
+      for (let obs of obstacles) {
+        if (b.x > obs.x && b.x < obs.x + obs.w && b.y > obs.y && b.y < obs.y + obs.h) {
+          return true;
+        }
+      }
+      return false;
+    }
+
+    /* =========================================================================
+       BOT AI LOGIC
+       ========================================================================= */
+    function updateBotAI() {
+      if (!botActive || !isHost) return;
+
+      const p2 = players.p2;
+      const p1 = players.p1;
+
+      // Move towards P1 while maintaining medium distance
+      const dx = p1.x - p2.x;
+      const dy = p1.y - p2.y;
+      const dist = Math.hypot(dx, dy);
+
+      p2.angle = Math.atan2(dy, dx);
+
+      if (dist > 220) {
+        p2.vx += Math.cos(p2.angle) * 0.4;
+        p2.vy += Math.sin(p2.angle) * 0.4;
+      } else if (dist < 120) {
+        p2.vx -= Math.cos(p2.angle) * 0.4;
+        p2.vy -= Math.sin(p2.angle) * 0.4;
+      } else {
+        // Strafe sideways
+        p2.vx += Math.cos(p2.angle + Math.PI / 2) * 0.3;
+        p2.vy += Math.sin(p2.angle + Math.PI / 2) * 0.3;
+      }
+
+      // Bot Shooting Logic
+      botShootTimer++;
+      if (botShootTimer > 35 && p2.cooldown <= 0) {
+        botShootTimer = 0;
+        // Shoot with slight aim error
+        const spread = (Math.random() - 0.5) * 0.2;
+        const shootAngle = p2.angle + spread;
+
+        bullets.push({
+          x: p2.x + Math.cos(shootAngle) * 20,
+          y: p2.y + Math.sin(shootAngle) * 20,
+          vx: Math.cos(shootAngle) * 9,
+          vy: Math.sin(shootAngle) * 9,
+          owner: 'p2',
+          color: p2.color
+        });
+        p2.cooldown = 12;
+        playSound('laser');
+      }
+    }
+
+    /* =========================================================================
+       MAIN UPDATE LOOP
+       ========================================================================= */
+    function update() {
+      if (isHost) {
+        // --- 1. HOST CONTROLS (PLAYER 1) ---
+        const p1 = players.p1;
+        const speed = 3.8;
+        p1.vx = 0;
+        p1.vy = 0;
+
+        if (keys['w'] || keys['arrowup']) p1.vy = -speed;
+        if (keys['s'] || keys['arrowdown']) p1.vy = speed;
+        if (keys['a'] || keys['arrowleft']) p1.vx = -speed;
+        if (keys['d'] || keys['arrowright']) p1.vx = speed;
+
+        p1.x += p1.vx;
+        p1.y += p1.vy;
+        checkWallCollision(p1);
+
+        // Aiming
+        p1.angle = Math.atan2(mouse.y - p1.y, mouse.x - p1.x);
+
+        // Shooting
+        if (p1.cooldown > 0) p1.cooldown--;
+        if (mouse.down && p1.cooldown <= 0) {
+          bullets.push({
+            x: p1.x + Math.cos(p1.angle) * 20,
+            y: p1.y + Math.sin(p1.angle) * 20,
+            vx: Math.cos(p1.angle) * 9,
+            vy: Math.sin(p1.angle) * 9,
+            owner: 'p1',
+            color: p1.color
+          });
+          p1.cooldown = 12;
+          playSound('laser');
+        }
+
+        // --- 2. PLAYER 2 / BOT CONTROLS ---
+        const p2 = players.p2;
+        if (p2.cooldown > 0) p2.cooldown--;
+
+        if (botActive) {
+          updateBotAI();
+        } else if (p2.keys) {
+          p2.vx = 0;
+          p2.vy = 0;
+          if (p2.keys['w'] || p2.keys['arrowup']) p2.vy = -speed;
+          if (p2.keys['s'] || p2.keys['arrowdown']) p2.vy = speed;
+          if (p2.keys['a'] || p2.keys['arrowleft']) p2.vx = -speed;
+          if (p2.keys['d'] || p2.keys['arrowright']) p2.vx = speed;
+
+          if (p2.mouse) {
+            p2.angle = Math.atan2(p2.mouse.y - p2.y, p2.mouse.x - p2.x);
+
+            if (p2.mouse.down && p2.cooldown <= 0) {
+              bullets.push({
+                x: p2.x + Math.cos(p2.angle) * 20,
+                y: p2.y + Math.sin(p2.angle) * 20,
+                vx: Math.cos(p2.angle) * 9,
+                vy: Math.sin(p2.angle) * 9,
+                owner: 'p2',
+                color: p2.color
+              });
+              p2.cooldown = 12;
+              playSound('laser');
+              if (conn) conn.send({ type: 'SFX', sfx: 'laser' });
+            }
+          }
+        }
+
+        p2.x += p2.vx;
+        p2.y += p2.vy;
+        checkWallCollision(p2);
+
+        // --- 3. BULLETS & DAMAGE LOGIC ---
+        for (let i = bullets.length - 1; i >= 0; i--) {
+          const b = bullets[i];
+          b.x += b.vx;
+          b.y += b.vy;
+
+          // Out of bounds or obstacle collision
+          if (b.x < 0 || b.x > CANVAS_WIDTH || b.y < 0 || b.y > CANVAS_HEIGHT || bulletHitsObstacle(b)) {
+            spawnParticle(b.x, b.y, '#94a3b8', 4);
+            bullets.splice(i, 1);
+            continue;
+          }
+
+          // Hit P1
+          if (b.owner !== 'p1') {
+            const distP1 = Math.hypot(b.x - p1.x, b.y - p1.y);
+            if (distP1 < PLAYER_RADIUS + BULLET_RADIUS) {
+              p1.hp -= 15;
+              spawnParticle(b.x, b.y, p1.color, 10);
+              spawnFloatingText(p1.x, p1.y - 20, "-15", '#ef4444');
+              playSound('hit');
+              if (conn) conn.send({ type: 'SFX', sfx: 'hit' });
+
+              bullets.splice(i, 1);
+
+              if (p1.hp <= 0) {
+                p2.kills++;
+                p1.hp = p1.maxHp;
+                p1.x = 120;
+                p1.y = CANVAS_HEIGHT / 2;
+                spawnParticle(p1.x, p1.y, '#06b6d4', 25);
+                playSound('explosion');
+                if (conn) conn.send({ type: 'SFX', sfx: 'explosion' });
+                showToast("Player 2 / Bot scored a kill!");
+              }
+              continue;
+            }
+          }
+
+          // Hit P2
+          if (b.owner !== 'p2') {
+            const distP2 = Math.hypot(b.x - p2.x, b.y - p2.y);
+            if (distP2 < PLAYER_RADIUS + BULLET_RADIUS) {
+              p2.hp -= 15;
+              spawnParticle(b.x, b.y, p2.color, 10);
+              spawnFloatingText(p2.x, p2.y - 20, "-15", '#ef4444');
+              playSound('hit');
+              if (conn) conn.send({ type: 'SFX', sfx: 'hit' });
+
+              bullets.splice(i, 1);
+
+              if (p2.hp <= 0) {
+                p1.kills++;
+                p2.hp = p2.maxHp;
+                p2.x = CANVAS_WIDTH - 120;
+                p2.y = CANVAS_HEIGHT / 2;
+                spawnParticle(p2.x, p2.y, '#ec4899', 25);
+                playSound('explosion');
+                if (conn) conn.send({ type: 'SFX', sfx: 'explosion' });
+                showToast("You scored a kill!");
+              }
+              continue;
+            }
+          }
+        }
+
+        // --- 4. PARTICLES & FLOATING TEXTS ---
+        for (let i = particles.length - 1; i >= 0; i--) {
+          const p = particles[i];
+          p.x += p.vx;
+          p.y += p.vy;
+          p.life -= 0.04;
+          if (p.life <= 0) particles.splice(i, 1);
+        }
+
+        for (let i = floatingTexts.length - 1; i >= 0; i--) {
+          const ft = floatingTexts[i];
+          ft.y += ft.vy;
+          ft.life -= 0.03;
+          if (ft.life <= 0) floatingTexts.splice(i, 1);
+        }
+
+        // --- 5. NETWORK SYNC (HOST TO CLIENT) ---
+        if (isConnected) {
+          const stateData = {
+            type: 'STATE',
+            players: { p1: players.p1, p2: players.p2 },
+            bullets,
+            particles,
+            floatingTexts
+          };
+
+          if (conn) conn.send(stateData);
+          if (localChannel) localChannel.postMessage(stateData);
+        }
+
+        updateHUD();
+
+      } else {
+        // --- CLIENT SIDE INPUT TRANSMISSION ---
+        if (isConnected) {
+          const inputData = {
+            type: 'INPUT',
+            keys: {
+              w: keys['w'] || keys['arrowup'],
+              s: keys['s'] || keys['arrowdown'],
+              a: keys['a'] || keys['arrowleft'],
+              d: keys['d'] || keys['arrowright']
+            },
+            mouse
+          };
+
+          if (conn) conn.send(inputData);
+          if (localChannel) localChannel.postMessage(inputData);
+        }
+      }
+    }
+
+    function updateHUD() {
+      document.getElementById('p1-hp-bar').style.width = Math.max(0, (players.p1.hp / players.p1.maxHp) * 100) + '%';
+      document.getElementById('p2-hp-bar').style.width = Math.max(0, (players.p2.hp / players.p2.maxHp) * 100) + '%';
+
+      document.getElementById('p1-score').innerText = players.p1.kills + " KILLS";
+      document.getElementById('p2-score').innerText = players.p2.kills + " KILLS";
+    }
+
+    /* =========================================================================
+       RENDER ENGINE (CANVAS DRAWING)
+       ========================================================================= */
+    function draw() {
+      // Clear background
+      ctx.fillStyle = '#090d16';
+      ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+
+      // Draw Grid Background
+      ctx.strokeStyle = '#1e293b';
+      ctx.lineWidth = 1;
+      const gridSize = 40;
+      for (let x = 0; x < CANVAS_WIDTH; x += gridSize) {
+        ctx.beginPath();
+        ctx.moveTo(x, 0);
+        ctx.lineTo(x, CANVAS_HEIGHT);
+        ctx.stroke();
+      }
+      for (let y = 0; y < CANVAS_HEIGHT; y += gridSize) {
+        ctx.beginPath();
+        ctx.moveTo(0, y);
+        ctx.lineTo(CANVAS_WIDTH, y);
+        ctx.stroke();
+      }
+
+      // Draw Obstacles
+      obstacles.forEach(obs => {
+        ctx.fillStyle = '#0f172a';
+        ctx.fillRect(obs.x, obs.y, obs.w, obs.h);
+        ctx.strokeStyle = '#334155';
+        ctx.lineWidth = 2;
+        ctx.strokeRect(obs.x, obs.y, obs.w, obs.h);
+
+        // Cyber grid accent lines on obstacles
+        ctx.strokeStyle = '#1e293b';
+        ctx.beginPath();
+        ctx.moveTo(obs.x, obs.y);
+        ctx.lineTo(obs.x + obs.w, obs.y + obs.h);
+        ctx.stroke();
+      });
+
+      // Draw Particles
+      particles.forEach(p => {
+        ctx.save();
+        ctx.globalAlpha = p.life;
+        ctx.fillStyle = p.color;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, 3, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+      });
+
+      // Draw Bullets
+      bullets.forEach(b => {
+        ctx.save();
+        ctx.shadowColor = b.color;
+        ctx.shadowBlur = 10;
+        ctx.fillStyle = b.color;
+        ctx.beginPath();
+        ctx.arc(b.x, b.y, BULLET_RADIUS, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+      });
+
+      // Draw Players
+      drawPlayer(players.p1, 'P1');
+      drawPlayer(players.p2, botActive ? 'BOT' : 'P2');
+
+      // Draw Floating Text
+      floatingTexts.forEach(ft => {
+        ctx.save();
+        ctx.globalAlpha = ft.life;
+        ctx.fillStyle = ft.color;
+        ctx.font = 'bold 14px Orbitron, sans-serif';
+        ctx.fillText(ft.text, ft.x, ft.y);
+        ctx.restore();
+      });
+    }
+
+    function drawPlayer(p, label) {
+      ctx.save();
+      ctx.translate(p.x, p.y);
+
+      // Outer Glow
+      ctx.shadowColor = p.color;
+      ctx.shadowBlur = 15;
+
+      // Turret Barrel
+      ctx.strokeStyle = p.color;
+      ctx.lineWidth = 4;
+      ctx.beginPath();
+      ctx.moveTo(0, 0);
+      ctx.lineTo(Math.cos(p.angle) * 22, Math.sin(p.angle) * 22);
+      ctx.stroke();
+
+      // Body Circle
+      ctx.fillStyle = '#090d16';
+      ctx.strokeStyle = p.color;
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.arc(0, 0, PLAYER_RADIUS, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+
+      // Label Tag
+      ctx.shadowBlur = 0;
+      ctx.fillStyle = p.color;
+      ctx.font = 'bold 10px Orbitron, sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText(label, 0, -PLAYER_RADIUS - 8);
+
+      ctx.restore();
+    }
+
+    /* =========================================================================
+       GAME LOOP & INIT
+       ========================================================================= */
+    function gameLoop() {
+      update();
+      draw();
+      requestAnimationFrame(gameLoop);
+    }
+
+    // Start
+    checkUrlForPrivateRoom();
+    requestAnimationFrame(gameLoop);
+
+  </script>
+</body>
+</html>

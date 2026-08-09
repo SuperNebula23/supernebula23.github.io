@@ -1,0 +1,1343 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Shadow Escape - Stealth Infiltrator</title>
+    <!-- Tailwind CSS for modern UI overlay -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome for crisp UI icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Tone.js for procedural audio effects -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
+
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;800;900&family=Rajdhani:wght@500;600;700&display=swap');
+
+        * {
+            user-select: none;
+            -webkit-user-select: none;
+            touch-action: manipulation;
+        }
+
+        body {
+            font-family: 'Rajdhani', sans-serif;
+            background-color: #07090e;
+            color: #e2e8f0;
+            overflow: hidden;
+        }
+
+        .font-orbitron {
+            font-family: 'Orbitron', sans-serif;
+        }
+
+        /* Subtle grid background pattern */
+        .bg-grid-pattern {
+            background-image: linear-gradient(to right, rgba(255,255,255,0.03) 1px, transparent 1px),
+                              linear-gradient(to bottom, rgba(255,255,255,0.03) 1px, transparent 1px);
+            background-size: 30px 30px;
+        }
+
+        /* Glassmorphism panels */
+        .glass-panel {
+            background: rgba(15, 23, 42, 0.75);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.5);
+        }
+
+        /* Custom glow effects */
+        .glow-green {
+            box-shadow: 0 0 15px rgba(34, 197, 94, 0.4);
+        }
+        .glow-red {
+            box-shadow: 0 0 15px rgba(239, 68, 68, 0.5);
+        }
+        .glow-cyan {
+            box-shadow: 0 0 15px rgba(6, 182, 212, 0.5);
+        }
+
+        /* Touch Virtual Joystick styling */
+        #joystick-zone {
+            touch-action: none;
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #0f172a;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #334155;
+            border-radius: 3px;
+        }
+    </style>
+</head>
+<body class="bg-grid-pattern h-screen w-screen flex flex-col justify-between items-center relative overflow-hidden select-none">
+
+    <!-- Top HUD Bar -->
+    <header class="w-full max-w-5xl px-4 py-3 flex items-center justify-between z-20">
+        <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-lg bg-emerald-950/80 border border-emerald-500/40 flex items-center justify-center text-emerald-400 font-bold text-xl shadow-lg">
+                <i class="fa-solid fa-[#00ff88] fa-user-ninja"></i>
+            </div>
+            <div>
+                <h1 class="text-xl font-black font-orbitron tracking-wider bg-gradient-to-r from-emerald-400 via-cyan-400 to-indigo-400 bg-clip-text text-transparent">
+                    SHADOW ESCAPE
+                </h1>
+                <p class="text-xs text-slate-400 font-semibold tracking-widest uppercase">Stealth Infiltration Protocol</p>
+            </div>
+        </div>
+
+        <!-- Level & Timer HUD -->
+        <div class="flex items-center gap-4 glass-panel px-4 py-2 rounded-xl">
+            <div class="text-center">
+                <span class="text-[10px] uppercase text-slate-400 font-bold block leading-none mb-1">Level</span>
+                <span id="hud-level" class="text-lg font-extrabold font-orbitron text-cyan-400">01</span>
+            </div>
+            <div class="h-6 w-px bg-slate-700"></div>
+            <div class="text-center">
+                <span class="text-[10px] uppercase text-slate-400 font-bold block leading-none mb-1">Time</span>
+                <span id="hud-timer" class="text-lg font-extrabold font-orbitron text-amber-400">00:00.0</span>
+            </div>
+            <div class="h-6 w-px bg-slate-700"></div>
+            <div class="text-center">
+                <span class="text-[10px] uppercase text-slate-400 font-bold block leading-none mb-1">Detection</span>
+                <div class="w-20 bg-slate-800 h-2.5 rounded-full overflow-hidden border border-slate-700">
+                    <div id="hud-alert-bar" class="bg-emerald-500 h-full w-0 transition-all duration-100"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Quick Controls / Action Buttons -->
+        <div class="flex items-center gap-2">
+            <a href="https://supernebula23.github.io/games" id="btn-home" class="w-10 h-10 rounded-lg glass-panel hover:bg-slate-800 text-slate-300 flex items-center justify-center transition-all" title="Home Hub">
+                <i class="fa-solid fa-house text-sm"></i>
+            </a>
+            <button id="btn-sound" class="w-10 h-10 rounded-lg glass-panel hover:bg-slate-800 text-slate-300 flex items-center justify-center transition-all">
+                <i class="fa-solid fa-volume-high text-sm"></i>
+            </button>
+            <button id="btn-pause" class="w-10 h-10 rounded-lg glass-panel hover:bg-slate-800 text-slate-300 flex items-center justify-center transition-all">
+                <i class="fa-solid fa-pause text-sm"></i>
+            </button>
+            <button id="btn-restart" class="w-10 h-10 rounded-lg glass-panel hover:bg-slate-800 text-slate-300 flex items-center justify-center transition-all" title="Restart Level">
+                <i class="fa-solid fa-rotate-right text-sm"></i>
+            </button>
+        </div>
+    </header>
+
+    <!-- Main Game Canvas Container -->
+    <main class="relative flex-1 w-full max-w-5xl flex items-center justify-center p-2">
+        <div id="game-container" class="relative w-full h-full max-h-[720px] rounded-2xl overflow-hidden glass-panel border border-slate-700/60 shadow-2xl flex items-center justify-center">
+            
+            <!-- Dynamic HTML5 Canvas -->
+            <canvas id="gameCanvas" class="block bg-[#0a0d14] cursor-crosshair rounded-xl"></canvas>
+
+            <!-- On-Screen Action Notifications -->
+            <div id="alert-toast" class="absolute top-4 left-1/2 -translate-x-1/2 px-6 py-2 rounded-full glass-panel border border-red-500/50 bg-red-950/80 text-red-400 font-bold font-orbitron text-sm tracking-wider uppercase opacity-0 transition-opacity duration-300 pointer-events-none flex items-center gap-2 shadow-2xl">
+                <i class="fa-solid fa-triangle-exclamation animate-pulse"></i>
+                <span id="alert-toast-msg">Spotted by Guard!</span>
+            </div>
+
+            <!-- Virtual Touch Joystick (Mobile overlay) -->
+            <div id="joystick-zone" class="absolute bottom-6 left-6 w-32 h-32 rounded-full border-2 border-slate-600/40 bg-slate-900/30 touch-none md:hidden flex items-center justify-center">
+                <div id="joystick-knob" class="w-12 h-12 rounded-full bg-cyan-500/60 border-2 border-cyan-300 shadow-lg pointer-events-none transform transition-transform"></div>
+            </div>
+
+            <!-- Mobile Action Button (Distraction coin) -->
+            <div class="absolute bottom-6 right-6 md:hidden flex flex-col gap-3">
+                <button id="btn-touch-distract" class="w-16 h-16 rounded-full bg-amber-500/80 active:bg-amber-600 border-2 border-amber-300 text-slate-950 font-bold text-xl flex items-center justify-center shadow-lg active:scale-95 transition-transform">
+                    <i class="fa-solid fa-bullseye"></i>
+                </button>
+                <span class="text-[10px] text-center font-bold text-amber-300 uppercase tracking-widest">Coin</span>
+            </div>
+        </div>
+    </main>
+
+    <!-- Start / Main Menu Modal -->
+    <div id="modal-menu" class="fixed inset-0 bg-slate-950/85 backdrop-blur-md z-50 flex items-center justify-center p-4">
+        <div class="max-w-md w-full glass-panel rounded-2xl p-6 border border-slate-700/80 shadow-2xl text-center space-y-6">
+            <div class="space-y-2">
+                <div class="inline-flex p-4 bg-emerald-500/10 rounded-2xl border border-emerald-500/30 text-emerald-400 text-4xl mb-1">
+                    <i class="fa-solid fa-user-ninja"></i>
+                </div>
+                <h2 class="text-3xl font-black font-orbitron tracking-wider text-white">SHADOW ESCAPE</h2>
+                <p class="text-xs text-slate-400 tracking-wider uppercase">Infiltrate • Evade • Extract</p>
+            </div>
+
+            <div class="bg-slate-900/80 rounded-xl p-4 text-left border border-slate-800 space-y-2 text-xs text-slate-300">
+                <div class="flex items-start gap-2">
+                    <i class="fa-solid fa-location-dot text-emerald-400 mt-0.5"></i>
+                    <p><strong class="text-white">Objective:</strong> Move from <span class="text-emerald-400 font-bold">Point A (Start)</span> to <span class="text-cyan-400 font-bold">Point B (Goal)</span> without being seen.</p>
+                </div>
+                <div class="flex items-start gap-2">
+                    <i class="fa-solid fa-eye text-red-400 mt-0.5"></i>
+                    <p><strong class="text-white">Light Cones:</strong> Guards cast vision cones. Entering a light cone triggers instant detection!</p>
+                </div>
+                <div class="flex items-start gap-2">
+                    <i class="fa-solid fa-bullseye text-amber-400 mt-0.5"></i>
+                    <p><strong class="text-white">Distraction:</strong> Throw coins <kbd class="px-1.5 py-0.5 bg-slate-800 border border-slate-700 rounded text-amber-300 font-mono">E</kbd> or tap button to lure guards away.</p>
+                </div>
+            </div>
+
+            <div class="space-y-3">
+                <button id="btn-start-game" class="w-full py-3.5 rounded-xl bg-gradient-to-r from-emerald-500 to-cyan-500 hover:from-emerald-400 hover:to-cyan-400 text-slate-950 font-bold font-orbitron tracking-wider shadow-lg hover:shadow-emerald-500/20 active:scale-[0.98] transition-all">
+                    START INFILTRATION
+                </button>
+                <button id="btn-select-level" class="w-full py-3 rounded-xl bg-slate-800/80 hover:bg-slate-700 text-slate-200 font-semibold text-sm border border-slate-700 transition-all">
+                    Select Mission Level
+                </button>
+                <a href="https://supernebula23.github.io/games" class="block w-full py-3 rounded-xl bg-slate-800/80 hover:bg-slate-700 text-slate-200 font-semibold text-sm border border-slate-700 transition-all">
+                    <i class="fa-solid fa-house mr-2"></i> Main Games Hub
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Level Selection Modal -->
+    <div id="modal-level-select" class="fixed inset-0 bg-slate-950/85 backdrop-blur-md z-50 flex items-center justify-center p-4 hidden">
+        <div class="max-w-lg w-full glass-panel rounded-2xl p-6 border border-slate-700/80 shadow-2xl space-y-6">
+            <div class="flex items-center justify-between">
+                <h3 class="text-xl font-bold font-orbitron text-white">Select Infiltration Mission</h3>
+                <button id="btn-close-levels" class="text-slate-400 hover:text-white p-2">
+                    <i class="fa-solid fa-xmark text-lg"></i>
+                </button>
+            </div>
+
+            <div id="level-grid" class="grid grid-cols-2 sm:grid-cols-3 gap-3 max-h-72 overflow-y-auto pr-1">
+                <!-- Injected via JS -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Game Over Modal -->
+    <div id="modal-gameover" class="fixed inset-0 bg-red-950/70 backdrop-blur-md z-50 flex items-center justify-center p-4 hidden">
+        <div class="max-w-md w-full glass-panel rounded-2xl p-6 border border-red-500/40 shadow-2xl text-center space-y-6 glow-red">
+            <div class="w-16 h-16 rounded-full bg-red-500/20 border-2 border-red-500 text-red-400 text-3xl mx-auto flex items-center justify-center animate-bounce">
+                <i class="fa-solid fa-eye"></i>
+            </div>
+            <div class="space-y-1">
+                <h2 class="text-3xl font-black font-orbitron text-red-500 tracking-wider">DETECTED!</h2>
+                <p class="text-sm text-slate-300">You walked into the security guard's cone of light.</p>
+            </div>
+
+            <div class="flex gap-3">
+                <button id="btn-retry" class="flex-1 py-3 rounded-xl bg-red-600 hover:bg-red-500 text-white font-bold font-orbitron tracking-wider transition-all shadow-lg active:scale-95">
+                    <i class="fa-solid fa-rotate-right mr-2"></i> RETRY MISSION
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Victory Modal -->
+    <div id="modal-victory" class="fixed inset-0 bg-emerald-950/75 backdrop-blur-md z-50 flex items-center justify-center p-4 hidden">
+        <div class="max-w-md w-full glass-panel rounded-2xl p-6 border border-emerald-500/40 shadow-2xl text-center space-y-6 glow-green">
+            <div class="w-16 h-16 rounded-full bg-emerald-500/20 border-2 border-emerald-400 text-emerald-400 text-3xl mx-auto flex items-center justify-center">
+                <i class="fa-solid fa-check-double"></i>
+            </div>
+            <div class="space-y-1">
+                <h2 class="text-3xl font-black font-orbitron text-emerald-400 tracking-wider">MISSION COMPLETE!</h2>
+                <p class="text-sm text-slate-300">You successfully reached Point B undetected.</p>
+            </div>
+
+            <div class="bg-slate-900/90 rounded-xl p-4 border border-slate-800 space-y-2 text-sm">
+                <div class="flex justify-between text-slate-400">
+                    <span>Completion Time:</span>
+                    <span id="victory-time" class="font-mono text-cyan-400 font-bold">00:00.0</span>
+                </div>
+                <div class="flex justify-between text-slate-400">
+                    <span>Coins Thrown:</span>
+                    <span id="victory-coins" class="font-mono text-amber-400 font-bold">0</span>
+                </div>
+                <div class="flex justify-between text-slate-400">
+                    <span>Stealth Rating:</span>
+                    <span id="victory-rating" class="text-emerald-400 font-bold">S-RANK</span>
+                </div>
+            </div>
+
+            <div class="flex gap-3">
+                <button id="btn-next-level" class="flex-1 py-3 rounded-xl bg-gradient-to-r from-emerald-500 to-cyan-500 hover:from-emerald-400 hover:to-cyan-400 text-slate-950 font-bold font-orbitron tracking-wider transition-all shadow-lg active:scale-95">
+                    NEXT LEVEL <i class="fa-solid fa-arrow-right ml-2"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bottom Controls Guide Footer -->
+    <footer class="w-full max-w-5xl px-4 py-2 flex items-center justify-between text-xs text-slate-500">
+        <div class="hidden md:flex items-center gap-4">
+            <span><kbd class="px-1.5 py-0.5 bg-slate-800 border border-slate-700 rounded text-slate-300">WASD</kbd> or <kbd class="px-1.5 py-0.5 bg-slate-800 border border-slate-700 rounded text-slate-300">ARROWS</kbd> Move</span>
+            <span><kbd class="px-1.5 py-0.5 bg-slate-800 border border-slate-700 rounded text-slate-300">SHIFT</kbd> Sneak (Silent)</span>
+            <span><kbd class="px-1.5 py-0.5 bg-slate-800 border border-slate-700 rounded text-slate-300">E</kbd> / Click Distract Coin</span>
+        </div>
+        <div class="text-right w-full md:w-auto">
+            <span>Shadow Escape v1.2 • Raycasted FOV Engine</span>
+        </div>
+    </footer>
+
+    <script>
+        // Game Engine Architecture & State Management
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // Target virtual design resolution
+        const V_WIDTH = 960;
+        const V_HEIGHT = 600;
+
+        let scaleFactor = 1;
+        let gameRunning = false;
+        let gamePaused = false;
+        let soundEnabled = true;
+        let currentLevelIdx = 0;
+        let levelStartTime = 0;
+        let elapsedTime = 0;
+        let coinsThrownCount = 0;
+
+        // Key states
+        const keys = {};
+
+        // Audio synthesizer setup using Tone.js
+        const audio = {
+            synth: null,
+            alarmSynth: null,
+            coinSynth: null,
+            footstepTimer: 0,
+            
+            init() {
+                try {
+                    this.synth = new Tone.PolySynth(Tone.Synth, {
+                        oscillator: { type: 'sine' },
+                        envelope: { attack: 0.01, decay: 0.1, sustain: 0.1, release: 0.2 }
+                    }).toDestination();
+                    this.synth.volume.value = -12;
+
+                    this.alarmSynth = new Tone.Synth({
+                        oscillator: { type: 'sawtooth' },
+                        envelope: { attack: 0.05, decay: 0.2, sustain: 0.2, release: 0.3 }
+                    }).toDestination();
+                    this.alarmSynth.volume.value = -8;
+
+                    this.coinSynth = new Tone.MetalSynth({
+                        frequency: 200,
+                        envelope: { attack: 0.001, decay: 0.2, release: 0.1 },
+                        harmonicity: 5.1,
+                        modulationIndex: 16,
+                        resonance: 4000,
+                        octaves: 1.5
+                    }).toDestination();
+                    this.coinSynth.volume.value = -16;
+                } catch (e) {
+                    console.warn("Tone.js audio setup fallback active.", e);
+                }
+            },
+
+            playFootstep() {
+                if (!soundEnabled || !this.synth) return;
+                this.synth.triggerAttackRelease('C2', '16n');
+            },
+
+            playCoinDrop() {
+                if (!soundEnabled || !this.coinSynth) return;
+                try {
+                    this.coinSynth.triggerAttackRelease('8n');
+                } catch(e){}
+            },
+
+            playAlarm() {
+                if (!soundEnabled || !this.alarmSynth) return;
+                try {
+                    this.alarmSynth.triggerAttackRelease('E5', '8n');
+                } catch(e){}
+            },
+
+            playWin() {
+                if (!soundEnabled || !this.synth) return;
+                try {
+                    const now = Tone.now();
+                    this.synth.triggerAttackRelease('C4', '8n', now);
+                    this.synth.triggerAttackRelease('E4', '8n', now + 0.12);
+                    this.synth.triggerAttackRelease('G4', '8n', now + 0.24);
+                    this.synth.triggerAttackRelease('C5', '4n', now + 0.36);
+                } catch(e){}
+            }
+        };
+
+        // Player Definition
+        const player = {
+            x: 100,
+            y: 100,
+            radius: 12,
+            speed: 3.2,
+            sneakSpeed: 1.6,
+            angle: 0,
+            isSneaking: false,
+            moving: false,
+
+            reset(startPoint) {
+                this.x = startPoint.x;
+                this.y = startPoint.y;
+                this.angle = 0;
+                this.moving = false;
+            },
+
+            update() {
+                if (!gameRunning || gamePaused) return;
+
+                let dx = 0;
+                let dy = 0;
+
+                // Keyboard input
+                if (keys['KeyW'] || keys['ArrowUp']) dy -= 1;
+                if (keys['KeyS'] || keys['ArrowDown']) dy += 1;
+                if (keys['KeyA'] || keys['ArrowLeft']) dx -= 1;
+                if (keys['KeyD'] || keys['ArrowRight']) dx += 1;
+
+                // Joystick input overrides keyboard if used
+                if (joystickInput.active) {
+                    dx = joystickInput.dx;
+                    dy = joystickInput.dy;
+                }
+
+                // Sneak modifier
+                this.isSneaking = !!(keys['ShiftLeft'] || keys['ShiftRight'] || joystickInput.isSneak);
+                let currentSpeed = this.isSneaking ? this.sneakSpeed : this.speed;
+
+                if (dx !== 0 || dy !== 0) {
+                    this.moving = true;
+                    let len = Math.hypot(dx, dy);
+                    let moveX = (dx / len) * currentSpeed;
+                    let moveY = (dy / len) * currentSpeed;
+
+                    this.angle = Math.atan2(dy, dx);
+
+                    // Move with Wall Collision detection
+                    this.moveWithCollision(moveX, moveY);
+
+                    // Footstep Audio timing
+                    audio.footstepTimer++;
+                    let stepInterval = this.isSneaking ? 25 : 14;
+                    if (audio.footstepTimer > stepInterval) {
+                        audio.playFootstep();
+                        audio.footstepTimer = 0;
+
+                        // Noise ripple effect if walking fast near guards
+                        if (!this.isSneaking) {
+                            addNoisePing(this.x, this.y, 40);
+                        }
+                    }
+                } else {
+                    this.moving = false;
+                }
+            },
+
+            moveWithCollision(moveX, moveY) {
+                // X axis test
+                let nextX = this.x + moveX;
+                if (!checkWallCircleCollision(nextX, this.y, this.radius)) {
+                    this.x = nextX;
+                }
+
+                // Y axis test
+                let nextY = this.y + moveY;
+                if (!checkWallCircleCollision(this.x, nextY, this.radius)) {
+                    this.y = nextY;
+                }
+            },
+
+            draw() {
+                ctx.save();
+                ctx.translate(this.x, this.y);
+                ctx.rotate(this.angle);
+
+                // Player outer stealth glow
+                ctx.beginPath();
+                ctx.arc(0, 0, this.radius + 4, 0, Math.PI * 2);
+                ctx.fillStyle = this.isSneaking ? 'rgba(34, 197, 94, 0.15)' : 'rgba(6, 182, 212, 0.25)';
+                ctx.fill();
+
+                // Player Body Circle
+                ctx.beginPath();
+                ctx.arc(0, 0, this.radius, 0, Math.PI * 2);
+                ctx.fillStyle = this.isSneaking ? '#10b981' : '#06b6d4';
+                ctx.shadowColor = this.isSneaking ? '#10b981' : '#06b6d4';
+                ctx.shadowBlur = 10;
+                ctx.fill();
+                ctx.lineWidth = 2;
+                ctx.strokeStyle = '#ffffff';
+                ctx.stroke();
+
+                // Direction / Facing Glyph Indicator
+                ctx.beginPath();
+                ctx.moveTo(this.radius - 2, 0);
+                ctx.lineTo(this.radius + 6, 0);
+                ctx.strokeStyle = '#ffffff';
+                ctx.lineWidth = 3;
+                ctx.lineCap = 'round';
+                ctx.stroke();
+
+                ctx.restore();
+            }
+        };
+
+        // Active Distraction Coins
+        let activeDistraction = null; // {x, y, radius, duration, maxDuration}
+        let noisePings = []; // Noise visual ripples [{x, y, radius, maxRadius, alpha}]
+
+        function throwDistractionCoin(targetX, targetY) {
+            if (!gameRunning || gamePaused || activeDistraction) return;
+
+            // Throw coin to player position or aiming target
+            let tx = targetX !== undefined ? targetX : player.x + Math.cos(player.angle) * 120;
+            let ty = targetY !== undefined ? targetY : player.y + Math.sin(player.angle) * 120;
+
+            // Clamp inside level bounds
+            tx = Math.max(30, Math.min(V_WIDTH - 30, tx));
+            ty = Math.max(30, Math.min(V_HEIGHT - 30, ty));
+
+            activeDistraction = {
+                x: tx,
+                y: ty,
+                radius: 6,
+                pulse: 0,
+                duration: 180 // frames (~3 sec)
+            };
+
+            coinsThrownCount++;
+            audio.playCoinDrop();
+            addNoisePing(tx, ty, 160);
+
+            // Alert nearby guards to investigate
+            guards.forEach(guard => {
+                let dist = Math.hypot(guard.x - tx, guard.y - ty);
+                if (dist < 220) {
+                    guard.setInvestigateTarget(tx, ty);
+                }
+            });
+        }
+
+        function addNoisePing(x, y, maxRadius) {
+            noisePings.push({
+                x: x,
+                y: y,
+                radius: 5,
+                maxRadius: maxRadius,
+                alpha: 0.8
+            });
+        }
+
+        // Enemy Guard Class
+        class Guard {
+            constructor(config) {
+                this.id = config.id;
+                this.x = config.x;
+                this.y = config.y;
+                this.waypoints = config.waypoints || [{x: config.x, y: config.y}];
+                this.currentWaypointIdx = 0;
+                this.speed = config.speed || 1.4;
+                this.angle = config.angle || 0;
+                this.fov = (config.fov || 65) * (Math.PI / 180); // FOV in radians
+                this.visionRadius = config.visionRadius || 170;
+                this.radius = 13;
+
+                this.state = 'PATROL'; // PATROL, WAIT, INVESTIGATE, ALERT
+                this.waitTime = 0;
+                this.investigateTimer = 0;
+                this.targetInvestigate = null;
+
+                // Light cone polygon cache for rendering & detection
+                this.conePolygon = [];
+            }
+
+            update() {
+                if (!gameRunning || gamePaused) return;
+
+                if (this.state === 'PATROL') {
+                    let target = this.waypoints[this.currentWaypointIdx];
+                    let dist = Math.hypot(target.x - this.x, target.y - this.y);
+
+                    if (dist < 5) {
+                        this.state = 'WAIT';
+                        this.waitTime = target.wait || 60; // pause at waypoint
+                    } else {
+                        let targetAngle = Math.atan2(target.y - this.y, target.x - this.x);
+                        this.rotateTowards(targetAngle, 0.08);
+
+                        let moveX = Math.cos(this.angle) * this.speed;
+                        let moveY = Math.sin(this.angle) * this.speed;
+
+                        this.x += moveX;
+                        this.y += moveY;
+                    }
+                } else if (this.state === 'WAIT') {
+                    this.waitTime--;
+                    if (this.waitTime <= 0) {
+                        this.currentWaypointIdx = (this.currentWaypointIdx + 1) % this.waypoints.length;
+                        this.state = 'PATROL';
+                    }
+                } else if (this.state === 'INVESTIGATE') {
+                    if (this.targetInvestigate) {
+                        let dist = Math.hypot(this.targetInvestigate.x - this.x, this.targetInvestigate.y - this.y);
+                        if (dist > 15) {
+                            let targetAngle = Math.atan2(this.targetInvestigate.y - this.y, this.targetInvestigate.x - this.x);
+                            this.rotateTowards(targetAngle, 0.1);
+                            this.x += Math.cos(this.angle) * (this.speed * 1.2);
+                            this.y += Math.sin(this.angle) * (this.speed * 1.2);
+                        } else {
+                            // Reached noise area, scan around
+                            this.angle += 0.04;
+                            this.investigateTimer--;
+                            if (this.investigateTimer <= 0) {
+                                this.state = 'PATROL';
+                                this.targetInvestigate = null;
+                            }
+                        }
+                    }
+                }
+
+                // Compute Raycasted Vision Light Cone
+                this.computeVisionCone();
+
+                // Check if Player is inside Light Cone
+                this.checkPlayerDetection();
+            }
+
+            rotateTowards(targetAngle, step) {
+                let diff = targetAngle - this.angle;
+                diff = Math.atan2(Math.sin(diff), Math.cos(diff));
+                this.angle += diff * step;
+            }
+
+            setInvestigateTarget(tx, ty) {
+                this.state = 'INVESTIGATE';
+                this.targetInvestigate = { x: tx, y: ty };
+                this.investigateTimer = 140; // time spent looking around
+            }
+
+            computeVisionCone() {
+                this.conePolygon = [];
+                const rayCount = 45; // raycast resolution
+                const startAngle = this.angle - (this.fov / 2);
+                const step = this.fov / rayCount;
+
+                this.conePolygon.push({ x: this.x, y: this.y });
+
+                for (let i = 0; i <= rayCount; i++) {
+                    let rayAngle = startAngle + (step * i);
+                    let hitPoint = castRay(this.x, this.y, rayAngle, this.visionRadius);
+                    this.conePolygon.push(hitPoint);
+                }
+            }
+
+            checkPlayerDetection() {
+                // 1. Fast distance check
+                let distToPlayer = Math.hypot(player.x - this.x, player.y - this.y);
+                if (distToPlayer > this.visionRadius + player.radius) return;
+
+                // 2. Angle check
+                let angleToPlayer = Math.atan2(player.y - this.y, player.x - this.x);
+                let angleDiff = Math.abs(Math.atan2(Math.sin(angleToPlayer - this.angle), Math.cos(angleToPlayer - this.angle)));
+
+                if (angleDiff <= (this.fov / 2) + 0.1) {
+                    // 3. Line of sight raycast to verify no walls blocking
+                    let hit = castRay(this.x, this.y, angleToPlayer, distToPlayer);
+                    let rayDist = Math.hypot(hit.x - this.x, hit.y - this.y);
+
+                    // If ray reached the player without wall obstruction -> DETECTED!
+                    if (rayDist >= distToPlayer - player.radius - 2) {
+                        triggerGameOver("Spotted in guard's light cone!");
+                    }
+                }
+            }
+
+            draw() {
+                // Render Vision Light Cone
+                if (this.conePolygon.length > 0) {
+                    ctx.save();
+                    ctx.beginPath();
+                    ctx.moveTo(this.conePolygon[0].x, this.conePolygon[0].y);
+                    for (let i = 1; i < this.conePolygon.length; i++) {
+                        ctx.lineTo(this.conePolygon[i].x, this.conePolygon[i].y);
+                    }
+                    ctx.closePath();
+
+                    // Cone gradient style based on state
+                    let coneGradient = ctx.createRadialGradient(this.x, this.y, 10, this.x, this.y, this.visionRadius);
+                    if (this.state === 'INVESTIGATE') {
+                        coneGradient.addColorStop(0, 'rgba(245, 158, 11, 0.45)');
+                        coneGradient.addColorStop(1, 'rgba(245, 158, 11, 0.05)');
+                        ctx.strokeStyle = 'rgba(245, 158, 11, 0.6)';
+                    } else {
+                        coneGradient.addColorStop(0, 'rgba(239, 68, 68, 0.4)');
+                        coneGradient.addColorStop(1, 'rgba(239, 68, 68, 0.03)');
+                        ctx.strokeStyle = 'rgba(239, 68, 68, 0.5)';
+                    }
+
+                    ctx.fillStyle = coneGradient;
+                    ctx.fill();
+                    ctx.lineWidth = 1.5;
+                    ctx.stroke();
+                    ctx.restore();
+                }
+
+                // Render Guard Sprite
+                ctx.save();
+                ctx.translate(this.x, this.y);
+
+                // Body
+                ctx.beginPath();
+                ctx.arc(0, 0, this.radius, 0, Math.PI * 2);
+                ctx.fillStyle = this.state === 'INVESTIGATE' ? '#f59e0b' : '#ef4444';
+                ctx.shadowColor = this.state === 'INVESTIGATE' ? '#f59e0b' : '#ef4444';
+                ctx.shadowBlur = 12;
+                ctx.fill();
+                ctx.lineWidth = 2;
+                ctx.strokeStyle = '#ffffff';
+                ctx.stroke();
+
+                // Flashlight lens indicator
+                ctx.rotate(this.angle);
+                ctx.beginPath();
+                ctx.arc(8, 0, 4, 0, Math.PI * 2);
+                ctx.fillStyle = '#fef08a';
+                ctx.fill();
+
+                // Status Indicator Icon over head
+                ctx.rotate(-this.angle); // un-rotate
+                if (this.state === 'INVESTIGATE') {
+                    ctx.fillStyle = '#f59e0b';
+                    ctx.font = '900 16px Orbitron';
+                    ctx.fillText('?', -4, -18);
+                }
+
+                ctx.restore();
+            }
+        }
+
+        // Wall / Obstacle Collision & Geometry
+        let walls = [];
+        let guards = [];
+        let startZone = { x: 80, y: 300, radius: 32 };
+        let goalZone = { x: 880, y: 300, radius: 36 };
+
+        function checkWallCircleCollision(cx, cy, radius) {
+            for (let w of walls) {
+                // Find nearest point on wall rectangle to circle center
+                let nearestX = Math.max(w.x, Math.min(cx, w.x + w.w));
+                let nearestY = Math.max(w.y, Math.min(cy, w.y + w.h));
+
+                let distX = cx - nearestX;
+                let distY = cy - nearestY;
+                let distanceSq = (distX * distX) + (distY * distY);
+
+                if (distanceSq < (radius * radius)) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        // Cast ray from (rx, ry) at angle for distance, return nearest obstacle intersection
+        function castRay(rx, ry, angle, maxDist) {
+            let dx = Math.cos(angle);
+            let dy = Math.sin(angle);
+            let closestDist = maxDist;
+
+            // Check map boundaries
+            if (dx > 0) closestDist = Math.min(closestDist, (V_WIDTH - rx) / dx);
+            if (dx < 0) closestDist = Math.min(closestDist, (0 - rx) / dx);
+            if (dy > 0) closestDist = Math.min(closestDist, (V_HEIGHT - ry) / dy);
+            if (dy < 0) closestDist = Math.min(closestDist, (0 - ry) / dy);
+
+            // Ray vs Axis-Aligned Wall Bounding Boxes
+            for (let w of walls) {
+                let dist = rayRectIntersection(rx, ry, dx, dy, w);
+                if (dist !== null && dist < closestDist) {
+                    closestDist = dist;
+                }
+            }
+
+            return {
+                x: rx + dx * closestDist,
+                y: ry + dy * closestDist
+            };
+        }
+
+        function rayRectIntersection(rx, ry, dx, dy, rect) {
+            let tmin = 0;
+            let tmax = 10000;
+
+            // X slab
+            if (Math.abs(dx) < 0.000001) {
+                if (rx < rect.x || rx > rect.x + rect.w) return null;
+            } else {
+                let tx1 = (rect.x - rx) / dx;
+                let tx2 = (rect.x + rect.w - rx) / dx;
+                tmin = Math.max(tmin, Math.min(tx1, tx2));
+                tmax = Math.min(tmax, Math.max(tx1, tx2));
+            }
+
+            // Y slab
+            if (Math.abs(dy) < 0.000001) {
+                if (ry < rect.y || ry > rect.y + rect.h) return null;
+            } else {
+                let ty1 = (rect.y - ry) / dy;
+                let ty2 = (rect.y + rect.h - ry) / dy;
+                tmin = Math.max(tmin, Math.min(ty1, ty2));
+                tmax = Math.min(tmax, Math.max(ty1, ty2));
+            }
+
+            if (tmax >= tmin && tmin > 0) {
+                return tmin;
+            }
+            return null;
+        }
+
+        // Handcrafted Stealth Levels Data
+        const LEVELS = [
+            {
+                name: "01: Infiltration Basics",
+                desc: "Learn guard patrol patterns and bypass the single guard.",
+                start: { x: 100, y: 300 },
+                goal: { x: 860, y: 300 },
+                walls: [
+                    { x: 300, y: 150, w: 40, h: 300 },
+                    { x: 600, y: 150, w: 40, h: 300 }
+                ],
+                guards: [
+                    {
+                        x: 450, y: 120,
+                        speed: 1.6,
+                        fov: 60,
+                        visionRadius: 180,
+                        waypoints: [
+                            { x: 450, y: 120, wait: 30 },
+                            { x: 450, y: 480, wait: 30 }
+                        ]
+                    }
+                ]
+            },
+            {
+                name: "02: Patrol Corridor",
+                desc: "Synchronized guards sweeping intersecting corridors.",
+                start: { x: 80, y: 100 },
+                goal: { x: 880, y: 500 },
+                walls: [
+                    { x: 220, y: 0, w: 30, h: 420 },
+                    { x: 480, y: 180, w: 30, h: 420 },
+                    { x: 720, y: 0, w: 30, h: 420 }
+                ],
+                guards: [
+                    {
+                        x: 120, y: 480,
+                        speed: 1.8,
+                        fov: 65,
+                        visionRadius: 170,
+                        waypoints: [
+                            { x: 120, y: 480, wait: 20 },
+                            { x: 350, y: 480, wait: 20 }
+                        ]
+                    },
+                    {
+                        x: 600, y: 100,
+                        speed: 2.0,
+                        fov: 70,
+                        visionRadius: 180,
+                        waypoints: [
+                            { x: 600, y: 100, wait: 15 },
+                            { x: 600, y: 450, wait: 15 }
+                        ]
+                    }
+                ]
+            },
+            {
+                name: "03: Shadow Pillars",
+                desc: "Use solid pillars as cover to break line-of-sight.",
+                start: { x: 90, y: 500 },
+                goal: { x: 870, y: 100 },
+                walls: [
+                    { x: 250, y: 120, w: 100, h: 100 },
+                    { x: 250, y: 380, w: 100, h: 100 },
+                    { x: 550, y: 120, w: 100, h: 100 },
+                    { x: 550, y: 380, w: 100, h: 100 }
+                ],
+                guards: [
+                    {
+                        x: 400, y: 300,
+                        speed: 1.5,
+                        fov: 70,
+                        visionRadius: 190,
+                        waypoints: [
+                            { x: 400, y: 100, wait: 30 },
+                            { x: 400, y: 500, wait: 30 }
+                        ]
+                    },
+                    {
+                        x: 700, y: 250,
+                        speed: 2.2,
+                        fov: 65,
+                        visionRadius: 180,
+                        waypoints: [
+                            { x: 700, y: 100, wait: 10 },
+                            { x: 850, y: 300, wait: 10 },
+                            { x: 700, y: 500, wait: 10 }
+                        ]
+                    }
+                ]
+            },
+            {
+                name: "04: Distraction Tactics",
+                desc: "Use Coin Distractions (E Key or Touch) to lure guards away.",
+                start: { x: 80, y: 300 },
+                goal: { x: 880, y: 300 },
+                walls: [
+                    { x: 280, y: 0, w: 40, h: 250 },
+                    { x: 280, y: 350, w: 40, h: 250 },
+                    { x: 620, y: 100, w: 40, h: 400 }
+                ],
+                guards: [
+                    {
+                        x: 450, y: 300,
+                        speed: 1.2,
+                        fov: 85,
+                        visionRadius: 210,
+                        waypoints: [
+                            { x: 450, y: 300, wait: 120 } // Stationary wide-angle watchman
+                        ]
+                    },
+                    {
+                        x: 750, y: 150,
+                        speed: 1.8,
+                        fov: 65,
+                        visionRadius: 180,
+                        waypoints: [
+                            { x: 750, y: 150, wait: 20 },
+                            { x: 750, y: 450, wait: 20 }
+                        ]
+                    }
+                ]
+            },
+            {
+                name: "05: Master Infiltrator",
+                desc: "Tight timing, multi-guard patrols, and complex obstacles.",
+                start: { x: 80, y: 80 },
+                goal: { x: 880, y: 520 },
+                walls: [
+                    { x: 180, y: 150, w: 250, h: 30 },
+                    { x: 500, y: 80, w: 30, h: 280 },
+                    { x: 300, y: 420, w: 350, h: 30 },
+                    { x: 720, y: 220, w: 120, h: 220 }
+                ],
+                guards: [
+                    {
+                        x: 300, y: 80,
+                        speed: 2.1,
+                        fov: 70,
+                        visionRadius: 180,
+                        waypoints: [
+                            { x: 300, y: 80, wait: 10 },
+                            { x: 100, y: 250, wait: 10 },
+                            { x: 300, y: 350, wait: 10 }
+                        ]
+                    },
+                    {
+                        x: 620, y: 120,
+                        speed: 2.3,
+                        fov: 75,
+                        visionRadius: 190,
+                        waypoints: [
+                            { x: 620, y: 120, wait: 15 },
+                            { x: 620, y: 360, wait: 15 }
+                        ]
+                    },
+                    {
+                        x: 820, y: 100,
+                        speed: 2.0,
+                        fov: 65,
+                        visionRadius: 170,
+                        waypoints: [
+                            { x: 820, y: 100, wait: 10 },
+                            { x: 820, y: 500, wait: 10 }
+                        ]
+                    }
+                ]
+            }
+        ];
+
+        function loadLevel(idx) {
+            currentLevelIdx = idx;
+            const level = LEVELS[currentLevelIdx];
+
+            startZone = { x: level.start.x, y: level.start.y, radius: 32 };
+            goalZone = { x: level.goal.x, y: level.goal.y, radius: 36 };
+
+            walls = level.walls.map(w => ({ ...w }));
+
+            guards = level.guards.map((g, i) => new Guard({
+                id: i,
+                x: g.x,
+                y: g.y,
+                speed: g.speed,
+                fov: g.fov,
+                visionRadius: g.visionRadius,
+                waypoints: g.waypoints
+            }));
+
+            player.reset(startZone);
+            activeDistraction = null;
+            noisePings = [];
+            coinsThrownCount = 0;
+            levelStartTime = performance.now();
+
+            document.getElementById('hud-level').textContent = String(currentLevelIdx + 1).padStart(2, '0');
+            hideModals();
+            gameRunning = true;
+            gamePaused = false;
+        }
+
+        function triggerGameOver(reason) {
+            if (!gameRunning) return;
+            gameRunning = false;
+            audio.playAlarm();
+
+            document.getElementById('alert-toast-msg').textContent = reason;
+            const toast = document.getElementById('alert-toast');
+            toast.classList.remove('opacity-0');
+            setTimeout(() => toast.classList.add('opacity-0'), 2500);
+
+            setTimeout(() => {
+                document.getElementById('modal-gameover').classList.remove('hidden');
+            }, 600);
+        }
+
+        function triggerVictory() {
+            if (!gameRunning) return;
+            gameRunning = false;
+            audio.playWin();
+
+            let totalSecs = (elapsedTime / 1000).toFixed(1);
+            document.getElementById('victory-time').textContent = formatTime(elapsedTime);
+            document.getElementById('victory-coins').textContent = coinsThrownCount;
+
+            let rating = coinsThrownCount === 0 ? "S-RANK (GHOST)" : coinsThrownCount <= 2 ? "A-RANK" : "B-RANK";
+            document.getElementById('victory-rating').textContent = rating;
+
+            document.getElementById('modal-victory').classList.remove('hidden');
+        }
+
+        function formatTime(ms) {
+            let totalSecs = Math.floor(ms / 1000);
+            let mins = Math.floor(totalSecs / 60);
+            let secs = totalSecs % 60;
+            let tenths = Math.floor((ms % 1000) / 100);
+            return `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}.${tenths}`;
+        }
+
+        function hideModals() {
+            document.getElementById('modal-menu').classList.add('hidden');
+            document.getElementById('modal-level-select').classList.add('hidden');
+            document.getElementById('modal-gameover').classList.add('hidden');
+            document.getElementById('modal-victory').classList.add('hidden');
+        }
+
+        function render() {
+            // Clear canvas background
+            ctx.fillStyle = '#07090e';
+            ctx.fillRect(0, 0, V_WIDTH, V_HEIGHT);
+
+            // Draw subtle floor grid
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.025)';
+            ctx.lineWidth = 1;
+            for (let x = 0; x < V_WIDTH; x += 40) {
+                ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, V_HEIGHT); ctx.stroke();
+            }
+            for (let y = 0; y < V_HEIGHT; y += 40) {
+                ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(V_WIDTH, y); ctx.stroke();
+            }
+
+            // Draw Point A (Start Zone)
+            ctx.save();
+            ctx.beginPath();
+            ctx.arc(startZone.x, startZone.y, startZone.radius, 0, Math.PI * 2);
+            ctx.fillStyle = 'rgba(34, 197, 94, 0.12)';
+            ctx.fill();
+            ctx.strokeStyle = '#22c55e';
+            ctx.lineWidth = 2;
+            ctx.setLineDash([6, 4]);
+            ctx.stroke();
+            ctx.restore();
+
+            ctx.fillStyle = '#22c55e';
+            ctx.font = '700 11px Orbitron';
+            ctx.textAlign = 'center';
+            ctx.fillText('POINT A', startZone.x, startZone.y + 4);
+
+            // Draw Point B (Goal Zone)
+            let timePulse = Math.sin(performance.now() * 0.005) * 4;
+            ctx.save();
+            ctx.beginPath();
+            ctx.arc(goalZone.x, goalZone.y, goalZone.radius + timePulse, 0, Math.PI * 2);
+            ctx.fillStyle = 'rgba(6, 182, 212, 0.18)';
+            ctx.fill();
+            ctx.strokeStyle = '#06b6d4';
+            ctx.lineWidth = 2.5;
+            ctx.shadowColor = '#06b6d4';
+            ctx.shadowBlur = 12;
+            ctx.stroke();
+            ctx.restore();
+
+            ctx.fillStyle = '#38bdf8';
+            ctx.font = '800 12px Orbitron';
+            ctx.textAlign = 'center';
+            ctx.fillText('POINT B', goalZone.x, goalZone.y + 4);
+
+            // Render Walls & Obstacles
+            ctx.save();
+            for (let w of walls) {
+                // Wall Fill
+                ctx.fillStyle = '#1e293b';
+                ctx.fillRect(w.x, w.y, w.w, w.h);
+
+                // Wall Border / Neon edge
+                ctx.strokeStyle = '#334155';
+                ctx.lineWidth = 2;
+                ctx.strokeRect(w.x, w.y, w.w, w.h);
+
+                // Top highlight
+                ctx.fillStyle = 'rgba(255, 255, 255, 0.05)';
+                ctx.fillRect(w.x, w.y, w.w, 3);
+            }
+            ctx.restore();
+
+            // Render Active Distraction Coin
+            if (activeDistraction) {
+                activeDistraction.duration--;
+                activeDistraction.pulse += 0.1;
+
+                ctx.save();
+                ctx.beginPath();
+                ctx.arc(activeDistraction.x, activeDistraction.y, activeDistraction.radius + Math.sin(activeDistraction.pulse)*2, 0, Math.PI*2);
+                ctx.fillStyle = '#f59e0b';
+                ctx.shadowColor = '#f59e0b';
+                ctx.shadowBlur = 8;
+                ctx.fill();
+
+                if (activeDistraction.duration <= 0) {
+                    activeDistraction = null;
+                }
+                ctx.restore();
+            }
+
+            // Render Noise Pings
+            for (let i = noisePings.length - 1; i >= 0; i--) {
+                let ping = noisePings[i];
+                ping.radius += 2.5;
+                ping.alpha -= 0.02;
+
+                if (ping.alpha <= 0 || ping.radius >= ping.maxRadius) {
+                    noisePings.splice(i, 1);
+                    continue;
+                }
+
+                ctx.save();
+                ctx.beginPath();
+                ctx.arc(ping.x, ping.y, ping.radius, 0, Math.PI * 2);
+                ctx.strokeStyle = `rgba(245, 158, 11, ${ping.alpha})`;
+                ctx.lineWidth = 1.5;
+                ctx.stroke();
+                ctx.restore();
+            }
+
+            // Render Guards & their Light Cones
+            guards.forEach(guard => guard.draw());
+
+            // Render Player
+            player.draw();
+        }
+
+        function gameLoop(timestamp) {
+            if (gameRunning && !gamePaused) {
+                elapsedTime = timestamp - levelStartTime;
+                document.getElementById('hud-timer').textContent = formatTime(elapsedTime);
+
+                // Update Player
+                player.update();
+
+                // Update Guards
+                guards.forEach(guard => guard.update());
+
+                // Check Goal Condition
+                let distToGoal = Math.hypot(player.x - goalZone.x, player.y - goalZone.y);
+                if (distToGoal < goalZone.radius - 8) {
+                    triggerVictory();
+                }
+            }
+
+            render();
+            requestAnimationFrame(gameLoop);
+        }
+
+        // Virtual Touch Joystick Logic
+        const joystickZone = document.getElementById('joystick-zone');
+        const joystickKnob = document.getElementById('joystick-knob');
+        let joystickInput = { active: false, dx: 0, dy: 0, isSneak: false };
+
+        if (joystickZone) {
+            let rect, centerX, centerY;
+
+            joystickZone.addEventListener('touchstart', (e) => {
+                e.preventDefault();
+                rect = joystickZone.getBoundingClientRect();
+                centerX = rect.left + rect.width / 2;
+                centerY = rect.top + rect.height / 2;
+                joystickInput.active = true;
+                updateJoystick(e.touches[0]);
+            }, { passive: false });
+
+            joystickZone.addEventListener('touchmove', (e) => {
+                e.preventDefault();
+                if (joystickInput.active) {
+                    updateJoystick(e.touches[0]);
+                }
+            }, { passive: false });
+
+            const endJoystick = (e) => {
+                joystickInput.active = false;
+                joystickInput.dx = 0;
+                joystickInput.dy = 0;
+                joystickKnob.style.transform = `translate(0px, 0px)`;
+            };
+
+            joystickZone.addEventListener('touchend', endJoystick);
+            joystickZone.addEventListener('touchcancel', endJoystick);
+
+            function updateJoystick(touch) {
+                let dx = touch.clientX - centerX;
+                let dy = touch.clientY - centerY;
+                let dist = Math.hypot(dx, dy);
+                let maxRadius = 40;
+
+                if (dist > maxRadius) {
+                    dx = (dx / dist) * maxRadius;
+                    dy = (dy / dist) * maxRadius;
+                }
+
+                joystickKnob.style.transform = `translate(${dx}px, ${dy}px)`;
+
+                joystickInput.dx = dx / maxRadius;
+                joystickInput.dy = dy / maxRadius;
+            }
+        }
+
+        // Resize canvas to maintain aspect ratio dynamically
+        function resizeCanvas() {
+            const container = document.getElementById('game-container');
+            const cw = container.clientWidth;
+            const ch = container.clientHeight;
+
+            let scale = Math.min(cw / V_WIDTH, ch / V_HEIGHT);
+            scaleFactor = scale;
+
+            canvas.width = V_WIDTH * scale;
+            canvas.height = V_HEIGHT * scale;
+
+            ctx.scale(scale, scale);
+        }
+
+        window.addEventListener('resize', resizeCanvas);
+
+        // Keyboard Listener
+        window.addEventListener('keydown', (e) => {
+            keys[e.code] = true;
+
+            if (e.code === 'KeyE') {
+                throwDistractionCoin();
+            }
+        });
+
+        window.addEventListener('keyup', (e) => {
+            keys[e.code] = false;
+        });
+
+        // Click to throw coin on canvas directly
+        canvas.addEventListener('click', (e) => {
+            if (!gameRunning || gamePaused) return;
+
+            const rect = canvas.getBoundingClientRect();
+            const clickX = (e.clientX - rect.left) / scaleFactor;
+            const clickY = (e.clientY - rect.top) / scaleFactor;
+
+            throwDistractionCoin(clickX, clickY);
+        });
+
+        // UI Event Listeners
+        document.getElementById('btn-touch-distract').addEventListener('click', () => throwDistractionCoin());
+
+        document.getElementById('btn-start-game').addEventListener('click', () => {
+            audio.init();
+            loadLevel(0);
+        });
+
+        document.getElementById('btn-retry').addEventListener('click', () => {
+            loadLevel(currentLevelIdx);
+        });
+
+        document.getElementById('btn-next-level').addEventListener('click', () => {
+            let nextIdx = (currentLevelIdx + 1) % LEVELS.length;
+            loadLevel(nextIdx);
+        });
+
+        document.getElementById('btn-restart').addEventListener('click', () => {
+            if (gameRunning) loadLevel(currentLevelIdx);
+        });
+
+        document.getElementById('btn-sound').addEventListener('click', function() {
+            soundEnabled = !soundEnabled;
+            this.querySelector('i').className = soundEnabled ? 'fa-solid fa-volume-high text-sm' : 'fa-solid fa-volume-xmark text-sm text-red-400';
+        });
+
+        document.getElementById('btn-pause').addEventListener('click', function() {
+            if (!gameRunning) return;
+            gamePaused = !gamePaused;
+            this.querySelector('i').className = gamePaused ? 'fa-solid fa-play text-sm text-amber-400' : 'fa-solid fa-pause text-sm';
+        });
+
+        // Level Select Dialog
+        const levelSelectModal = document.getElementById('modal-level-select');
+        const levelGrid = document.getElementById('level-grid');
+
+        document.getElementById('btn-select-level').addEventListener('click', () => {
+            levelGrid.innerHTML = '';
+            LEVELS.forEach((lvl, idx) => {
+                const card = document.createElement('button');
+                card.className = `p-3 rounded-xl border text-left flex flex-col justify-between transition-all ${idx === currentLevelIdx ? 'bg-emerald-950/60 border-emerald-500/80 text-emerald-300' : 'bg-slate-900/80 hover:bg-slate-800 border-slate-700 text-slate-300'}`;
+                card.innerHTML = `
+                    <div>
+                        <span class="text-xs font-bold font-orbitron text-cyan-400 block mb-1">MISSION ${idx + 1}</span>
+                        <h4 class="font-bold text-sm text-white">${lvl.name.split(': ')[1]}</h4>
+                        <p class="text-[10px] text-slate-400 mt-1 line-clamp-2">${lvl.desc}</p>
+                    </div>
+                `;
+                card.onclick = () => {
+                    audio.init();
+                    loadLevel(idx);
+                };
+                levelGrid.appendChild(card);
+            });
+            levelSelectModal.classList.remove('hidden');
+        });
+
+        document.getElementById('btn-close-levels').addEventListener('click', () => {
+            levelSelectModal.classList.add('hidden');
+        });
+
+        // Initialize Window
+        window.onload = function() {
+            resizeCanvas();
+            requestAnimationFrame(gameLoop);
+        };
+    </script>
+</body>
+</html>

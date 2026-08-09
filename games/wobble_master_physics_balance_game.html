@@ -1,0 +1,1484 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Wobble Master Deluxe - Physics Balance Game</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Tone.js for Web Audio Synthesis -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
+    <!-- Canvas Confetti -->
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&family=Outfit:wght@400;600;800&display=swap" rel="stylesheet">
+
+    <style>
+        body {
+            font-family: 'Outfit', sans-serif;
+            background: #090d16;
+            color: #f8fafc;
+            touch-action: none;
+            overflow: hidden;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+        
+        .font-playful {
+            font-family: 'Fredoka', cursive;
+        }
+
+        .glass-panel {
+            background: rgba(30, 41, 59, 0.75);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+        }
+
+        .glass-card {
+            background: rgba(15, 23, 42, 0.65);
+            backdrop-filter: blur(8px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+
+        .glow-effect {
+            box-shadow: 0 0 30px rgba(59, 130, 246, 0.3);
+        }
+
+        .glow-fever {
+            box-shadow: 0 0 40px rgba(236, 72, 153, 0.6);
+            animation: feverGlow 1s infinite alternate;
+        }
+
+        @keyframes feverGlow {
+            0% { box-shadow: 0 0 25px rgba(236, 72, 153, 0.5); }
+            100% { box-shadow: 0 0 50px rgba(245, 158, 11, 0.8); }
+        }
+
+        /* Custom scrollbar for high scores & shop modals */
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: rgba(15, 23, 42, 0.5);
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #3b82f6;
+            border-radius: 4px;
+        }
+
+        @keyframes pulse-fast {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+        }
+        .animate-pulse-fast {
+            animation: pulse-fast 0.5s infinite ease-in-out;
+        }
+
+        @keyframes floatText {
+            0% { opacity: 1; transform: translateY(0) scale(1); }
+            100% { opacity: 0; transform: translateY(-40px) scale(1.2); }
+        }
+
+        .floating-text {
+            position: absolute;
+            pointer-events: none;
+            animation: floatText 1.2s ease-out forwards;
+            font-weight: 900;
+            text-shadow: 0 2px 10px rgba(0,0,0,0.8);
+        }
+
+        /* Lightning flash overlay */
+        #lightningFlash {
+            pointer-events: none;
+            transition: opacity 0.1s ease-out;
+        }
+    </style>
+</head>
+<body class="h-screen w-screen flex flex-col justify-between items-center relative select-none">
+
+    <!-- Flash Overlay for Thunderstorm events -->
+    <div id="lightningFlash" class="absolute inset-0 bg-white/20 opacity-0 z-40 pointer-events-none"></div>
+
+    <!-- Top Header & HUD Bar -->
+    <header class="w-full max-w-6xl px-4 pt-3 pb-1 flex justify-between items-center z-20">
+        <!-- Brand / Mode Title -->
+        <div class="flex items-center gap-3">
+            <div class="w-11 h-11 rounded-2xl bg-gradient-to-tr from-blue-600 via-indigo-500 to-pink-500 flex items-center justify-center text-white text-2xl shadow-lg shadow-indigo-500/30">
+                <i class="fa-solid fa-scale-balanced animate-bounce"></i>
+            </div>
+            <div>
+                <h1 class="font-playful text-xl md:text-2xl font-black tracking-wide bg-gradient-to-r from-blue-400 via-pink-400 to-amber-300 bg-clip-text text-transparent">
+                    WOBBLE MASTER <span class="text-xs px-2 py-0.5 rounded-full bg-pink-500/20 text-pink-300 border border-pink-500/30">DELUXE</span>
+                </h1>
+                <p id="modeNameText" class="text-xs text-slate-400 font-medium">Mode: Classic Magic Stick</p>
+            </div>
+        </div>
+
+        <!-- Live Score & Coins Indicators -->
+        <div class="flex items-center gap-2 md:gap-5">
+            <!-- Coin Balance Counter -->
+            <div class="glass-panel px-3 py-1.5 rounded-2xl flex items-center gap-2">
+                <i class="fa-solid fa-coins text-amber-400 text-base animate-pulse"></i>
+                <span id="coinDisplay" class="font-playful text-sm md:text-lg font-bold text-amber-300">0</span>
+            </div>
+
+            <!-- Multiplier Badge -->
+            <div id="multiplierBadge" class="hidden px-3 py-1 rounded-full bg-gradient-to-r from-amber-500 to-orange-500 text-slate-950 font-black text-xs md:text-sm shadow-md animate-pulse-fast">
+                <span id="multiplierVal">2x</span> PERFECT
+            </div>
+
+            <!-- Score -->
+            <div class="glass-panel px-4 py-1.5 rounded-2xl flex flex-col items-center min-w-[85px]">
+                <span class="text-[9px] text-slate-400 tracking-wider uppercase font-semibold">Score</span>
+                <span id="scoreDisplay" class="font-playful text-lg md:text-2xl font-bold text-amber-400">0</span>
+            </div>
+
+            <!-- Best Score -->
+            <div class="glass-panel px-4 py-1.5 rounded-2xl flex flex-col items-center min-w-[85px]">
+                <span class="text-[9px] text-slate-400 tracking-wider uppercase font-semibold">Best</span>
+                <span id="highScoreDisplay" class="font-playful text-lg md:text-2xl font-bold text-emerald-400">0</span>
+            </div>
+
+            <!-- Action Drawer Buttons -->
+            <div class="flex gap-2">
+                <a href="https://supernebula23.github.io/games" id="homeBtn" class="w-10 h-10 rounded-xl glass-panel flex items-center justify-center text-slate-300 hover:text-white hover:bg-slate-700/50 transition" title="Home - More Games">
+                    <i class="fa-solid fa-house text-base"></i>
+                </a>
+                <button id="shopBtn" class="w-10 h-10 rounded-xl glass-panel flex items-center justify-center text-amber-300 hover:text-white hover:bg-amber-500/20 transition relative">
+                    <i class="fa-solid fa-store text-base"></i>
+                </button>
+                <button id="audioBtn" class="w-10 h-10 rounded-xl glass-panel flex items-center justify-center text-slate-300 hover:text-white hover:bg-slate-700/50 transition">
+                    <i class="fa-solid fa-volume-high text-base" id="audioIcon"></i>
+                </button>
+                <button id="pauseBtn" class="w-10 h-10 rounded-xl glass-panel flex items-center justify-center text-slate-300 hover:text-white hover:bg-slate-700/50 transition">
+                    <i class="fa-solid fa-pause text-base"></i>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Game Canvas Container -->
+    <main class="relative w-full max-w-6xl flex-1 my-2 px-2 flex justify-center items-center overflow-hidden" id="canvasContainer">
+        
+        <!-- Main Game Canvas -->
+        <canvas id="gameCanvas" class="w-full h-full rounded-2xl glass-panel glow-effect border border-slate-700/50 cursor-crosshair shadow-2xl"></canvas>
+
+        <!-- Dynamic Weather & Event Status Alert Banner -->
+        <div id="weatherBanner" class="absolute top-4 left-6 glass-panel px-3 py-2 rounded-xl flex items-center gap-3 pointer-events-none transition-all duration-300 opacity-90">
+            <div id="weatherIconBg" class="w-8 h-8 rounded-lg bg-cyan-500/20 border border-cyan-400/40 flex items-center justify-center text-cyan-300">
+                <i class="fa-solid fa-sun text-sm" id="weatherIcon"></i>
+            </div>
+            <div class="flex flex-col">
+                <span id="weatherTitle" class="text-xs font-bold text-slate-200">Clear Skies</span>
+                <div class="flex items-center gap-2">
+                    <div class="w-20 h-1.5 bg-slate-800 rounded-full overflow-hidden border border-slate-700">
+                        <div id="windBar" class="h-full bg-gradient-to-r from-cyan-400 to-blue-500 w-0 transition-all duration-300"></div>
+                    </div>
+                    <span id="windDirText" class="text-[10px] font-bold text-cyan-300 min-w-[28px]">0mph</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Dynamic Fever Mode Combo Meter -->
+        <div id="feverMeterContainer" class="absolute top-4 right-6 glass-panel px-3 py-1.5 rounded-2xl flex items-center gap-2 pointer-events-none">
+            <i class="fa-solid fa-fire text-pink-500 text-base" id="feverIcon"></i>
+            <div class="flex flex-col">
+                <div class="flex justify-between items-center text-[10px] font-bold text-slate-300 mb-0.5">
+                    <span>FEVER</span>
+                    <span id="feverPct">0%</span>
+                </div>
+                <div class="w-24 h-2 bg-slate-800 rounded-full overflow-hidden border border-slate-700">
+                    <div id="feverBar" class="h-full bg-gradient-to-r from-pink-500 via-purple-500 to-amber-400 w-0 transition-all duration-200"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Active Power-up Status Pill -->
+        <div id="powerupPill" class="absolute bottom-6 left-6 glass-panel px-4 py-2 rounded-full flex items-center gap-2.5 pointer-events-none hidden border border-amber-500/40 animate-bounce z-10">
+            <i class="fa-solid fa-bolt text-amber-400 text-lg" id="powerupIcon"></i>
+            <span id="powerupName" class="text-xs font-bold text-amber-300">Heavy Base</span>
+            <span id="powerupTimer" class="text-xs font-mono text-slate-300">5.0s</span>
+        </div>
+
+        <!-- Floating Toast Achievement Notifications -->
+        <div id="toastContainer" class="absolute bottom-6 right-6 flex flex-col gap-2 pointer-events-none z-30"></div>
+
+        <!-- Start Screen Overlay -->
+        <div id="startOverlay" class="absolute inset-0 glass-panel rounded-2xl flex flex-col items-center justify-center p-6 z-30 text-center backdrop-blur-md overflow-y-auto">
+            <div class="w-16 h-16 md:w-20 md:h-20 mb-3 rounded-3xl bg-gradient-to-br from-blue-500 via-indigo-600 to-pink-500 flex items-center justify-center text-3xl md:text-4xl shadow-xl shadow-indigo-500/30">
+                <i class="fa-solid fa-hand-holding-hand text-white animate-pulse"></i>
+            </div>
+            
+            <h2 class="font-playful text-2xl md:text-4xl font-black mb-1 text-white tracking-wide">
+                READY TO BALANCE?
+            </h2>
+            <p class="text-slate-300 max-w-lg text-xs md:text-sm mb-5">
+                Balance physics objects upright! Collect stars, weather severe storms, unlock fever combos, and upgrade cosmetics.
+            </p>
+
+            <!-- Mode Selection Grid -->
+            <div class="grid grid-cols-2 md:grid-cols-3 gap-2.5 w-full max-w-3xl mb-6">
+                <button class="mode-select-btn glass-card p-3 rounded-xl border border-blue-500/50 bg-blue-500/20 text-left hover:border-blue-400 transition" data-mode="stick">
+                    <div class="text-xl mb-1 text-amber-400"><i class="fa-solid fa-wand-magic-sparkles"></i></div>
+                    <div class="font-bold text-xs md:text-sm text-white">Magic Stick</div>
+                    <div class="text-[10px] text-slate-400">Classic single-pole pendulum</div>
+                </button>
+                <button class="mode-select-btn glass-card p-3 rounded-xl border border-slate-700 text-left hover:border-blue-400 transition" data-mode="teacups">
+                    <div class="text-xl mb-1 text-rose-400"><i class="fa-solid fa-mug-hot"></i></div>
+                    <div class="font-bold text-xs md:text-sm text-white">Tea Party</div>
+                    <div class="text-[10px] text-slate-400">Multi-joint wobbly cups stack</div>
+                </button>
+                <button class="mode-select-btn glass-card p-3 rounded-xl border border-slate-700 text-left hover:border-blue-400 transition" data-mode="alien">
+                    <div class="text-xl mb-1 text-emerald-400"><i class="fa-solid fa-spaghetti-monster-flying"></i></div>
+                    <div class="font-bold text-xs md:text-sm text-white">Alien Jelly</div>
+                    <div class="text-[10px] text-slate-400">Squishy bouncy blob pendulum</div>
+                </button>
+                <button class="mode-select-btn glass-card p-3 rounded-xl border border-slate-700 text-left hover:border-blue-400 transition" data-mode="pizza">
+                    <div class="text-xl mb-1 text-orange-400"><i class="fa-solid fa-pizza-slice"></i></div>
+                    <div class="font-bold text-xs md:text-sm text-white">Pizza Delivery</div>
+                    <div class="text-[10px] text-slate-400">Tower of sliding pizza boxes</div>
+                </button>
+                <button class="mode-select-btn glass-card p-3 rounded-xl border border-slate-700 text-left hover:border-blue-400 transition" data-mode="cats">
+                    <div class="text-xl mb-1 text-purple-400"><i class="fa-solid fa-cat"></i></div>
+                    <div class="font-bold text-xs md:text-sm text-white">Stack of Cats</div>
+                    <div class="text-[10px] text-slate-400">Meowing, Purring Cat Tower</div>
+                </button>
+                <button class="mode-select-btn glass-card p-3 rounded-xl border border-slate-700 text-left hover:border-blue-400 transition" data-mode="icecream">
+                    <div class="text-xl mb-1 text-cyan-400"><i class="fa-solid fa-ice-cream"></i></div>
+                    <div class="font-bold text-xs md:text-sm text-white">Mega Ice Cream</div>
+                    <div class="text-[10px] text-slate-400">Tower of melting scoops</div>
+                </button>
+            </div>
+
+            <!-- Start Button -->
+            <button id="startGameBtn" class="px-8 py-3.5 bg-gradient-to-r from-blue-600 via-indigo-600 to-pink-600 hover:from-blue-500 hover:to-pink-500 text-white font-playful text-lg font-bold rounded-2xl shadow-xl shadow-indigo-500/30 transform hover:-translate-y-0.5 active:translate-y-0 transition">
+                <i class="fa-solid fa-play mr-2"></i> START BALANCING
+            </button>
+        </div>
+
+        <!-- Pause Overlay -->
+        <div id="pauseOverlay" class="absolute inset-0 glass-panel rounded-2xl flex flex-col items-center justify-center p-6 z-30 text-center hidden">
+            <h2 class="font-playful text-4xl font-bold mb-4 text-white">GAME PAUSED</h2>
+            <div class="flex flex-wrap gap-4 justify-center">
+                <button id="resumeBtn" class="px-6 py-3 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-xl shadow-lg transition">
+                    <i class="fa-solid fa-play mr-2"></i> Resume
+                </button>
+                <button id="restartPauseBtn" class="px-6 py-3 bg-slate-700 hover:bg-slate-600 text-white font-bold rounded-xl transition">
+                    <i class="fa-solid fa-rotate-right mr-2"></i> Restart
+                </button>
+                <a href="https://supernebula23.github.io/games" class="px-6 py-3 bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold rounded-xl transition border border-slate-700 flex items-center justify-center">
+                    <i class="fa-solid fa-house mr-2"></i> Home
+                </a>
+            </div>
+        </div>
+
+        <!-- Shop Modal Overlay -->
+        <div id="shopOverlay" class="absolute inset-0 glass-panel rounded-2xl flex flex-col items-center p-6 z-30 text-center hidden backdrop-blur-md">
+            <div class="w-full flex justify-between items-center mb-4 max-w-2xl border-b border-slate-700 pb-3">
+                <div class="flex items-center gap-2">
+                    <i class="fa-solid fa-store text-amber-400 text-xl"></i>
+                    <h2 class="font-playful text-2xl font-bold text-white">COSMETICS SHOP</h2>
+                </div>
+                <div class="flex items-center gap-4">
+                    <div class="flex items-center gap-1.5 bg-amber-500/20 border border-amber-500/40 px-3 py-1 rounded-xl text-amber-300 font-bold text-sm">
+                        <i class="fa-solid fa-coins"></i>
+                        <span id="shopCoinDisplay">0</span>
+                    </div>
+                    <button id="closeShopBtn" class="w-8 h-8 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 flex items-center justify-center">
+                        <i class="fa-solid fa-xmark text-lg"></i>
+                    </button>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-3 w-full max-w-2xl overflow-y-auto max-h-[70vh] pr-1">
+                <!-- Shop Item 1 -->
+                <div class="glass-card p-3 rounded-xl flex items-center justify-between border border-slate-700" id="shopItem-default">
+                    <div class="flex items-center gap-3">
+                        <div class="w-12 h-12 rounded-xl bg-blue-600/30 border border-blue-400 flex items-center justify-center text-blue-400 text-xl">
+                            <i class="fa-solid fa-grip-lines"></i>
+                        </div>
+                        <div class="text-left">
+                            <div class="font-bold text-sm text-white">Classic Pad</div>
+                            <div class="text-[10px] text-slate-400">Standard hover platform</div>
+                        </div>
+                    </div>
+                    <button class="equip-skin-btn px-4 py-1.5 rounded-xl font-bold text-xs bg-emerald-500/20 border border-emerald-400 text-emerald-300" data-skin="default">EQUIPPED</button>
+                </div>
+
+                <!-- Shop Item 2 -->
+                <div class="glass-card p-3 rounded-xl flex items-center justify-between border border-slate-700" id="shopItem-cyber">
+                    <div class="flex items-center gap-3">
+                        <div class="w-12 h-12 rounded-xl bg-pink-600/30 border border-pink-400 flex items-center justify-center text-pink-400 text-xl">
+                            <i class="fa-solid fa-compact-disc"></i>
+                        </div>
+                        <div class="text-left">
+                            <div class="font-bold text-sm text-white">Cyber Neon Disk</div>
+                            <div class="text-[10px] text-slate-400">Futuristic synthwave glow</div>
+                        </div>
+                    </div>
+                    <button class="equip-skin-btn px-4 py-1.5 rounded-xl font-bold text-xs bg-amber-500 hover:bg-amber-400 text-slate-950" data-skin="cyber" data-cost="150">150 COINS</button>
+                </div>
+
+                <!-- Shop Item 3 -->
+                <div class="glass-card p-3 rounded-xl flex items-center justify-between border border-slate-700" id="shopItem-gold">
+                    <div class="flex items-center gap-3">
+                        <div class="w-12 h-12 rounded-xl bg-amber-500/30 border border-amber-400 flex items-center justify-center text-amber-300 text-xl">
+                            <i class="fa-solid fa-crown"></i>
+                        </div>
+                        <div class="text-left">
+                            <div class="font-bold text-sm text-white">Royal Sovereign</div>
+                            <div class="text-[10px] text-slate-400">Pure solid gold tray</div>
+                        </div>
+                    </div>
+                    <button class="equip-skin-btn px-4 py-1.5 rounded-xl font-bold text-xs bg-amber-500 hover:bg-amber-400 text-slate-950" data-skin="gold" data-cost="350">350 COINS</button>
+                </div>
+
+                <!-- Shop Item 4 -->
+                <div class="glass-card p-3 rounded-xl flex items-center justify-between border border-slate-700" id="shopItem-magma">
+                    <div class="flex items-center gap-3">
+                        <div class="w-12 h-12 rounded-xl bg-rose-600/30 border border-rose-400 flex items-center justify-center text-rose-400 text-xl">
+                            <i class="fa-solid fa-fire"></i>
+                        </div>
+                        <div class="text-left">
+                            <div class="font-bold text-sm text-white">Magma Core</div>
+                            <div class="text-[10px] text-slate-400">Fiery molten energy base</div>
+                        </div>
+                    </div>
+                    <button class="equip-skin-btn px-4 py-1.5 rounded-xl font-bold text-xs bg-amber-500 hover:bg-amber-400 text-slate-950" data-skin="magma" data-cost="600">600 COINS</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Game Over Overlay -->
+        <div id="gameOverOverlay" class="absolute inset-0 glass-panel rounded-2xl flex flex-col items-center justify-center p-6 z-30 text-center hidden backdrop-blur-lg">
+            <div id="gameOverIcon" class="w-16 h-16 mb-3 rounded-full bg-rose-500/20 border border-rose-500/40 text-rose-400 flex items-center justify-center text-3xl">
+                <i class="fa-solid fa-heart-crack"></i>
+            </div>
+            
+            <h2 id="gameOverTitle" class="font-playful text-3xl md:text-4xl font-extrabold text-white mb-1">TOBBLED OVER!</h2>
+            <p id="gameOverSub" class="text-slate-400 text-xs md:text-sm mb-4">Gravity took control this time.</p>
+
+            <!-- Final Stats Box -->
+            <div class="glass-card rounded-2xl p-4 w-full max-w-md grid grid-cols-3 gap-2 mb-4 border border-slate-700/60 text-center">
+                <div class="flex flex-col items-center">
+                    <span class="text-[10px] text-slate-400 uppercase font-semibold">Final Score</span>
+                    <span id="finalScoreVal" class="font-playful text-2xl font-bold text-amber-400">0</span>
+                </div>
+                <div class="flex flex-col items-center border-x border-slate-700/60 px-2">
+                    <span class="text-[10px] text-slate-400 uppercase font-semibold">Coins Earned</span>
+                    <span id="earnedCoinsVal" class="font-playful text-2xl font-bold text-amber-300">+0</span>
+                </div>
+                <div class="flex flex-col items-center">
+                    <span class="text-[10px] text-slate-400 uppercase font-semibold">Survived</span>
+                    <span id="finalTimeVal" class="font-playful text-2xl font-bold text-emerald-400">0.0s</span>
+                </div>
+                <div class="col-span-3 border-t border-slate-700/60 pt-2 flex justify-around text-xs text-slate-300">
+                    <div>Perfect Center: <span id="perfectTimeVal" class="font-bold text-blue-400">0s</span></div>
+                    <div>Max Tilt: <span id="maxTiltVal" class="font-bold text-purple-400">0°</span></div>
+                </div>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="flex flex-wrap gap-3 justify-center">
+                <button id="retryBtn" class="px-8 py-3.5 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-slate-950 font-playful font-bold text-lg rounded-xl shadow-lg transition transform hover:scale-105">
+                    <i class="fa-solid fa-rotate-right mr-2"></i> TRY AGAIN
+                </button>
+                <button id="changeModeBtn" class="px-6 py-3.5 bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold rounded-xl transition border border-slate-700">
+                    <i class="fa-solid fa-shapes mr-2"></i> Select Mode
+                </button>
+                <a href="https://supernebula23.github.io/games" class="px-6 py-3.5 bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold rounded-xl transition border border-slate-700 flex items-center">
+                    <i class="fa-solid fa-house mr-2"></i> Home
+                </a>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- Bottom Controls & Settings Footer -->
+    <footer class="w-full max-w-6xl px-4 py-2 flex justify-between items-center z-20 text-xs text-slate-400">
+        <!-- Input Method Hint -->
+        <div class="flex items-center gap-3">
+            <div class="flex items-center gap-1.5 glass-panel px-3 py-1 rounded-lg">
+                <i class="fa-solid fa-computer-mouse text-blue-400"></i>
+                <span class="hidden sm:inline">Mouse / Touch Drag</span>
+            </div>
+            <div class="flex items-center gap-1.5 glass-panel px-3 py-1 rounded-lg">
+                <i class="fa-solid fa-keyboard text-purple-400"></i>
+                <span class="hidden sm:inline">Left / Right Arrows or A / D</span>
+            </div>
+        </div>
+
+        <!-- Dynamic Sensitivity Slider -->
+        <div class="flex items-center gap-2 glass-panel px-3 py-1 rounded-lg">
+            <span class="text-[11px] font-semibold text-slate-300">Sensitivity:</span>
+            <input type="range" id="sensitivitySlider" min="0.5" max="2.0" step="0.1" value="1.0" class="w-20 accent-blue-500 cursor-pointer">
+        </div>
+    </footer>
+
+    <!-- Mobile Virtual Arrow Touch Controls -->
+    <div id="mobileControls" class="fixed bottom-12 inset-x-0 px-6 flex justify-between pointer-events-none md:hidden z-20 opacity-70">
+        <button id="touchLeft" class="w-16 h-16 rounded-full glass-panel border border-blue-500/40 text-white text-2xl flex items-center justify-center active:bg-blue-600/40 pointer-events-auto shadow-lg">
+            <i class="fa-solid fa-arrow-left"></i>
+        </button>
+        <button id="touchRight" class="w-16 h-16 rounded-full glass-panel border border-blue-500/40 text-white text-2xl flex items-center justify-center active:bg-blue-600/40 pointer-events-auto shadow-lg">
+            <i class="fa-solid fa-arrow-right"></i>
+        </button>
+    </div>
+
+    <script>
+        // --- GAME ENGINE & STATE MANAGEMENT ---
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const canvasContainer = document.getElementById('canvasContainer');
+
+        // UI Element References
+        const scoreDisplay = document.getElementById('scoreDisplay');
+        const highScoreDisplay = document.getElementById('highScoreDisplay');
+        const coinDisplay = document.getElementById('coinDisplay');
+        const shopCoinDisplay = document.getElementById('shopCoinDisplay');
+        const multiplierBadge = document.getElementById('multiplierBadge');
+        const multiplierVal = document.getElementById('multiplierVal');
+        const modeNameText = document.getElementById('modeNameText');
+        
+        const startOverlay = document.getElementById('startOverlay');
+        const pauseOverlay = document.getElementById('pauseOverlay');
+        const shopOverlay = document.getElementById('shopOverlay');
+        const gameOverOverlay = document.getElementById('gameOverOverlay');
+        
+        const startGameBtn = document.getElementById('startGameBtn');
+        const pauseBtn = document.getElementById('pauseBtn');
+        const resumeBtn = document.getElementById('resumeBtn');
+        const restartPauseBtn = document.getElementById('restartPauseBtn');
+        const shopBtn = document.getElementById('shopBtn');
+        const closeShopBtn = document.getElementById('closeShopBtn');
+        const retryBtn = document.getElementById('retryBtn');
+        const changeModeBtn = document.getElementById('changeModeBtn');
+        const audioBtn = document.getElementById('audioBtn');
+        const audioIcon = document.getElementById('audioIcon');
+        const sensitivitySlider = document.getElementById('sensitivitySlider');
+
+        const weatherBanner = document.getElementById('weatherBanner');
+        const weatherIcon = document.getElementById('weatherIcon');
+        const weatherIconBg = document.getElementById('weatherIconBg');
+        const weatherTitle = document.getElementById('weatherTitle');
+        const windBar = document.getElementById('windBar');
+        const windDirText = document.getElementById('windDirText');
+
+        const feverBar = document.getElementById('feverBar');
+        const feverPct = document.getElementById('feverPct');
+        const powerupPill = document.getElementById('powerupPill');
+        const powerupIcon = document.getElementById('powerupIcon');
+        const powerupName = document.getElementById('powerupName');
+        const powerupTimer = document.getElementById('powerupTimer');
+        const lightningFlash = document.getElementById('lightningFlash');
+        const toastContainer = document.getElementById('toastContainer');
+
+        // Audio State (Tone.js)
+        let audioEnabled = false;
+        let synths = {};
+
+        function initAudio() {
+            if (synths.initialized) return;
+            try {
+                Tone.start();
+                synths.wobbleOsc = new Tone.Oscillator(120, "sine").toDestination();
+                synths.wobbleGain = new Tone.Gain(0).toDestination();
+                synths.wobbleOsc.connect(synths.wobbleGain);
+                synths.wobbleOsc.start();
+
+                synths.synth = new Tone.PolySynth(Tone.Synth).toDestination();
+                synths.synth.set({
+                    envelope: { attack: 0.01, decay: 0.1, sustain: 0.1, release: 0.3 },
+                    volume: -8
+                });
+
+                synths.noise = new Tone.NoiseSynth({
+                    noise: { type: 'pink' },
+                    envelope: { attack: 0.01, decay: 0.4, sustain: 0 }
+                }).toDestination();
+
+                synths.initialized = true;
+            } catch (e) {
+                console.warn("Audio Context deferred", e);
+            }
+        }
+
+        function playSound(type, pitch = "C4") {
+            if (!audioEnabled || !synths.initialized || Tone.context.state !== 'running') return;
+            try {
+                if (type === 'score') {
+                    synths.synth.triggerAttackRelease(pitch, '16n');
+                } else if (type === 'powerup') {
+                    synths.synth.triggerAttackRelease(['C5', 'E5', 'G5', 'C6'], '12n');
+                } else if (type === 'fever') {
+                    synths.synth.triggerAttackRelease(['A5', 'C6', 'E6', 'A6'], '8n');
+                } else if (type === 'crash') {
+                    synths.noise.triggerAttackRelease('8n');
+                } else if (type === 'thunder') {
+                    synths.noise.triggerAttackRelease('4n');
+                }
+            } catch (e) {}
+        }
+
+        // --- LOCAL STORAGE DATA ---
+        const LOCAL_STORAGE_KEY = 'wobble_master_deluxe_save';
+        let saveData = JSON.parse(localStorage.getItem(LOCAL_STORAGE_KEY)) || {
+            coins: 0,
+            equippedSkin: 'default',
+            unlockedSkins: ['default'],
+            highScores: { stick: 0, teacups: 0, alien: 0, pizza: 0, cats: 0, icecream: 0 }
+        };
+
+        function saveGameData() {
+            localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(saveData));
+            coinDisplay.innerText = saveData.coins;
+            shopCoinDisplay.innerText = saveData.coins;
+        }
+
+        // Game State Variables
+        let gameState = 'START';
+        let selectedMode = 'stick';
+        let inputSensitivity = 1.0;
+        let lastTime = 0;
+        let gameTime = 0;
+        let score = 0;
+        let coinsEarnedThisRun = 0;
+        let perfectStreakTime = 0;
+        let multiplier = 1;
+        let maxTiltRecorded = 0;
+        let perfectTimeTotal = 0;
+
+        // Fever Mode
+        let feverVal = 0; // 0 to 100
+        let isFeverActive = false;
+        let feverDuration = 0;
+
+        // Weather Events State
+        let currentWeather = 'clear'; // 'clear', 'storm', 'earthquake', 'zerog'
+        let weatherTimer = 10;
+
+        // Platform
+        const platform = {
+            x: 0,
+            y: 0,
+            width: 130,
+            height: 20,
+            vx: 0,
+            targetX: 0,
+            shakeX: 0
+        };
+
+        // Physics Constants & Object State
+        const physics = {
+            gravity: 9.81,
+            length: 180,
+            angle: 0,          
+            angularVel: 0,     
+            angularAccel: 0,   
+            mass: 1.0,
+            damping: 0.985
+        };
+
+        // Stacked Joints (Teacups, Pizza, Cats, Ice cream)
+        let stackSegments = [];
+
+        // Environmental Effects
+        let wind = { current: 0, target: 0, timer: 0 };
+        let activePowerup = null; 
+        let collectibles = [];    
+        let hazards = [];         // Flying birds/drones
+        let particles = [];
+        let debrisList = [];      // Physics fragments on fail
+
+        function resizeCanvas() {
+            const rect = canvasContainer.getBoundingClientRect();
+            canvas.width = rect.width * window.devicePixelRatio;
+            canvas.height = rect.height * window.devicePixelRatio;
+            ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
+            
+            if (gameState === 'START') {
+                platform.x = rect.width / 2;
+                platform.y = rect.height - 80;
+                platform.targetX = platform.x;
+            } else {
+                platform.y = rect.height - 80;
+            }
+        }
+
+        window.addEventListener('resize', resizeCanvas);
+
+        function setupMode(mode) {
+            selectedMode = mode;
+            modeNameText.innerText = `Mode: ${
+                mode === 'stick' ? 'Magic Stick' :
+                mode === 'teacups' ? 'Tea Party Stack' :
+                mode === 'alien' ? 'Alien Jelly' :
+                mode === 'pizza' ? 'Pizza Delivery' :
+                mode === 'cats' ? 'Stack of Cats' : 'Mega Ice Cream'
+            }`;
+
+            highScoreDisplay.innerText = Math.floor(saveData.highScores[selectedMode] || 0);
+
+            if (mode === 'stick') {
+                physics.length = 190; physics.mass = 1.0; physics.damping = 0.988; platform.width = 140; stackSegments = [];
+            } else if (mode === 'teacups') {
+                physics.length = 160; physics.mass = 1.4; physics.damping = 0.982; platform.width = 130;
+                stackSegments = [{ angle: 0, vel: 0 }, { angle: 0, vel: 0 }, { angle: 0, vel: 0 }, { angle: 0, vel: 0 }];
+            } else if (mode === 'alien') {
+                physics.length = 150; physics.mass = 1.2; physics.damping = 0.985; platform.width = 150; stackSegments = [];
+            } else if (mode === 'pizza') {
+                physics.length = 170; physics.mass = 1.6; physics.damping = 0.978; platform.width = 120;
+                stackSegments = [{ xOffset: 0, velX: 0 }, { xOffset: 0, velX: 0 }, { xOffset: 0, velX: 0 }, { xOffset: 0, velX: 0 }];
+            } else if (mode === 'cats') {
+                physics.length = 180; physics.mass = 1.3; physics.damping = 0.983; platform.width = 140;
+                stackSegments = [{ angle: 0, vel: 0 }, { angle: 0, vel: 0 }, { angle: 0, vel: 0 }];
+            } else if (mode === 'icecream') {
+                physics.length = 175; physics.mass = 1.5; physics.damping = 0.980; platform.width = 125;
+                stackSegments = [{ angle: 0, vel: 0 }, { angle: 0, vel: 0 }, { angle: 0, vel: 0 }, { angle: 0, vel: 0 }];
+            }
+        }
+
+        function resetGame() {
+            const rect = canvasContainer.getBoundingClientRect();
+            platform.x = rect.width / 2;
+            platform.targetX = platform.x;
+            platform.vx = 0;
+            
+            physics.angle = (Math.random() - 0.5) * 0.08;
+            physics.angularVel = 0;
+            physics.angularAccel = 0;
+
+            if (stackSegments.length > 0) {
+                stackSegments.forEach(s => {
+                    if (s.angle !== undefined) { s.angle = 0; s.vel = 0; }
+                    if (s.xOffset !== undefined) { s.xOffset = 0; s.velX = 0; }
+                });
+            }
+
+            score = 0;
+            coinsEarnedThisRun = 0;
+            gameTime = 0;
+            perfectStreakTime = 0;
+            perfectTimeTotal = 0;
+            maxTiltRecorded = 0;
+            multiplier = 1;
+            feverVal = 0;
+            isFeverActive = false;
+            feverDuration = 0;
+            
+            currentWeather = 'clear';
+            weatherTimer = 8;
+            updateWeatherUI();
+
+            wind.current = 0; wind.target = 0; wind.timer = 0;
+            collectibles = []; hazards = []; particles = []; debrisList = [];
+            activePowerup = null;
+
+            scoreDisplay.innerText = '0';
+            multiplierBadge.classList.add('hidden');
+            powerupPill.classList.add('hidden');
+            feverBar.style.width = '0%';
+            feverPct.innerText = '0%';
+            canvasContainer.classList.remove('glow-fever');
+        }
+
+        function updatePhysics(dt) {
+            if (gameState !== 'PLAYING') return;
+
+            gameTime += dt;
+
+            // 1. Weather Event System
+            weatherTimer -= dt;
+            if (weatherTimer <= 0) {
+                switchWeather();
+            }
+
+            // 2. Smooth Platform Movement
+            const oldX = platform.x;
+            const easeFactor = 18 * inputSensitivity;
+            platform.x += (platform.targetX - platform.x) * Math.min(dt * easeFactor, 1);
+            
+            const rect = canvasContainer.getBoundingClientRect();
+            const minX = platform.width / 2;
+            const maxX = rect.width - platform.width / 2;
+            platform.x = Math.max(minX, Math.min(maxX, platform.x));
+
+            platform.vx = (platform.x - oldX) / dt;
+            const platformAccel = (platform.vx) * 0.015;
+
+            // Earthquake Shaking Effect
+            if (currentWeather === 'earthquake') {
+                platform.shakeX = (Math.random() - 0.5) * 8;
+            } else {
+                platform.shakeX = 0;
+            }
+
+            // 3. Wind Dynamics
+            wind.timer -= dt;
+            if (wind.timer <= 0) {
+                wind.timer = 2 + Math.random() * 3;
+                let maxWind = Math.min(0.035, 0.008 + (gameTime / 90) * 0.012);
+                if (currentWeather === 'storm') maxWind *= 2.2;
+                wind.target = (Math.random() - 0.5) * 2 * maxWind;
+            }
+            wind.current += (wind.target - wind.current) * dt * 2;
+
+            let effectiveWind = wind.current;
+            if (activePowerup && activePowerup.type === 'freeze') effectiveWind = 0;
+
+            const windPct = Math.min(100, Math.abs(effectiveWind) * 3000);
+            windBar.style.width = `${windPct}%`;
+            windDirText.innerText = `${(effectiveWind * 1000).toFixed(0)}mph`;
+
+            // 4. Inverted Pendulum Core Physics
+            let currentGravity = physics.gravity;
+            if (currentWeather === 'zerog') currentGravity *= 0.4; // Floating Physics
+
+            let effectiveDamping = physics.damping;
+            if (activePowerup && activePowerup.type === 'heavy') effectiveDamping = 0.95;
+            if (isFeverActive) effectiveDamping = 0.97; // Extra stability in fever
+
+            const gTerm = (currentGravity / (physics.length * 0.01)) * Math.sin(physics.angle);
+            const accelTerm = (platformAccel / (physics.length * 0.01)) * Math.cos(physics.angle);
+            const windTerm = effectiveWind * Math.cos(physics.angle);
+
+            physics.angularAccel = gTerm - accelTerm + windTerm;
+            physics.angularVel += physics.angularAccel * dt;
+            physics.angularVel *= effectiveDamping;
+            physics.angle += physics.angularVel * dt;
+
+            const degTilt = Math.abs(physics.angle * (180 / Math.PI));
+            if (degTilt > maxTiltRecorded) maxTiltRecorded = degTilt;
+
+            // Secondary stack joint dynamics
+            if (selectedMode === 'teacups' || selectedMode === 'cats' || selectedMode === 'icecream') {
+                let parentAngle = physics.angle;
+                stackSegments.forEach((seg, idx) => {
+                    const springK = 35 - idx * 4;
+                    const targetAngle = parentAngle * 1.15;
+                    seg.vel += (targetAngle - seg.angle) * springK * dt;
+                    seg.vel *= 0.88;
+                    seg.angle += seg.vel * dt;
+                    parentAngle = seg.angle;
+                });
+            } else if (selectedMode === 'pizza') {
+                let baseVelocity = platform.vx * 0.05;
+                stackSegments.forEach((box, idx) => {
+                    const diff = (physics.angle * 120) - box.xOffset;
+                    box.velX += (diff * (20 - idx * 2) - baseVelocity) * dt;
+                    box.velX *= 0.85;
+                    box.xOffset += box.velX * dt;
+                });
+            }
+
+            // Audio Wobble Pitch Cue
+            if (audioEnabled && synths.wobbleGain && Tone.context.state === 'running') {
+                const tiltRatio = Math.min(1, Math.abs(physics.angle) / 0.8);
+                synths.wobbleGain.gain.value += (tiltRatio * 0.15 - synths.wobbleGain.gain.value) * Math.min(1, dt * 10);
+                synths.wobbleOsc.frequency.value += ((100 + tiltRatio * 350) - synths.wobbleOsc.frequency.value) * Math.min(1, dt * 10);
+            }
+
+            // 5. Perfect Alignment & Multipliers & Fever Meter
+            const centerThreshold = 0.06;
+            if (Math.abs(physics.angle) < centerThreshold) {
+                perfectStreakTime += dt;
+                perfectTimeTotal += dt;
+                
+                if (!isFeverActive) {
+                    feverVal = Math.min(100, feverVal + dt * 15);
+                    if (feverVal >= 100) activateFeverMode();
+                }
+
+                if (perfectStreakTime > 1.5) {
+                    multiplier = Math.min(5, Math.floor(perfectStreakTime / 1.5) + 1);
+                    multiplierBadge.classList.remove('hidden');
+                    multiplierVal.innerText = `${multiplier}x`;
+                }
+            } else {
+                perfectStreakTime = 0;
+                multiplier = 1;
+                multiplierBadge.classList.add('hidden');
+            }
+
+            if (isFeverActive) {
+                feverDuration -= dt;
+                feverVal = (feverDuration / 8) * 100;
+                if (feverDuration <= 0) {
+                    isFeverActive = false;
+                    feverVal = 0;
+                    canvasContainer.classList.remove('glow-fever');
+                }
+            }
+
+            feverBar.style.width = `${feverVal}%`;
+            feverPct.innerText = `${Math.floor(feverVal)}%`;
+
+            // Score addition
+            const scoreStep = dt * 10 * multiplier * (isFeverActive ? 3 : 1);
+            score += scoreStep;
+            scoreDisplay.innerText = Math.floor(score);
+
+            // 6. Spawns: Star Collectibles & Birds/Hazards
+            if (Math.random() < (isFeverActive ? 0.02 : 0.005) && collectibles.length < 4) {
+                collectibles.push({
+                    x: Math.random() * (rect.width - 100) + 50,
+                    y: -30,
+                    vy: 70 + Math.random() * 40,
+                    type: Math.random() < 0.3 ? 'coin' : (Math.random() < 0.5 ? 'heavy' : 'freeze'),
+                    radius: 16
+                });
+            }
+
+            // Hazards (Birds/Drones)
+            if (Math.random() < 0.002 && hazards.length < 2) {
+                const side = Math.random() < 0.5 ? 'L' : 'R';
+                hazards.push({
+                    x: side === 'L' ? -30 : rect.width + 30,
+                    y: 100 + Math.random() * (rect.height - 250),
+                    vx: side === 'L' ? (80 + Math.random() * 50) : -(80 + Math.random() * 50),
+                    radius: 14
+                });
+            }
+
+            // Process Collectibles
+            const tipPos = getTopTipPosition();
+            for (let i = collectibles.length - 1; i >= 0; i--) {
+                const c = collectibles[i];
+                c.y += c.vy * dt;
+
+                const distTip = Math.hypot(c.x - tipPos.x, c.y - tipPos.y);
+                const distPlat = Math.hypot(c.x - (platform.x + platform.shakeX), c.y - platform.y);
+
+                if (distTip < c.radius + 25 || distPlat < c.radius + platform.width / 2) {
+                    if (c.type === 'coin') {
+                        saveData.coins += 5;
+                        coinsEarnedThisRun += 5;
+                        saveGameData();
+                        showFloatingText('+5 COINS', c.x, c.y, '#f59e0b');
+                    } else {
+                        activatePowerup(c.type);
+                    }
+                    createBurstParticles(c.x, c.y, c.type === 'heavy' ? '#f59e0b' : '#38bdf8', 15);
+                    collectibles.splice(i, 1);
+                    playSound('powerup');
+                    continue;
+                }
+
+                if (c.y > rect.height + 40) collectibles.splice(i, 1);
+            }
+
+            // Process Hazards
+            for (let i = hazards.length - 1; i >= 0; i--) {
+                const h = hazards[i];
+                h.x += h.vx * dt;
+
+                const distTip = Math.hypot(h.x - tipPos.x, h.y - tipPos.y);
+                if (distTip < h.radius + 20) {
+                    // Hazard Bump Torque!
+                    physics.angularVel += (h.vx > 0 ? 0.8 : -0.8);
+                    showFloatingText('BUMP!', tipPos.x, tipPos.y - 20, '#ef4444');
+                    createBurstParticles(h.x, h.y, '#ef4444', 20);
+                    playSound('thunder');
+                    hazards.splice(i, 1);
+                    continue;
+                }
+
+                if (h.x < -50 || h.x > rect.width + 50) hazards.splice(i, 1);
+            }
+
+            // Powerup Timer
+            if (activePowerup) {
+                activePowerup.duration -= dt;
+                powerupTimer.innerText = `${Math.max(0, activePowerup.duration).toFixed(1)}s`;
+                if (activePowerup.duration <= 0) {
+                    activePowerup = null;
+                    powerupPill.classList.add('hidden');
+                }
+            }
+
+            // Fail Condition Check
+            const maxAllowedAngle = Math.PI / 3.2; 
+            if (Math.abs(physics.angle) > maxAllowedAngle) {
+                triggerGameOver();
+            }
+        }
+
+        // Switch Weather State
+        function switchWeather() {
+            weatherTimer = 10 + Math.random() * 8;
+            const rand = Math.random();
+            if (rand < 0.4) currentWeather = 'clear';
+            else if (rand < 0.65) currentWeather = 'storm';
+            else if (rand < 0.85) currentWeather = 'earthquake';
+            else currentWeather = 'zerog';
+
+            updateWeatherUI();
+        }
+
+        function updateWeatherUI() {
+            if (currentWeather === 'clear') {
+                weatherIcon.className = 'fa-solid fa-sun text-sm text-amber-300';
+                weatherIconBg.className = 'w-8 h-8 rounded-lg bg-amber-500/20 border border-amber-400/40 flex items-center justify-center';
+                weatherTitle.innerText = 'Clear Skies';
+            } else if (currentWeather === 'storm') {
+                weatherIcon.className = 'fa-solid fa-cloud-bolt text-sm text-purple-300';
+                weatherIconBg.className = 'w-8 h-8 rounded-lg bg-purple-500/20 border border-purple-400/40 flex items-center justify-center animate-bounce';
+                weatherTitle.innerText = 'Thunderstorm!';
+                triggerLightning();
+                showFloatingText('STORM WARNING!', canvasContainer.clientWidth/2 - 40, 60, '#c084fc');
+            } else if (currentWeather === 'earthquake') {
+                weatherIcon.className = 'fa-solid fa-house-crack text-sm text-orange-300';
+                weatherIconBg.className = 'w-8 h-8 rounded-lg bg-orange-500/20 border border-orange-400/40 flex items-center justify-center';
+                weatherTitle.innerText = 'Earthquake!';
+                showFloatingText('EARTHQUAKE!', canvasContainer.clientWidth/2 - 40, 60, '#fb923c');
+            } else if (currentWeather === 'zerog') {
+                weatherIcon.className = 'fa-solid fa-shuttle-space text-sm text-cyan-300';
+                weatherIconBg.className = 'w-8 h-8 rounded-lg bg-cyan-500/20 border border-cyan-400/40 flex items-center justify-center';
+                weatherTitle.innerText = 'Low Gravity';
+                showFloatingText('ZERO GRAVITY!', canvasContainer.clientWidth/2 - 40, 60, '#38bdf8');
+            }
+        }
+
+        function triggerLightning() {
+            lightningFlash.style.opacity = '0.4';
+            playSound('thunder');
+            setTimeout(() => { lightningFlash.style.opacity = '0'; }, 150);
+        }
+
+        function activateFeverMode() {
+            isFeverActive = true;
+            feverDuration = 8.0;
+            canvasContainer.classList.add('glow-fever');
+            playSound('fever');
+            showFloatingText('FEVER MODE!', canvasContainer.clientWidth/2 - 50, canvasContainer.clientHeight/2, '#ec4899');
+        }
+
+        function activatePowerup(type) {
+            activePowerup = { type: type, duration: 6.0 };
+            powerupPill.classList.remove('hidden');
+            if (type === 'heavy') {
+                powerupIcon.className = 'fa-solid fa-weight-hanging text-amber-400';
+                powerupName.innerText = 'Heavy Base';
+            } else if (type === 'freeze') {
+                powerupIcon.className = 'fa-solid fa-snowflake text-cyan-400';
+                powerupName.innerText = 'No Wind';
+            }
+        }
+
+        function getTopTipPosition() {
+            const tipX = (platform.x + platform.shakeX) + Math.sin(physics.angle) * physics.length;
+            const tipY = platform.y - Math.cos(physics.angle) * physics.length;
+            return { x: tipX, y: tipY };
+        }
+
+        function showFloatingText(str, x, y, color = '#38bdf8') {
+            const el = document.createElement('div');
+            el.className = 'floating-text';
+            el.innerText = str;
+            el.style.left = `${x}px`;
+            el.style.top = `${y}px`;
+            el.style.color = color;
+            canvasContainer.appendChild(el);
+            setTimeout(() => el.remove(), 1200);
+        }
+
+        function render() {
+            const rect = canvasContainer.getBoundingClientRect();
+            ctx.clearRect(0, 0, rect.width, rect.height);
+
+            drawBackground(rect.width, rect.height);
+            drawCollectibles();
+            drawHazards();
+            drawPlatform();
+
+            if (selectedMode === 'stick') drawMagicStick();
+            else if (selectedMode === 'teacups') drawTeacupsStack();
+            else if (selectedMode === 'alien') drawAlienJelly();
+            else if (selectedMode === 'pizza') drawPizzaStack();
+            else if (selectedMode === 'cats') drawCatStack();
+            else if (selectedMode === 'icecream') drawIceCreamCone();
+
+            drawGuidanceOverlay();
+            drawParticles();
+            drawDebris();
+        }
+
+        function drawBackground(w, h) {
+            const bgGradient = ctx.createRadialGradient(w/2, h/2, 50, w/2, h/2, w * 0.8);
+            bgGradient.addColorStop(0, '#151d30');
+            bgGradient.addColorStop(1, '#090d16');
+            ctx.fillStyle = bgGradient;
+            ctx.fillRect(0, 0, w, h);
+
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.03)';
+            ctx.lineWidth = 1;
+            const gridSize = 40;
+            for (let x = 0; x < w; x += gridSize) {
+                ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, h); ctx.stroke();
+            }
+            for (let y = 0; y < h; y += gridSize) {
+                ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(w, y); ctx.stroke();
+            }
+        }
+
+        function drawPlatform() {
+            ctx.save();
+            ctx.translate(platform.x + platform.shakeX, platform.y);
+
+            const skin = saveData.equippedSkin;
+            const halfW = platform.width / 2;
+
+            ctx.fillStyle = 'rgba(0,0,0,0.3)';
+            ctx.beginPath();
+            ctx.ellipse(0, 25, halfW, 10, 0, 0, Math.PI * 2);
+            ctx.fill();
+
+            if (skin === 'cyber') {
+                const grad = ctx.createLinearGradient(-halfW, 0, halfW, 0);
+                grad.addColorStop(0, '#ec4899'); grad.addColorStop(0.5, '#a855f7'); grad.addColorStop(1, '#ec4899');
+                ctx.fillStyle = grad;
+                ctx.shadowColor = '#ec4899'; ctx.shadowBlur = 15;
+                ctx.beginPath(); ctx.roundRect(-halfW, 0, platform.width, platform.height, 10); ctx.fill();
+            } else if (skin === 'gold') {
+                const grad = ctx.createLinearGradient(-halfW, 0, halfW, 0);
+                grad.addColorStop(0, '#f59e0b'); grad.addColorStop(0.5, '#fef08a'); grad.addColorStop(1, '#f59e0b');
+                ctx.fillStyle = grad;
+                ctx.shadowColor = '#eab308'; ctx.shadowBlur = 15;
+                ctx.beginPath(); ctx.roundRect(-halfW, 0, platform.width, platform.height, 10); ctx.fill();
+            } else if (skin === 'magma') {
+                const grad = ctx.createLinearGradient(-halfW, 0, halfW, 0);
+                grad.addColorStop(0, '#ef4444'); grad.addColorStop(0.5, '#f97316'); grad.addColorStop(1, '#ef4444');
+                ctx.fillStyle = grad;
+                ctx.shadowColor = '#ef4444'; ctx.shadowBlur = 18;
+                ctx.beginPath(); ctx.roundRect(-halfW, 0, platform.width, platform.height, 10); ctx.fill();
+            } else {
+                const grad = ctx.createLinearGradient(-halfW, 0, halfW, 0);
+                grad.addColorStop(0, '#3b82f6'); grad.addColorStop(0.5, '#60a5fa'); grad.addColorStop(1, '#3b82f6');
+                ctx.fillStyle = grad;
+                ctx.beginPath(); ctx.roundRect(-halfW, 0, platform.width, platform.height, [8, 8, 12, 12]); ctx.fill();
+            }
+
+            ctx.restore();
+        }
+
+        // Modes Graphics Rendering
+        function drawMagicStick() {
+            ctx.save();
+            ctx.translate(platform.x + platform.shakeX, platform.y);
+            ctx.rotate(physics.angle);
+
+            const len = physics.length;
+            const rodGrad = ctx.createLinearGradient(-6, 0, 6, 0);
+            rodGrad.addColorStop(0, '#f59e0b'); rodGrad.addColorStop(0.5, '#fbbf24'); rodGrad.addColorStop(1, '#d97706');
+
+            ctx.fillStyle = rodGrad;
+            ctx.beginPath(); ctx.roundRect(-6, -len, 12, len, 6); ctx.fill();
+
+            ctx.fillStyle = '#38bdf8'; ctx.shadowColor = '#38bdf8'; ctx.shadowBlur = 20;
+            ctx.beginPath(); ctx.arc(0, -len - 4, 16, 0, Math.PI * 2); ctx.fill();
+
+            ctx.restore();
+        }
+
+        function drawTeacupsStack() {
+            ctx.save();
+            ctx.translate(platform.x + platform.shakeX, platform.y);
+
+            let currentX = 0, currentY = 0, currentAngle = physics.angle;
+            const cupColors = ['#f43f5e', '#a855f7', '#06b6d4', '#10b981'];
+
+            stackSegments.forEach((seg, i) => {
+                ctx.save();
+                ctx.translate(currentX, currentY);
+                ctx.rotate(currentAngle);
+
+                const cupHeight = 38, cupWidth = 50 - i * 4;
+                ctx.fillStyle = cupColors[i % cupColors.length];
+                ctx.beginPath();
+                ctx.moveTo(-cupWidth / 2, -cupHeight);
+                ctx.lineTo(cupWidth / 2, -cupHeight);
+                ctx.quadraticCurveTo(cupWidth / 2.5, 0, 0, 0);
+                ctx.quadraticCurveTo(-cupWidth / 2.5, 0, -cupWidth / 2, -cupHeight);
+                ctx.closePath(); ctx.fill(); ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 2; ctx.stroke();
+
+                ctx.restore();
+                currentX += Math.sin(currentAngle) * cupHeight;
+                currentY -= Math.cos(currentAngle) * cupHeight;
+                currentAngle = seg.angle;
+            });
+
+            ctx.restore();
+        }
+
+        function drawAlienJelly() {
+            ctx.save();
+            ctx.translate(platform.x + platform.shakeX, platform.y);
+            ctx.rotate(physics.angle);
+
+            const len = physics.length;
+            const tilt = Math.abs(physics.angle);
+            ctx.translate(0, -len / 2);
+
+            const alienGrad = ctx.createRadialGradient(0, 0, 10, 0, 0, 50);
+            alienGrad.addColorStop(0, '#4ade80'); alienGrad.addColorStop(1, '#15803d');
+            ctx.fillStyle = alienGrad; ctx.shadowColor = '#4ade80'; ctx.shadowBlur = 15;
+            ctx.beginPath(); ctx.ellipse(0, 0, 45, len / 2 - 10, 0, 0, Math.PI * 2); ctx.fill();
+
+            ctx.fillStyle = '#ffffff'; ctx.beginPath(); ctx.arc(0, -15, 16, 0, Math.PI * 2); ctx.fill();
+            ctx.fillStyle = '#0f172a'; ctx.beginPath(); ctx.arc(-physics.angle * 20, -15, tilt > 0.3 ? 7 : 5, 0, Math.PI * 2); ctx.fill();
+
+            ctx.restore();
+        }
+
+        function drawPizzaStack() {
+            ctx.save();
+            ctx.translate(platform.x + platform.shakeX, platform.y);
+            ctx.rotate(physics.angle);
+
+            const boxHeight = 24, boxWidth = 90;
+            stackSegments.forEach((box, i) => {
+                ctx.save();
+                ctx.translate(box.xOffset, -i * boxHeight - boxHeight/2);
+                ctx.fillStyle = '#f97316';
+                ctx.beginPath(); ctx.roundRect(-boxWidth/2, -boxHeight/2, boxWidth, boxHeight, 4); ctx.fill();
+                ctx.strokeStyle = '#c2410c'; ctx.lineWidth = 2; ctx.stroke();
+                ctx.restore();
+            });
+
+            ctx.restore();
+        }
+
+        // Mode 5: Stack of Cats
+        function drawCatStack() {
+            ctx.save();
+            ctx.translate(platform.x + platform.shakeX, platform.y);
+
+            let currentX = 0, currentY = 0, currentAngle = physics.angle;
+            const catColors = ['#f59e0b', '#8b5cf6', '#ec4899'];
+
+            stackSegments.forEach((seg, i) => {
+                ctx.save();
+                ctx.translate(currentX, currentY);
+                ctx.rotate(currentAngle);
+
+                const catH = 45;
+                ctx.fillStyle = catColors[i % catColors.length];
+                ctx.beginPath(); ctx.roundRect(-22, -catH, 44, catH, 12); ctx.fill();
+
+                // Cat Ears
+                ctx.beginPath(); ctx.moveTo(-18, -catH); ctx.lineTo(-10, -catH - 10); ctx.lineTo(-2, -catH); ctx.fill();
+                ctx.beginPath(); ctx.moveTo(18, -catH); ctx.lineTo(10, -catH - 10); ctx.lineTo(2, -catH); ctx.fill();
+
+                // Cat Face
+                ctx.fillStyle = '#ffffff';
+                ctx.beginPath(); ctx.arc(-8, -catH + 15, 3, 0, Math.PI * 2); ctx.arc(8, -catH + 15, 3, 0, Math.PI * 2); ctx.fill();
+
+                ctx.restore();
+                currentX += Math.sin(currentAngle) * catH;
+                currentY -= Math.cos(currentAngle) * catH;
+                currentAngle = seg.angle;
+            });
+
+            ctx.restore();
+        }
+
+        // Mode 6: Ice Cream Cone
+        function drawIceCreamCone() {
+            ctx.save();
+            ctx.translate(platform.x + platform.shakeX, platform.y);
+
+            let currentX = 0, currentY = 0, currentAngle = physics.angle;
+            const scoopColors = ['#fda4af', '#fef08a', '#86efac', '#a5f3fc'];
+
+            // Waffle Cone Base
+            ctx.save();
+            ctx.rotate(physics.angle);
+            ctx.fillStyle = '#d97706';
+            ctx.beginPath(); ctx.moveTo(-16, 0); ctx.lineTo(16, 0); ctx.lineTo(0, -40); ctx.closePath(); ctx.fill();
+            ctx.restore();
+
+            currentY = -40;
+            stackSegments.forEach((seg, i) => {
+                ctx.save();
+                ctx.translate(currentX, currentY);
+                ctx.rotate(currentAngle);
+
+                const radius = 22 - i * 2;
+                ctx.fillStyle = scoopColors[i % scoopColors.length];
+                ctx.beginPath(); ctx.arc(0, -radius, radius, 0, Math.PI * 2); ctx.fill();
+
+                ctx.restore();
+                currentX += Math.sin(currentAngle) * (radius * 1.6);
+                currentY -= Math.cos(currentAngle) * (radius * 1.6);
+                currentAngle = seg.angle;
+            });
+
+            ctx.restore();
+        }
+
+        function drawGuidanceOverlay() {
+            ctx.save();
+            ctx.translate(platform.x + platform.shakeX, platform.y);
+            ctx.strokeStyle = 'rgba(56, 189, 248, 0.2)';
+            ctx.lineWidth = 2; ctx.setLineDash([4, 4]);
+            ctx.beginPath(); ctx.arc(0, 0, physics.length, -Math.PI / 2 - 0.4, -Math.PI / 2 + 0.4); ctx.stroke();
+            ctx.restore();
+        }
+
+        function drawCollectibles() {
+            collectibles.forEach(c => {
+                ctx.save();
+                ctx.translate(c.x, c.y);
+                ctx.shadowColor = c.type === 'coin' ? '#f59e0b' : '#38bdf8'; ctx.shadowBlur = 12;
+                ctx.fillStyle = c.type === 'coin' ? '#fbbf24' : '#38bdf8';
+                ctx.beginPath(); ctx.arc(0, 0, c.radius, 0, Math.PI * 2); ctx.fill();
+                ctx.fillStyle = '#0f172a'; ctx.font = '900 12px "Font Awesome 6 Free"'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+                ctx.fillText(c.type === 'coin' ? '\uf51e' : '\uf06d', 0, 1);
+                ctx.restore();
+            });
+        }
+
+        function drawHazards() {
+            hazards.forEach(h => {
+                ctx.save();
+                ctx.translate(h.x, h.y);
+                ctx.fillStyle = '#f43f5e'; ctx.shadowColor = '#f43f5e'; ctx.shadowBlur = 10;
+                ctx.beginPath(); ctx.arc(0, 0, h.radius, 0, Math.PI * 2); ctx.fill();
+                ctx.restore();
+            });
+        }
+
+        function createBurstParticles(x, y, color, count = 12) {
+            for (let i = 0; i < count; i++) {
+                const angle = Math.random() * Math.PI * 2;
+                const speed = 40 + Math.random() * 100;
+                particles.push({ x: x, y: y, vx: Math.cos(angle) * speed, vy: Math.sin(angle) * speed, color: color, size: 3 + Math.random() * 3, life: 0.6 });
+            }
+        }
+
+        function createDebrisExplosion(x, y) {
+            for (let i = 0; i < 18; i++) {
+                const angle = Math.random() * Math.PI * 2;
+                const speed = 80 + Math.random() * 160;
+                debrisList.push({
+                    x: x, y: y,
+                    vx: Math.cos(angle) * speed, vy: Math.sin(angle) * speed - 100,
+                    size: 6 + Math.random() * 10,
+                    color: selectedMode === 'cats' ? '#f59e0b' : (selectedMode === 'pizza' ? '#f97316' : '#38bdf8'),
+                    rot: 0, vRot: (Math.random() - 0.5) * 10
+                });
+            }
+        }
+
+        function drawParticles() {
+            for (let i = particles.length - 1; i >= 0; i--) {
+                const p = particles[i];
+                p.x += p.vx * 0.016; p.y += p.vy * 0.016; p.life -= 0.016;
+                if (p.life <= 0) { particles.splice(i, 1); continue; }
+                ctx.fillStyle = p.color; ctx.globalAlpha = p.life / 0.6;
+                ctx.beginPath(); ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2); ctx.fill(); ctx.globalAlpha = 1.0;
+            }
+        }
+
+        function drawDebris() {
+            for (let i = debrisList.length - 1; i >= 0; i--) {
+                const d = debrisList[i];
+                d.vy += 400 * 0.016; d.x += d.vx * 0.016; d.y += d.vy * 0.016; d.rot += d.vRot * 0.016;
+                ctx.save(); ctx.translate(d.x, d.y); ctx.rotate(d.rot);
+                ctx.fillStyle = d.color; ctx.fillRect(-d.size/2, -d.size/2, d.size, d.size);
+                ctx.restore();
+            }
+        }
+
+        let keys = { left: false, right: false };
+
+        window.addEventListener('keydown', (e) => {
+            if (e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'A') keys.left = true;
+            if (e.key === 'ArrowRight' || e.key === 'd' || e.key === 'D') keys.right = true;
+        });
+
+        window.addEventListener('keyup', (e) => {
+            if (e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'A') keys.left = false;
+            if (e.key === 'ArrowRight' || e.key === 'd' || e.key === 'D') keys.right = false;
+        });
+
+        function handlePointerMove(clientX) {
+            const rect = canvasContainer.getBoundingClientRect();
+            platform.targetX = clientX - rect.left;
+        }
+
+        canvas.addEventListener('mousemove', (e) => handlePointerMove(e.clientX));
+        canvas.addEventListener('touchmove', (e) => {
+            if (e.touches.length > 0) handlePointerMove(e.touches[0].clientX);
+        }, { passive: true });
+
+        const touchLeft = document.getElementById('touchLeft');
+        const touchRight = document.getElementById('touchRight');
+        touchLeft.addEventListener('touchstart', (e) => { e.preventDefault(); keys.left = true; });
+        touchLeft.addEventListener('touchend', (e) => { e.preventDefault(); keys.left = false; });
+        touchRight.addEventListener('touchstart', (e) => { e.preventDefault(); keys.right = true; });
+        touchRight.addEventListener('touchend', (e) => { e.preventDefault(); keys.right = false; });
+
+        function processKeyboardInput(dt) {
+            const speed = 500 * inputSensitivity;
+            if (keys.left) platform.targetX -= speed * dt;
+            if (keys.right) platform.targetX += speed * dt;
+        }
+
+        sensitivitySlider.addEventListener('input', (e) => { inputSensitivity = parseFloat(e.target.value); });
+
+        audioBtn.addEventListener('click', () => {
+            audioEnabled = !audioEnabled;
+            if (audioEnabled) {
+                initAudio();
+                audioIcon.className = 'fa-solid fa-volume-high text-emerald-400';
+            } else {
+                audioIcon.className = 'fa-solid fa-volume-xmark text-slate-400';
+                if (synths.wobbleGain) synths.wobbleGain.gain.value = 0;
+            }
+        });
+
+        document.querySelectorAll('.mode-select-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.mode-select-btn').forEach(b => {
+                    b.classList.remove('border-blue-500/50', 'bg-blue-500/20');
+                    b.classList.add('border-slate-700');
+                });
+                btn.classList.remove('border-slate-700');
+                btn.classList.add('border-blue-500/50', 'bg-blue-500/20');
+                setupMode(btn.dataset.mode);
+            });
+        });
+
+        // Shop UI Logic
+        shopBtn.addEventListener('click', () => {
+            updateShopUI();
+            shopOverlay.classList.remove('hidden');
+        });
+
+        closeShopBtn.addEventListener('click', () => shopOverlay.classList.add('hidden'));
+
+        function updateShopUI() {
+            document.querySelectorAll('.equip-skin-btn').forEach(btn => {
+                const skin = btn.dataset.skin;
+                const cost = parseInt(btn.dataset.cost || 0);
+
+                if (saveData.equippedSkin === skin) {
+                    btn.className = "equip-skin-btn px-4 py-1.5 rounded-xl font-bold text-xs bg-emerald-500/20 border border-emerald-400 text-emerald-300";
+                    btn.innerText = "EQUIPPED";
+                } else if (saveData.unlockedSkins.includes(skin)) {
+                    btn.className = "equip-skin-btn px-4 py-1.5 rounded-xl font-bold text-xs bg-blue-600 hover:bg-blue-500 text-white cursor-pointer";
+                    btn.innerText = "EQUIP";
+                } else {
+                    btn.className = "equip-skin-btn px-4 py-1.5 rounded-xl font-bold text-xs bg-amber-500 hover:bg-amber-400 text-slate-950 cursor-pointer";
+                    btn.innerText = `${cost} COINS`;
+                }
+
+                btn.onclick = () => {
+                    if (saveData.unlockedSkins.includes(skin)) {
+                        saveData.equippedSkin = skin;
+                        saveGameData();
+                        updateShopUI();
+                    } else if (saveData.coins >= cost) {
+                        saveData.coins -= cost;
+                        saveData.unlockedSkins.push(skin);
+                        saveData.equippedSkin = skin;
+                        saveGameData();
+                        updateShopUI();
+                        playSound('powerup');
+                    }
+                };
+            });
+        }
+
+        startGameBtn.addEventListener('click', () => {
+            initAudio(); startOverlay.classList.add('hidden'); gameState = 'PLAYING'; resetGame();
+        });
+
+        pauseBtn.addEventListener('click', () => {
+            if (gameState === 'PLAYING') { gameState = 'PAUSED'; pauseOverlay.classList.remove('hidden'); }
+        });
+
+        resumeBtn.addEventListener('click', () => {
+            gameState = 'PLAYING'; pauseOverlay.classList.add('hidden'); lastTime = performance.now();
+        });
+
+        restartPauseBtn.addEventListener('click', () => {
+            pauseOverlay.classList.add('hidden'); gameState = 'PLAYING'; resetGame();
+        });
+
+        retryBtn.addEventListener('click', () => {
+            gameOverOverlay.classList.add('hidden'); gameState = 'PLAYING'; resetGame();
+        });
+
+        changeModeBtn.addEventListener('click', () => {
+            gameOverOverlay.classList.add('hidden'); startOverlay.classList.remove('hidden'); gameState = 'START';
+        });
+
+        function triggerGameOver() {
+            gameState = 'GAMEOVER';
+            if (synths.wobbleGain) synths.wobbleGain.gain.value = 0;
+            playSound('crash');
+
+            const tip = getTopTipPosition();
+            createDebrisExplosion(tip.x, tip.y);
+
+            const finalScoreInt = Math.floor(score);
+            let isNewHigh = false;
+            if (finalScoreInt > (saveData.highScores[selectedMode] || 0)) {
+                saveData.highScores[selectedMode] = finalScoreInt;
+                isNewHigh = true;
+                try { confetti({ particleCount: 120, spread: 80, origin: { y: 0.6 } }); } catch(e){}
+            }
+
+            saveData.coins += Math.floor(finalScoreInt / 10);
+            coinsEarnedThisRun += Math.floor(finalScoreInt / 10);
+            saveGameData();
+
+            document.getElementById('finalScoreVal').innerText = finalScoreInt;
+            document.getElementById('earnedCoinsVal').innerText = `+${coinsEarnedThisRun}`;
+            document.getElementById('finalTimeVal').innerText = `${gameTime.toFixed(1)}s`;
+            document.getElementById('perfectTimeVal').innerText = `${perfectTimeTotal.toFixed(1)}s`;
+            document.getElementById('maxTiltVal').innerText = `${maxTiltRecorded.toFixed(0)}°`;
+
+            const titleElem = document.getElementById('gameOverTitle');
+            if (isNewHigh) {
+                titleElem.innerText = 'NEW HIGH SCORE!';
+                titleElem.className = 'font-playful text-3xl md:text-4xl font-extrabold text-amber-400 mb-1 animate-bounce';
+            } else {
+                titleElem.innerText = 'TOBBLED OVER!';
+                titleElem.className = 'font-playful text-3xl md:text-4xl font-extrabold text-white mb-1';
+            }
+
+            gameOverOverlay.classList.remove('hidden');
+        }
+
+        function gameLoop(timestamp) {
+            if (!lastTime) lastTime = timestamp;
+            const dt = Math.min(0.05, (timestamp - lastTime) / 1000);
+            lastTime = timestamp;
+
+            if (gameState === 'PLAYING') {
+                processKeyboardInput(dt);
+                updatePhysics(dt);
+            }
+
+            render();
+            requestAnimationFrame(gameLoop);
+        }
+
+        window.onload = function() {
+            resizeCanvas();
+            saveGameData();
+            setupMode('stick');
+            requestAnimationFrame(gameLoop);
+        };
+    </script>
+</body>
+</html>

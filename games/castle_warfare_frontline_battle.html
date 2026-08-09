@@ -1,0 +1,1713 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Castle Warfare: Frontline Battle</title>
+    <!-- Tailwind CSS for modern HUD overlay -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Font: Cinzel and Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;900&family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            user-select: none;
+            overflow: hidden;
+            background-color: #0b0f19;
+            color: #f8fafc;
+        }
+        .font-cinzel {
+            font-family: 'Cinzel', serif;
+        }
+        canvas {
+            display: block;
+            touch-action: none;
+        }
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: rgba(15, 23, 42, 0.6);
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #3b82f6;
+            border-radius: 3px;
+        }
+        .cooldown-overlay {
+            position: absolute;
+            inset: 0;
+            background: rgba(15, 23, 42, 0.85);
+            pointer-events: none;
+            transition: height 0.1s linear;
+        }
+        .glass-panel {
+            background: rgba(15, 23, 42, 0.88);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+        }
+        .btn-action {
+            transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .btn-action:active:not(:disabled) {
+            transform: scale(0.94);
+        }
+        .btn-action:disabled {
+            opacity: 0.45;
+            cursor: not-allowed;
+            filter: grayscale(85%);
+        }
+        @keyframes pulse-glow {
+            0%, 100% { box-shadow: 0 0 12px rgba(234, 179, 8, 0.35); }
+            50% { box-shadow: 0 0 25px rgba(234, 179, 8, 0.8); }
+        }
+        .glow-gold {
+            animation: pulse-glow 2s infinite;
+        }
+    </style>
+</head>
+<body class="w-screen h-screen flex flex-col justify-between overflow-hidden relative">
+
+    <!-- GAME CANVAS (Background & Battleground) -->
+    <canvas id="gameCanvas" class="absolute inset-0 z-0 w-full h-full"></canvas>
+
+    <!-- TOP HUD OVERLAY -->
+    <header class="relative z-10 w-full px-4 py-2.5 flex justify-between items-center glass-panel shadow-2xl border-b border-slate-700/60">
+        <!-- Player Castle Health -->
+        <div class="flex items-center gap-3 w-1/3 max-w-xs">
+            <a href="https://supernebula23.github.io/games" class="btn-action p-2.5 bg-slate-800/80 hover:bg-slate-700 text-slate-200 rounded-xl border border-slate-600/60 flex items-center justify-center shrink-0 shadow" title="Back to Games">
+                <i class="fa-solid fa-house text-sm"></i>
+            </a>
+            <div class="w-10 h-10 rounded-xl bg-blue-600/30 border border-blue-400 flex items-center justify-center text-blue-400 font-bold shadow-lg">
+                <i class="fa-solid fa-chess-rook text-lg"></i>
+            </div>
+            <div class="flex-1">
+                <div class="flex justify-between items-center text-xs mb-1 font-semibold text-blue-300">
+                    <span class="font-cinzel text-sm text-blue-200">BLUE KINGDOM</span>
+                    <span id="playerHpText">1200 / 1200</span>
+                </div>
+                <div class="w-full h-3 bg-slate-900/90 rounded-full overflow-hidden p-0.5 border border-blue-500/40">
+                    <div id="playerHpBar" class="h-full bg-gradient-to-r from-blue-600 to-cyan-400 rounded-full transition-all duration-300 w-full"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Center Match Stats & Gold Bar -->
+        <div class="flex flex-col items-center justify-center gap-1">
+            <div class="flex items-center gap-2 bg-amber-500/10 border border-amber-500/40 px-5 py-1.5 rounded-full shadow-inner">
+                <i class="fa-solid fa-coins text-amber-400 text-xl animate-bounce"></i>
+                <span id="goldText" class="font-cinzel font-black text-2xl text-amber-300 tracking-wider">120</span>
+                <span id="incomeText" class="text-xs text-amber-400/90 font-mono ml-1">(+6/s)</span>
+            </div>
+            <div class="flex items-center gap-3 text-xs text-slate-400 font-mono">
+                <span id="timerText"><i class="fa-regular fa-clock mr-1"></i>00:00</span>
+                <span>•</span>
+                <span id="frontlineText" class="text-cyan-400 font-bold">Frontline: 50%</span>
+            </div>
+        </div>
+
+        <!-- Enemy Castle Health -->
+        <div class="flex items-center gap-3 w-1/3 max-w-xs flex-row-reverse">
+            <div class="w-10 h-10 rounded-xl bg-red-600/30 border border-red-400 flex items-center justify-center text-red-400 font-bold shadow-lg">
+                <i class="fa-solid fa-chess-rook text-lg"></i>
+            </div>
+            <div class="flex-1 text-right">
+                <div class="flex justify-between items-center text-xs mb-1 font-semibold text-red-300 flex-row-reverse">
+                    <span class="font-cinzel text-sm text-red-200">RED EMPIRE</span>
+                    <span id="enemyHpText">1200 / 1200</span>
+                </div>
+                <div class="w-full h-3 bg-slate-900/90 rounded-full overflow-hidden p-0.5 border border-red-500/40">
+                    <div id="enemyHpBar" class="h-full bg-gradient-to-r from-orange-500 to-red-600 rounded-full transition-all duration-300 w-full ml-auto"></div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- FLOATING ACTION MESSAGE / BANNER -->
+    <div id="bannerMessage" class="absolute top-16 left-1/2 -translate-x-1/2 z-20 pointer-events-none opacity-0 transition-all duration-300">
+        <div class="glass-panel px-6 py-2 rounded-full border border-amber-400/50 text-amber-300 font-cinzel font-bold text-base sm:text-lg shadow-2xl flex items-center gap-2">
+            <i class="fa-solid fa-shield-halved text-amber-400"></i>
+            <span id="bannerText">Battle Commenced!</span>
+        </div>
+    </div>
+
+    <!-- TACTICAL STANCE SELECTION OVERLAY -->
+    <div class="absolute top-20 left-4 z-20 hidden md:flex items-center gap-1 glass-panel p-1.5 rounded-xl border border-slate-700">
+        <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider px-2">Stance:</span>
+        <button id="stanceAggro" class="btn-action px-2.5 py-1 text-xs font-bold rounded-lg text-slate-400 hover:text-white flex items-center gap-1">
+            <i class="fa-solid fa-bolt text-amber-400"></i> Aggressive
+        </button>
+        <button id="stanceBal" class="btn-action px-2.5 py-1 text-xs font-bold rounded-lg bg-blue-600 text-white flex items-center gap-1">
+            <i class="fa-solid fa-scale-balanced text-cyan-300"></i> Balanced
+        </button>
+        <button id="stanceDef" class="btn-action px-2.5 py-1 text-xs font-bold rounded-lg text-slate-400 hover:text-white flex items-center gap-1">
+            <i class="fa-solid fa-shield-cat text-emerald-400"></i> Defensive
+        </button>
+    </div>
+
+    <!-- BOTTOM COMMAND CONTROLS HUD -->
+    <footer class="relative z-10 w-full px-3 py-2.5 glass-panel border-t border-slate-700/60 flex flex-col md:flex-row gap-2 items-center justify-between shadow-2xl">
+
+        <!-- Left Utility: Upgrades Modal & Game Speed -->
+        <div class="flex items-center gap-2 w-full md:w-auto justify-between md:justify-start">
+            <button id="upgradeBtn" class="btn-action px-3 py-2 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white rounded-xl font-bold text-xs flex items-center gap-2 shadow-lg border border-indigo-400/40">
+                <i class="fa-solid fa-angles-up"></i>
+                <span>UPGRADES</span>
+            </button>
+            <div class="flex items-center gap-1 bg-slate-900/90 p-1 rounded-xl border border-slate-700">
+                <button id="speed1x" class="px-2.5 py-1 text-xs rounded-lg font-bold bg-blue-600 text-white">1x</button>
+                <button id="speed2x" class="px-2.5 py-1 text-xs rounded-lg font-bold text-slate-400 hover:text-white">2x</button>
+                <button id="speed4x" class="px-2.5 py-1 text-xs rounded-lg font-bold text-slate-400 hover:text-white">4x</button>
+            </div>
+            <button id="soundToggle" class="p-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl border border-slate-700">
+                <i id="soundIcon" class="fa-solid fa-volume-high text-xs"></i>
+            </button>
+        </div>
+
+        <!-- Center: Unit Spawning Cards -->
+        <div class="flex items-center gap-1.5 overflow-x-auto max-w-full py-1">
+            <button id="spawnSwordsman" class="btn-action relative group flex flex-col items-center bg-slate-800/90 hover:bg-slate-700/90 border border-slate-600/60 rounded-xl p-1.5 min-w-[72px] sm:min-w-[85px] shadow-lg">
+                <div class="cooldown-overlay rounded-xl h-0" id="cdSwordsman"></div>
+                <span class="absolute top-1 left-1.5 text-[9px] font-mono text-slate-400 bg-slate-900/80 px-1 rounded">1</span>
+                <i class="fa-solid fa-shield-halved text-blue-400 text-lg my-1 group-hover:scale-110 transition-transform"></i>
+                <span class="text-[11px] font-bold text-slate-200">Swordsman</span>
+                <div class="flex items-center gap-1 text-amber-400 text-[11px] font-semibold mt-0.5">
+                    <i class="fa-solid fa-coins text-[9px]"></i>
+                    <span id="costSwordsman">50</span>
+                </div>
+            </button>
+
+            <button id="spawnArcher" class="btn-action relative group flex flex-col items-center bg-slate-800/90 hover:bg-slate-700/90 border border-slate-600/60 rounded-xl p-1.5 min-w-[72px] sm:min-w-[85px] shadow-lg">
+                <div class="cooldown-overlay rounded-xl h-0" id="cdArcher"></div>
+                <span class="absolute top-1 left-1.5 text-[9px] font-mono text-slate-400 bg-slate-900/80 px-1 rounded">2</span>
+                <i class="fa-solid fa-bow-arrow text-emerald-400 text-lg my-1 group-hover:scale-110 transition-transform"></i>
+                <span class="text-[11px] font-bold text-slate-200">Archer</span>
+                <div class="flex items-center gap-1 text-amber-400 text-[11px] font-semibold mt-0.5">
+                    <i class="fa-solid fa-coins text-[9px]"></i>
+                    <span id="costArcher">60</span>
+                </div>
+            </button>
+
+            <button id="spawnShieldman" class="btn-action relative group flex flex-col items-center bg-slate-800/90 hover:bg-slate-700/90 border border-slate-600/60 rounded-xl p-1.5 min-w-[72px] sm:min-w-[85px] shadow-lg">
+                <div class="cooldown-overlay rounded-xl h-0" id="cdShieldman"></div>
+                <span class="absolute top-1 left-1.5 text-[9px] font-mono text-slate-400 bg-slate-900/80 px-1 rounded">3</span>
+                <i class="fa-solid fa-user-shield text-cyan-400 text-lg my-1 group-hover:scale-110 transition-transform"></i>
+                <span class="text-[11px] font-bold text-slate-200">Shieldman</span>
+                <div class="flex items-center gap-1 text-amber-400 text-[11px] font-semibold mt-0.5">
+                    <i class="fa-solid fa-coins text-[9px]"></i>
+                    <span id="costShieldman">85</span>
+                </div>
+            </button>
+
+            <button id="spawnCavalry" class="btn-action relative group flex flex-col items-center bg-slate-800/90 hover:bg-slate-700/90 border border-slate-600/60 rounded-xl p-1.5 min-w-[72px] sm:min-w-[85px] shadow-lg">
+                <div class="cooldown-overlay rounded-xl h-0" id="cdCavalry"></div>
+                <span class="absolute top-1 left-1.5 text-[9px] font-mono text-slate-400 bg-slate-900/80 px-1 rounded">4</span>
+                <i class="fa-solid fa-horse-head text-amber-400 text-lg my-1 group-hover:scale-110 transition-transform"></i>
+                <span class="text-[11px] font-bold text-slate-200">Cavalry</span>
+                <div class="flex items-center gap-1 text-amber-400 text-[11px] font-semibold mt-0.5">
+                    <i class="fa-solid fa-coins text-[9px]"></i>
+                    <span id="costCavalry">130</span>
+                </div>
+            </button>
+
+            <button id="spawnMage" class="btn-action relative group flex flex-col items-center bg-slate-800/90 hover:bg-slate-700/90 border border-slate-600/60 rounded-xl p-1.5 min-w-[72px] sm:min-w-[85px] shadow-lg">
+                <div class="cooldown-overlay rounded-xl h-0" id="cdMage"></div>
+                <span class="absolute top-1 left-1.5 text-[9px] font-mono text-slate-400 bg-slate-900/80 px-1 rounded">5</span>
+                <i class="fa-solid fa-wand-magic-sparkles text-purple-400 text-lg my-1 group-hover:scale-110 transition-transform"></i>
+                <span class="text-[11px] font-bold text-slate-200">Mage</span>
+                <div class="flex items-center gap-1 text-amber-400 text-[11px] font-semibold mt-0.5">
+                    <i class="fa-solid fa-coins text-[9px]"></i>
+                    <span id="costMage">175</span>
+                </div>
+            </button>
+
+            <button id="spawnCleric" class="btn-action relative group flex flex-col items-center bg-slate-800/90 hover:bg-slate-700/90 border border-slate-600/60 rounded-xl p-1.5 min-w-[72px] sm:min-w-[85px] shadow-lg">
+                <div class="cooldown-overlay rounded-xl h-0" id="cdCleric"></div>
+                <span class="absolute top-1 left-1.5 text-[9px] font-mono text-slate-400 bg-slate-900/80 px-1 rounded">6</span>
+                <i class="fa-solid fa-hands-holding-child text-teal-300 text-lg my-1 group-hover:scale-110 transition-transform"></i>
+                <span class="text-[11px] font-bold text-slate-200">Cleric</span>
+                <div class="flex items-center gap-1 text-amber-400 text-[11px] font-semibold mt-0.5">
+                    <i class="fa-solid fa-coins text-[9px]"></i>
+                    <span id="costCleric">140</span>
+                </div>
+            </button>
+
+            <button id="spawnCatapult" class="btn-action relative group flex flex-col items-center bg-slate-800/90 hover:bg-slate-700/90 border border-slate-600/60 rounded-xl p-1.5 min-w-[72px] sm:min-w-[85px] shadow-lg">
+                <div class="cooldown-overlay rounded-xl h-0" id="cdCatapult"></div>
+                <span class="absolute top-1 left-1.5 text-[9px] font-mono text-slate-400 bg-slate-900/80 px-1 rounded">7</span>
+                <i class="fa-solid fa-dharmachakra text-orange-400 text-lg my-1 group-hover:rotate-45 transition-transform"></i>
+                <span class="text-[11px] font-bold text-slate-200">Catapult</span>
+                <div class="flex items-center gap-1 text-amber-400 text-[11px] font-semibold mt-0.5">
+                    <i class="fa-solid fa-coins text-[9px]"></i>
+                    <span id="costCatapult">220</span>
+                </div>
+            </button>
+        </div>
+
+        <!-- Right: Commander Spells -->
+        <div class="flex items-center gap-1.5 w-full md:w-auto justify-end">
+            <button id="spellFireball" class="btn-action relative group p-2 bg-red-950/70 hover:bg-red-900/70 border border-red-500/50 rounded-xl flex items-center gap-2 shadow-lg">
+                <div class="cooldown-overlay rounded-xl h-0" id="cdSpellFireball"></div>
+                <i class="fa-solid fa-meteor text-red-400 text-xl group-hover:rotate-12 transition-transform"></i>
+                <div class="text-left hidden lg:block">
+                    <div class="text-[11px] font-bold text-red-200">Fireball</div>
+                    <div class="text-[10px] text-amber-400 font-semibold"><i class="fa-solid fa-coins mr-0.5"></i>100</div>
+                </div>
+            </button>
+
+            <button id="spellBlizzard" class="btn-action relative group p-2 bg-cyan-950/70 hover:bg-cyan-900/70 border border-cyan-500/50 rounded-xl flex items-center gap-2 shadow-lg">
+                <div class="cooldown-overlay rounded-xl h-0" id="cdSpellBlizzard"></div>
+                <i class="fa-solid fa-snowflake text-cyan-300 text-xl group-hover:rotate-45 transition-transform"></i>
+                <div class="text-left hidden lg:block">
+                    <div class="text-[11px] font-bold text-cyan-100">Blizzard</div>
+                    <div class="text-[10px] text-amber-400 font-semibold"><i class="fa-solid fa-coins mr-0.5"></i>120</div>
+                </div>
+            </button>
+
+            <button id="spellRally" class="btn-action relative group p-2 bg-amber-950/70 hover:bg-amber-900/70 border border-amber-500/50 rounded-xl flex items-center gap-2 shadow-lg">
+                <div class="cooldown-overlay rounded-xl h-0" id="cdSpellRally"></div>
+                <i class="fa-solid fa-flag text-amber-400 text-xl group-hover:scale-110 transition-transform"></i>
+                <div class="text-left hidden lg:block">
+                    <div class="text-[11px] font-bold text-amber-200">War Cry</div>
+                    <div class="text-[10px] text-amber-400 font-semibold"><i class="fa-solid fa-coins mr-0.5"></i>80</div>
+                </div>
+            </button>
+
+            <button id="spellHeal" class="btn-action relative group p-2 bg-emerald-950/70 hover:bg-emerald-900/70 border border-emerald-500/50 rounded-xl flex items-center gap-2 shadow-lg">
+                <div class="cooldown-overlay rounded-xl h-0" id="cdSpellHeal"></div>
+                <i class="fa-solid fa-heart-pulse text-emerald-400 text-xl group-hover:scale-110 transition-transform"></i>
+                <div class="text-left hidden lg:block">
+                    <div class="text-[11px] font-bold text-emerald-200">Sanctuary</div>
+                    <div class="text-[10px] text-amber-400 font-semibold"><i class="fa-solid fa-coins mr-0.5"></i>90</div>
+                </div>
+            </button>
+        </div>
+    </footer>
+
+    <!-- UPGRADE DRAWER MODAL -->
+    <div id="upgradeModal" class="absolute inset-0 z-30 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4 opacity-0 pointer-events-none transition-all duration-300">
+        <div class="glass-panel w-full max-w-2xl rounded-2xl p-6 border border-slate-700 shadow-2xl flex flex-col max-h-[85vh]">
+            <div class="flex justify-between items-center pb-4 border-b border-slate-700">
+                <h2 class="font-cinzel text-xl font-bold text-amber-300 flex items-center gap-2">
+                    <i class="fa-solid fa-cubes-stacked text-amber-400"></i>
+                    KINGDOM UPGRADES
+                </h2>
+                <button id="closeUpgradeBtn" class="text-slate-400 hover:text-white p-2">
+                    <i class="fa-solid fa-xmark text-xl"></i>
+                </button>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 py-4 overflow-y-auto pr-1">
+                <div class="bg-slate-900/90 border border-slate-800 rounded-xl p-4 flex flex-col justify-between">
+                    <div>
+                        <div class="flex justify-between items-center mb-1">
+                            <span class="font-bold text-amber-300 text-sm">Gold Mines</span>
+                            <span id="lvlGoldMine" class="text-xs bg-amber-500/20 text-amber-300 px-2 py-0.5 rounded border border-amber-500/30">Lvl 1</span>
+                        </div>
+                        <p class="text-xs text-slate-400 mb-3">Increases passive gold income per second by +3.</p>
+                    </div>
+                    <button id="buyGoldMine" class="btn-action w-full py-2 bg-amber-600 hover:bg-amber-500 text-slate-950 font-bold text-xs rounded-lg flex justify-center items-center gap-2">
+                        <span>Upgrade</span>
+                        <span class="font-mono text-slate-900"><i class="fa-solid fa-coins mr-1"></i><span id="costGoldMine">150</span></span>
+                    </button>
+                </div>
+
+                <div class="bg-slate-900/90 border border-slate-800 rounded-xl p-4 flex flex-col justify-between">
+                    <div>
+                        <div class="flex justify-between items-center mb-1">
+                            <span class="font-bold text-blue-300 text-sm">Castle Walls</span>
+                            <span id="lvlCastleHp" class="text-xs bg-blue-500/20 text-blue-300 px-2 py-0.5 rounded border border-blue-500/30">Lvl 1</span>
+                        </div>
+                        <p class="text-xs text-slate-400 mb-3">Increases max Castle HP by +350 and repairs damage.</p>
+                    </div>
+                    <button id="buyCastleHp" class="btn-action w-full py-2 bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs rounded-lg flex justify-center items-center gap-2">
+                        <span>Upgrade</span>
+                        <span class="font-mono"><i class="fa-solid fa-coins mr-1"></i><span id="costCastleHp">200</span></span>
+                    </button>
+                </div>
+
+                <div class="bg-slate-900/90 border border-slate-800 rounded-xl p-4 flex flex-col justify-between">
+                    <div>
+                        <div class="flex justify-between items-center mb-1">
+                            <span class="font-bold text-red-300 text-sm">Forged Weaponry</span>
+                            <span id="lvlMeleeDmg" class="text-xs bg-red-500/20 text-red-300 px-2 py-0.5 rounded border border-red-500/30">Lvl 0</span>
+                        </div>
+                        <p class="text-xs text-slate-400 mb-3">Grants +15% damage to all melee troops.</p>
+                    </div>
+                    <button id="buyMeleeDmg" class="btn-action w-full py-2 bg-slate-700 hover:bg-slate-600 text-white font-bold text-xs rounded-lg flex justify-center items-center gap-2">
+                        <span>Upgrade</span>
+                        <span class="font-mono"><i class="fa-solid fa-coins mr-1"></i><span id="costMeleeDmg">175</span></span>
+                    </button>
+                </div>
+
+                <div class="bg-slate-900/90 border border-slate-800 rounded-xl p-4 flex flex-col justify-between">
+                    <div>
+                        <div class="flex justify-between items-center mb-1">
+                            <span class="font-bold text-emerald-300 text-sm">Artillery & Range</span>
+                            <span id="lvlRangedDmg" class="text-xs bg-emerald-500/20 text-emerald-300 px-2 py-0.5 rounded border border-emerald-500/30">Lvl 0</span>
+                        </div>
+                        <p class="text-xs text-slate-400 mb-3">Grants +12% range & fire rate to ranged/siege units.</p>
+                    </div>
+                    <button id="buyRangedDmg" class="btn-action w-full py-2 bg-slate-700 hover:bg-slate-600 text-white font-bold text-xs rounded-lg flex justify-center items-center gap-2">
+                        <span>Upgrade</span>
+                        <span class="font-mono"><i class="fa-solid fa-coins mr-1"></i><span id="costRangedDmg">175</span></span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- START / GAME OVER OVERLAY -->
+    <div id="mainModal" class="absolute inset-0 z-40 bg-slate-950/90 backdrop-blur-lg flex items-center justify-center p-4">
+        <div class="glass-panel w-full max-w-lg rounded-2xl p-8 border border-amber-500/30 shadow-2xl text-center flex flex-col items-center">
+            <div id="modalLogo" class="mb-4">
+                <i class="fa-solid fa-crown text-5xl text-amber-400 drop-shadow-[0_0_15px_rgba(251,191,36,0.5)]"></i>
+            </div>
+
+            <h1 id="modalTitle" class="font-cinzel text-3xl sm:text-4xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-amber-200 via-amber-400 to-amber-100 mb-2">
+                CASTLE WARFARE
+            </h1>
+            <p id="modalSubtitle" class="text-slate-300 text-sm mb-6 max-w-md">
+                Recruit troops, command siege catapults, unleash elemental spells, and capture dynamic gold drops to destroy the enemy castle!
+            </p>
+
+            <div id="statsContainer" class="w-full bg-slate-900/80 border border-slate-700 rounded-xl p-4 mb-6 text-left hidden">
+                <h3 class="font-cinzel font-bold text-amber-300 text-sm mb-3 border-b border-slate-800 pb-2">BATTLE SUMMARY</h3>
+                <div class="grid grid-cols-2 gap-3 text-xs">
+                    <div><span class="text-slate-400">Troops Summoned:</span> <span id="statSummoned" class="font-mono font-bold text-blue-300">0</span></div>
+                    <div><span class="text-slate-400">Enemies Slain:</span> <span id="statKills" class="font-mono font-bold text-red-300">0</span></div>
+                    <div><span class="text-slate-400">Gold Harvested:</span> <span id="statGold" class="font-mono font-bold text-amber-300">0</span></div>
+                    <div><span class="text-slate-400">Peak Frontline:</span> <span id="statFrontline" class="font-mono font-bold text-cyan-300">50%</span></div>
+                </div>
+            </div>
+
+            <div id="difficultyContainer" class="w-full mb-6">
+                <label class="block text-xs font-semibold text-slate-400 mb-2 uppercase tracking-wider">Select Difficulty</label>
+                <div class="grid grid-cols-3 gap-2">
+                    <button class="diff-btn py-2 text-xs font-bold rounded-lg border border-slate-700 bg-slate-800 text-slate-300 hover:border-blue-500" data-diff="easy">EASY</button>
+                    <button class="diff-btn py-2 text-xs font-bold rounded-lg border border-amber-500 bg-amber-500/20 text-amber-300" data-diff="normal">NORMAL</button>
+                    <button class="diff-btn py-2 text-xs font-bold rounded-lg border border-slate-700 bg-slate-800 text-slate-300 hover:border-red-500" data-diff="hard">HARD</button>
+                </div>
+            </div>
+
+            <div class="flex items-center gap-3 w-full">
+                <a href="https://supernebula23.github.io/games" class="btn-action px-4 py-4 bg-slate-800 hover:bg-slate-700 text-slate-200 font-cinzel font-bold text-base rounded-xl shadow-xl border border-slate-600 flex items-center justify-center gap-2">
+                    <i class="fa-solid fa-house"></i>
+                    <span>HOME</span>
+                </a>
+                <button id="startGameBtn" class="btn-action flex-1 py-4 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-cinzel font-extrabold text-lg rounded-xl shadow-xl border border-amber-300/40 glow-gold">
+                    START BATTLE
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        class SoundEngine {
+            constructor() {
+                this.ctx = null;
+                this.enabled = true;
+            }
+
+            init() {
+                if (!this.ctx) {
+                    const AudioContext = window.AudioContext || window.webkitAudioContext;
+                    this.ctx = new AudioContext();
+                }
+            }
+
+            playSpawn() {
+                if (!this.enabled || !this.ctx) return;
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(220, this.ctx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(440, this.ctx.currentTime + 0.15);
+                gain.gain.setValueAtTime(0.15, this.ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.15);
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                osc.start();
+                osc.stop(this.ctx.currentTime + 0.15);
+            }
+
+            playHit() {
+                if (!this.enabled || !this.ctx) return;
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(160, this.ctx.currentTime);
+                osc.frequency.linearRampToValueAtTime(40, this.ctx.currentTime + 0.08);
+                gain.gain.setValueAtTime(0.18, this.ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.08);
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                osc.start();
+                osc.stop(this.ctx.currentTime + 0.08);
+            }
+
+            playArrow() {
+                if (!this.enabled || !this.ctx) return;
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(850, this.ctx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(280, this.ctx.currentTime + 0.1);
+                gain.gain.setValueAtTime(0.1, this.ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.1);
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                osc.start();
+                osc.stop(this.ctx.currentTime + 0.1);
+            }
+
+            playExplosion() {
+                if (!this.enabled || !this.ctx) return;
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.type = 'square';
+                osc.frequency.setValueAtTime(130, this.ctx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(25, this.ctx.currentTime + 0.35);
+                gain.gain.setValueAtTime(0.25, this.ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.35);
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                osc.start();
+                osc.stop(this.ctx.currentTime + 0.35);
+            }
+
+            playFreeze() {
+                if (!this.enabled || !this.ctx) return;
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(1200, this.ctx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(600, this.ctx.currentTime + 0.25);
+                gain.gain.setValueAtTime(0.2, this.ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.25);
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                osc.start();
+                osc.stop(this.ctx.currentTime + 0.25);
+            }
+
+            playHeal() {
+                if (!this.enabled || !this.ctx) return;
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(350, this.ctx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(700, this.ctx.currentTime + 0.3);
+                gain.gain.setValueAtTime(0.18, this.ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.3);
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                osc.start();
+                osc.stop(this.ctx.currentTime + 0.3);
+            }
+
+            playCoin() {
+                if (!this.enabled || !this.ctx) return;
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(987.77, this.ctx.currentTime);
+                osc.frequency.setValueAtTime(1318.51, this.ctx.currentTime + 0.08);
+                gain.gain.setValueAtTime(0.2, this.ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.25);
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                osc.start();
+                osc.stop(this.ctx.currentTime + 0.25);
+            }
+
+            playFanfare(win) {
+                if (!this.enabled || !this.ctx) return;
+                const notes = win ? [261.63, 329.63, 392.00, 523.25] : [300, 260, 220, 180];
+                notes.forEach((freq, idx) => {
+                    const osc = this.ctx.createOscillator();
+                    const gain = this.ctx.createGain();
+                    osc.type = win ? 'triangle' : 'sawtooth';
+                    osc.frequency.value = freq;
+                    gain.gain.setValueAtTime(0.2, this.ctx.currentTime + idx * 0.12);
+                    gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + idx * 0.12 + 0.25);
+                    osc.connect(gain);
+                    gain.connect(this.ctx.destination);
+                    osc.start(this.ctx.currentTime + idx * 0.12);
+                    osc.stop(this.ctx.currentTime + idx * 0.12 + 0.25);
+                });
+            }
+        }
+
+        const sounds = new SoundEngine();
+
+        const UNIT_TYPES = {
+            swordsman: { name: "Swordsman", cost: 50, hp: 180, damage: 24, speed: 65, range: 30, attackCd: 1.0, cooldown: 2.0, role: "melee" },
+            archer: { name: "Archer", cost: 60, hp: 95, damage: 18, speed: 60, range: 230, attackCd: 1.1, cooldown: 2.5, role: "ranged" },
+            shieldman: { name: "Shieldman", cost: 85, hp: 360, damage: 14, speed: 45, range: 30, attackCd: 1.4, cooldown: 3.8, role: "tank", blockChance: 0.55 },
+            cavalry: { name: "Cavalry", cost: 130, hp: 260, damage: 42, speed: 115, range: 35, attackCd: 1.1, cooldown: 5.5, role: "charge" },
+            mage: { name: "Mage", cost: 175, hp: 115, damage: 38, speed: 52, range: 210, attackCd: 1.9, cooldown: 7.5, role: "splash" },
+            cleric: { name: "Cleric", cost: 140, hp: 130, damage: 25, speed: 55, range: 160, attackCd: 2.2, cooldown: 6.5, role: "healer" },
+            catapult: { name: "Catapult", cost: 220, hp: 210, damage: 85, speed: 32, range: 340, attackCd: 3.2, cooldown: 11.0, role: "siege" }
+        };
+
+        let game = {
+            running: false,
+            paused: false,
+            speed: 1,
+            selectedDiff: 'normal',
+            gold: 120,
+            incomeRate: 6,
+            lastTimestamp: 0,
+            elapsedTime: 0,
+            activeSpellTargeting: null,
+            stance: 'balanced',
+
+            stats: { summoned: 0, kills: 0, goldEarned: 120, peakFrontline: 50 },
+
+            playerCastle: null,
+            enemyCastle: null,
+
+            units: [],
+            projectiles: [],
+            particles: [],
+            chests: [],
+
+            cooldowns: { swordsman: 0, archer: 0, shieldman: 0, cavalry: 0, mage: 0, cleric: 0, catapult: 0, fireball: 0, blizzard: 0, rally: 0, heal: 0 },
+            upgrades: { goldMineLvl: 1, goldMineCost: 150, castleHpLvl: 1, castleHpCost: 200, meleeDmgLvl: 0, meleeDmgCost: 175, rangedDmgLvl: 0, rangedDmgCost: 175 },
+
+            ai: { timer: 0, spawnInterval: 4.0 },
+            chestTimer: 0
+        };
+
+        const canvas = document.getElementById("gameCanvas");
+        const ctx = canvas.getContext("2d");
+
+        function resizeCanvas() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+            if (game.playerCastle) game.playerCastle.y = canvas.height * 0.65;
+            if (game.enemyCastle) game.enemyCastle.y = canvas.height * 0.65;
+        }
+        window.addEventListener("resize", resizeCanvas);
+
+        class Castle {
+            constructor(side, x, maxHp) {
+                this.side = side;
+                this.x = x;
+                this.y = canvas.height * 0.65;
+                this.maxHp = maxHp;
+                this.hp = maxHp;
+                this.turretCd = 0;
+                this.turretRange = 280;
+                this.flagPhase = Math.random() * 10;
+            }
+
+            takeDamage(amount) {
+                this.hp = Math.max(0, this.hp - amount);
+                createSparks(this.x, this.y - 60, "#ef4444", 15);
+                sounds.playHit();
+            }
+
+            update(dt) {
+                this.turretCd -= dt;
+                this.flagPhase += dt * 4;
+                if (this.turretCd <= 0) {
+                    const enemySide = this.side === 'player' ? 'enemy' : 'player';
+                    const target = game.units.find(u => u.side === enemySide && Math.abs(u.x - this.x) <= this.turretRange);
+                    if (target) {
+                        game.projectiles.push(new Projectile(this.x, this.y - 140, target, 28, 'arrow', this.side));
+                        this.turretCd = 1.1;
+                        sounds.playArrow();
+                    }
+                }
+            }
+
+            draw() {
+                const isPlayer = this.side === 'player';
+                const mainColor = isPlayer ? '#2563eb' : '#dc2626';
+                const stoneColor = isPlayer ? '#1e293b' : '#271c1c';
+                const accentColor = isPlayer ? '#38bdf8' : '#f87171';
+
+                ctx.save();
+                ctx.translate(this.x, this.y);
+
+                // Base Shadow
+                ctx.fillStyle = 'rgba(0, 0, 0, 0.4)';
+                ctx.beginPath();
+                ctx.ellipse(0, 10, 90, 20, 0, 0, Math.PI * 2);
+                ctx.fill();
+
+                // Main Castle Keep Base (Smooth rounded corners)
+                ctx.fillStyle = stoneColor;
+                ctx.beginPath();
+                ctx.roundRect(-70, -130, 140, 130, [10, 10, 0, 0]);
+                ctx.fill();
+
+                // Subtle Stone Layer Shading
+                ctx.fillStyle = 'rgba(255, 255, 255, 0.05)';
+                ctx.fillRect(-65, -120, 130, 12);
+                ctx.fillRect(-65, -80, 130, 12);
+
+                // Side Towers with Conical Roofs
+                const drawTower = (tx) => {
+                    ctx.fillStyle = stoneColor;
+                    ctx.beginPath();
+                    ctx.roundRect(tx - 22, -160, 44, 160, [8, 8, 0, 0]);
+                    ctx.fill();
+
+                    // Conical Spire Roof
+                    ctx.fillStyle = mainColor;
+                    ctx.beginPath();
+                    ctx.moveTo(tx - 26, -160);
+                    ctx.lineTo(tx, -205);
+                    ctx.lineTo(tx + 26, -160);
+                    ctx.closePath();
+                    ctx.fill();
+
+                    // Glowing Window
+                    ctx.fillStyle = accentColor;
+                    ctx.beginPath();
+                    ctx.arc(tx, -110, 5, Math.PI, 0);
+                    ctx.lineTo(tx + 5, -95);
+                    ctx.lineTo(tx - 5, -95);
+                    ctx.closePath();
+                    ctx.fill();
+                };
+
+                drawTower(-65);
+                drawTower(65);
+
+                // Central Arch Gate
+                ctx.fillStyle = '#0f172a';
+                ctx.beginPath();
+                ctx.arc(0, 0, 24, Math.PI, 0);
+                ctx.lineTo(24, 0);
+                ctx.lineTo(-24, 0);
+                ctx.fill();
+
+                // Portcullis Grate
+                ctx.strokeStyle = '#64748b';
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                for (let gx = -16; gx <= 16; gx += 8) {
+                    ctx.moveTo(gx, -20); ctx.lineTo(gx, 0);
+                }
+                ctx.stroke();
+
+                // Center Flag Waving Animation
+                const wave = Math.sin(this.flagPhase) * 6;
+                ctx.strokeStyle = '#94a3b8';
+                ctx.lineWidth = 3;
+                ctx.beginPath();
+                ctx.moveTo(0, -130); ctx.lineTo(0, -180);
+                ctx.stroke();
+
+                ctx.fillStyle = mainColor;
+                ctx.beginPath();
+                ctx.moveTo(0, -180);
+                ctx.quadraticCurveTo(isPlayer ? 18 : -18, -170 + wave, isPlayer ? 36 : -36, -180);
+                ctx.lineTo(isPlayer ? 30 : -30, -160 + wave);
+                ctx.lineTo(0, -160);
+                ctx.closePath();
+                ctx.fill();
+
+                // Castle Health Bar Overlay
+                const hpPct = Math.max(0, this.hp / this.maxHp);
+                ctx.fillStyle = 'rgba(15, 23, 42, 0.9)';
+                ctx.beginPath();
+                ctx.roundRect(-50, -215, 100, 10, 5);
+                ctx.fill();
+
+                ctx.fillStyle = hpPct > 0.5 ? '#22c55e' : hpPct > 0.25 ? '#eab308' : '#ef4444';
+                ctx.beginPath();
+                ctx.roundRect(-48, -213, 96 * hpPct, 6, 3);
+                ctx.fill();
+
+                ctx.restore();
+            }
+        }
+
+        class Unit {
+            constructor(typeKey, side, x) {
+                const config = UNIT_TYPES[typeKey];
+                this.typeKey = typeKey;
+                this.side = side;
+                this.x = x;
+                this.y = canvas.height * 0.65 + (Math.random() * 28 - 14);
+                this.maxHp = config.hp;
+                this.hp = config.hp;
+                this.damage = config.damage;
+                this.speed = config.speed;
+                this.range = config.range;
+                this.attackCdMax = config.attackCd;
+                this.attackCd = 0;
+                this.role = config.role;
+
+                if (side === 'player') {
+                    if (this.role === 'melee' || this.role === 'tank' || this.role === 'charge') {
+                        this.damage *= (1 + game.upgrades.meleeDmgLvl * 0.15);
+                    } else {
+                        this.attackCdMax *= (1 - game.upgrades.rangedDmgLvl * 0.08);
+                        this.range *= (1 + game.upgrades.rangedDmgLvl * 0.08);
+                    }
+                    if (game.stance === 'aggressive') this.speed *= 1.15;
+                }
+
+                this.target = null;
+                this.chargeBonus = typeKey === 'cavalry' ? 2.5 : 1.0;
+                this.animPhase = Math.random() * Math.PI * 2;
+                this.buffTimer = 0;
+                this.freezeTimer = 0;
+            }
+
+            takeDamage(amount, sourceRole) {
+                let finalDmg = amount;
+                if (this.side === 'player' && game.stance === 'defensive' && this.x < canvas.width * 0.35) {
+                    finalDmg *= 0.75;
+                }
+
+                if (this.typeKey === 'shieldman' && Math.random() < UNIT_TYPES.shieldman.blockChance) {
+                    finalDmg *= 0.35;
+                    createFloatingText(this.x, this.y - 35, "BLOCKED", "#38bdf8");
+                }
+
+                this.hp -= finalDmg;
+                createSparks(this.x, this.y - 15, "#ef4444", 6);
+
+                if (this.hp <= 0) {
+                    if (this.side === 'enemy') {
+                        const reward = Math.round(UNIT_TYPES[this.typeKey].cost * 0.42);
+                        game.gold += reward;
+                        game.stats.goldEarned += reward;
+                        game.stats.kills++;
+                        createFloatingText(this.x, this.y - 30, `+${reward}G`, "#facc15");
+                    }
+                }
+            }
+
+            heal(amount) {
+                if (this.hp < this.maxHp) {
+                    this.hp = Math.min(this.maxHp, this.hp + amount);
+                    createFloatingText(this.x, this.y - 30, `+${Math.round(amount)}`, "#4ade80");
+                    createSparks(this.x, this.y - 15, "#2dd4bf", 4);
+                }
+            }
+
+            update(dt) {
+                if (this.freezeTimer > 0) {
+                    this.freezeTimer -= dt;
+                    return;
+                }
+
+                if (this.attackCd > 0) this.attackCd -= dt;
+                if (this.buffTimer > 0) this.buffTimer -= dt;
+
+                const enemySide = this.side === 'player' ? 'enemy' : 'player';
+                const enemyCastle = this.side === 'player' ? game.enemyCastle : game.playerCastle;
+                const dir = this.side === 'player' ? 1 : -1;
+
+                if (this.role === 'healer') {
+                    const woundedAlly = game.units.find(u => u.side === this.side && u !== this && u.hp < u.maxHp && Math.abs(u.x - this.x) <= this.range);
+                    if (woundedAlly) {
+                        if (this.attackCd <= 0) {
+                            woundedAlly.heal(this.damage);
+                            sounds.playHeal();
+                            this.attackCd = this.attackCdMax;
+                        }
+                        return;
+                    }
+                }
+
+                const targets = game.units.filter(u => u.side === enemySide);
+                let closestEnemy = null;
+                let minDist = Infinity;
+
+                for (let u of targets) {
+                    const dist = (u.x - this.x) * dir;
+                    if (dist > -15 && dist < minDist) {
+                        minDist = dist;
+                        closestEnemy = u;
+                    }
+                }
+
+                const castleDist = (enemyCastle.x - this.x) * dir;
+
+                if (closestEnemy && minDist <= this.range) {
+                    this.target = closestEnemy;
+                    if (this.attackCd <= 0) {
+                        this.performAttack(closestEnemy);
+                        this.attackCd = this.attackCdMax;
+                    }
+                } else if (castleDist <= this.range) {
+                    this.target = enemyCastle;
+                    if (this.attackCd <= 0) {
+                        const dmg = this.damage * (this.buffTimer > 0 ? 1.5 : 1.0);
+                        enemyCastle.takeDamage(dmg);
+                        this.attackCd = this.attackCdMax;
+                    }
+                } else {
+                    this.target = null;
+                    const speedMult = (this.buffTimer > 0 ? 1.35 : 1.0);
+                    this.x += dir * this.speed * speedMult * dt;
+                    this.animPhase += dt * 9 * speedMult;
+                }
+            }
+
+            performAttack(target) {
+                const isRally = this.buffTimer > 0;
+                let finalDamage = this.damage * (isRally ? 1.5 : 1.0) * this.chargeBonus;
+                this.chargeBonus = 1.0;
+
+                if (this.role === 'ranged') {
+                    game.projectiles.push(new Projectile(this.x, this.y - 20, target, finalDamage, 'arrow', this.side));
+                    sounds.playArrow();
+                } else if (this.role === 'splash') {
+                    game.projectiles.push(new Projectile(this.x, this.y - 20, target, finalDamage, 'magic', this.side));
+                    sounds.playArrow();
+                } else if (this.role === 'siege') {
+                    game.projectiles.push(new Projectile(this.x, this.y - 25, target, finalDamage, 'boulder', this.side));
+                    sounds.playExplosion();
+                } else {
+                    target.takeDamage(finalDamage, this.role);
+                    sounds.playHit();
+                }
+            }
+
+            draw() {
+                ctx.save();
+                ctx.translate(this.x, this.y);
+
+                const isPlayer = this.side === 'player';
+                const facing = isPlayer ? 1 : -1;
+                const bob = Math.sin(this.animPhase) * 3;
+                const legSwing = Math.sin(this.animPhase) * 8;
+
+                // Ground Soft Oval Shadow
+                ctx.fillStyle = 'rgba(0, 0, 0, 0.35)';
+                ctx.beginPath();
+                ctx.ellipse(0, 4, this.typeKey === 'cavalry' ? 22 : this.typeKey === 'catapult' ? 28 : 12, 5, 0, 0, Math.PI * 2);
+                ctx.fill();
+
+                // Freeze & Rally Auras
+                if (this.freezeTimer > 0) {
+                    ctx.fillStyle = "rgba(186, 230, 253, 0.5)";
+                    ctx.beginPath();
+                    ctx.arc(0, -15, 25, 0, Math.PI * 2);
+                    ctx.fill();
+                } else if (this.buffTimer > 0) {
+                    ctx.fillStyle = "rgba(245, 158, 11, 0.35)";
+                    ctx.beginPath();
+                    ctx.arc(0, -15, 25, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+
+                // Smooth Vector Character Models
+                if (this.typeKey === 'cavalry') {
+                    // Armored Horse
+                    ctx.fillStyle = '#78350f';
+                    ctx.beginPath();
+                    ctx.ellipse(facing * 4, -14 + bob, 22, 12, 0, 0, Math.PI * 2);
+                    ctx.fill();
+
+                    // Horse Head
+                    ctx.beginPath();
+                    ctx.arc(facing * 20, -26 + bob, 8, 0, Math.PI * 2);
+                    ctx.fill();
+
+                    // Horse Legs
+                    ctx.strokeStyle = '#451a03';
+                    ctx.lineWidth = 4;
+                    ctx.beginPath();
+                    ctx.moveTo(-12, -8); ctx.lineTo(-12 + legSwing, 4);
+                    ctx.moveTo(12, -8); ctx.lineTo(12 - legSwing, 4);
+                    ctx.stroke();
+
+                    // Knight Torso
+                    ctx.fillStyle = isPlayer ? '#2563eb' : '#dc2626';
+                    ctx.beginPath();
+                    ctx.roundRect(-6, -34 + bob, 12, 18, 4);
+                    ctx.fill();
+
+                    // Helmet
+                    ctx.fillStyle = '#94a3b8';
+                    ctx.beginPath();
+                    ctx.arc(0, -38 + bob, 7, 0, Math.PI * 2);
+                    ctx.fill();
+
+                    // Lance
+                    ctx.strokeStyle = '#cbd5e1';
+                    ctx.lineWidth = 3;
+                    ctx.beginPath();
+                    ctx.moveTo(0, -32 + bob);
+                    ctx.lineTo(facing * 35, -30 + bob);
+                    ctx.stroke();
+
+                } else if (this.typeKey === 'catapult') {
+                    // Siege Frame
+                    ctx.fillStyle = '#543310';
+                    ctx.beginPath();
+                    ctx.roundRect(-22, -18, 44, 14, 4);
+                    ctx.fill();
+
+                    // Wheels
+                    ctx.fillStyle = '#1e293b';
+                    ctx.beginPath();
+                    ctx.arc(-14, 0, 7, 0, Math.PI * 2);
+                    ctx.arc(14, 0, 7, 0, Math.PI * 2);
+                    ctx.fill();
+
+                    // Throwing Arm
+                    ctx.strokeStyle = '#78350f';
+                    ctx.lineWidth = 4;
+                    ctx.beginPath();
+                    ctx.moveTo(facing * -10, -18);
+                    ctx.lineTo(facing * 18, -36);
+                    ctx.stroke();
+
+                } else {
+                    // Infantry Units (Swordsman, Archer, Shieldman, Mage, Cleric)
+                    const mainColor = isPlayer ? '#2563eb' : '#dc2626';
+
+                    // Legs
+                    ctx.strokeStyle = '#334155';
+                    ctx.lineWidth = 3.5;
+                    ctx.beginPath();
+                    ctx.moveTo(-4, -6); ctx.lineTo(-4 + legSwing, 4);
+                    ctx.moveTo(4, -6); ctx.lineTo(4 - legSwing, 4);
+                    ctx.stroke();
+
+                    // Torso/Cape
+                    ctx.fillStyle = mainColor;
+                    ctx.beginPath();
+                    ctx.roundRect(-7, -24 + bob, 14, 18, 5);
+                    ctx.fill();
+
+                    // Head
+                    ctx.fillStyle = '#f8fafc';
+                    ctx.beginPath();
+                    ctx.arc(0, -28 + bob, 6.5, 0, Math.PI * 2);
+                    ctx.fill();
+
+                    // Specialized Gear
+                    if (this.typeKey === 'shieldman') {
+                        // Curved Heater Shield
+                        ctx.fillStyle = isPlayer ? '#0284c7' : '#991b1b';
+                        ctx.beginPath();
+                        ctx.arc(facing * 8, -20 + bob, 9, 0, Math.PI);
+                        ctx.lineTo(facing * 8, -28 + bob);
+                        ctx.closePath();
+                        ctx.fill();
+                    } else if (this.typeKey === 'archer') {
+                        // Bow
+                        ctx.strokeStyle = '#b45309';
+                        ctx.lineWidth = 2.5;
+                        ctx.beginPath();
+                        ctx.arc(facing * 8, -22 + bob, 10, -Math.PI / 2.2, Math.PI / 2.2);
+                        ctx.stroke();
+                    } else if (this.typeKey === 'mage' || this.typeKey === 'cleric') {
+                        // Glowing Staff with Gem
+                        ctx.strokeStyle = '#78350f';
+                        ctx.lineWidth = 3;
+                        ctx.beginPath();
+                        ctx.moveTo(facing * 8, -34 + bob);
+                        ctx.lineTo(facing * 8, 2);
+                        ctx.stroke();
+
+                        ctx.fillStyle = this.typeKey === 'mage' ? '#c084fc' : '#2dd4bf';
+                        ctx.beginPath();
+                        ctx.arc(facing * 8, -36 + bob, 4.5, 0, Math.PI * 2);
+                        ctx.fill();
+                    } else {
+                        // Sword
+                        ctx.strokeStyle = '#cbd5e1';
+                        ctx.lineWidth = 3;
+                        ctx.beginPath();
+                        ctx.moveTo(facing * 6, -20 + bob);
+                        ctx.lineTo(facing * 18, -28 + bob);
+                        ctx.stroke();
+                    }
+                }
+
+                // Rounded Floating Health Bar
+                const hpPct = Math.max(0, this.hp / this.maxHp);
+                ctx.fillStyle = 'rgba(15, 23, 42, 0.85)';
+                ctx.beginPath();
+                ctx.roundRect(-12, -44 + bob, 24, 4, 2);
+                ctx.fill();
+
+                ctx.fillStyle = hpPct > 0.5 ? '#22c55e' : hpPct > 0.25 ? '#eab308' : '#ef4444';
+                ctx.beginPath();
+                ctx.roundRect(-12, -44 + bob, 24 * hpPct, 4, 2);
+                ctx.fill();
+
+                ctx.restore();
+            }
+        }
+
+        class Projectile {
+            constructor(startX, startY, target, damage, style, side) {
+                this.startX = startX;
+                this.startY = startY;
+                this.x = startX;
+                this.y = startY;
+                this.target = target;
+                this.damage = damage;
+                this.style = style;
+                this.side = side;
+                this.progress = 0;
+                this.speed = style === 'arrow' ? 1.6 : style === 'magic' ? 1.3 : 0.95;
+                this.arcHeight = style === 'boulder' ? 90 : style === 'arrow' ? 45 : 15;
+            }
+
+            update(dt) {
+                if (!this.target) return true;
+
+                this.progress += this.speed * dt;
+                const targetY = this.target.y ? (this.target.y - 15) : (canvas.height * 0.65 - 40);
+
+                const lerpX = this.startX + (this.target.x - this.startX) * this.progress;
+                const lerpY = this.startY + (targetY - this.startY) * this.progress;
+                const arc = Math.sin(this.progress * Math.PI) * this.arcHeight;
+
+                this.x = lerpX;
+                this.y = lerpY - arc;
+
+                if (this.progress >= 1.0) {
+                    const enemySide = this.side === 'player' ? 'enemy' : 'player';
+                    if (this.style === 'magic') {
+                        game.units.filter(u => u.side === enemySide && Math.abs(u.x - this.x) <= 60).forEach(u => {
+                            u.takeDamage(this.damage, 'splash');
+                        });
+                        createSparks(this.x, this.y, "#c084fc", 15);
+                        sounds.playExplosion();
+                    } else if (this.style === 'boulder') {
+                        game.units.filter(u => u.side === enemySide && Math.abs(u.x - this.x) <= 90).forEach(u => {
+                            u.takeDamage(this.damage, 'siege');
+                        });
+                        if (this.target === game.enemyCastle || this.target === game.playerCastle) {
+                            this.target.takeDamage(this.damage);
+                        }
+                        createSparks(this.x, this.y, "#ea580c", 25);
+                        sounds.playExplosion();
+                    } else {
+                        this.target.takeDamage(this.damage, 'ranged');
+                    }
+                    return true;
+                }
+                return false;
+            }
+
+            draw() {
+                ctx.save();
+                if (this.style === 'arrow') {
+                    ctx.fillStyle = '#f59e0b';
+                    ctx.beginPath();
+                    ctx.arc(this.x, this.y, 3.5, 0, Math.PI * 2);
+                    ctx.fill();
+                } else if (this.style === 'magic') {
+                    ctx.fillStyle = '#a855f7';
+                    ctx.shadowColor = '#d8b4fe';
+                    ctx.shadowBlur = 10;
+                    ctx.beginPath();
+                    ctx.arc(this.x, this.y, 7, 0, Math.PI * 2);
+                    ctx.fill();
+                } else {
+                    // Tumbling Flaming Boulder
+                    ctx.fillStyle = '#ea580c';
+                    ctx.shadowColor = '#fdba74';
+                    ctx.shadowBlur = 14;
+                    ctx.beginPath();
+                    ctx.arc(this.x, this.y, 11, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+                ctx.restore();
+            }
+        }
+
+        class GoldChest {
+            constructor() {
+                this.x = canvas.width * 0.25 + Math.random() * (canvas.width * 0.5);
+                this.y = canvas.height * 0.65 + 10;
+                this.value = Math.floor(75 + Math.random() * 75);
+                this.life = 10.0;
+            }
+
+            update(dt) {
+                this.life -= dt;
+                return this.life <= 0;
+            }
+
+            draw() {
+                ctx.save();
+                ctx.translate(this.x, this.y);
+                ctx.fillStyle = '#eab308';
+                ctx.beginPath();
+                ctx.roundRect(-12, -10, 24, 16, 4);
+                ctx.fill();
+                ctx.fillStyle = '#78350f';
+                ctx.beginPath();
+                ctx.roundRect(-10, -8, 20, 12, 2);
+                ctx.fill();
+                ctx.fillStyle = '#fef08a';
+                ctx.fillRect(-3, -4, 6, 6);
+                ctx.restore();
+            }
+        }
+
+        class Particle {
+            constructor(x, y, color) {
+                this.x = x; this.y = y;
+                this.vx = (Math.random() - 0.5) * 130;
+                this.vy = (Math.random() - 0.7) * 130;
+                this.color = color;
+                this.alpha = 1;
+                this.life = 0.4 + Math.random() * 0.35;
+            }
+
+            update(dt) {
+                this.x += this.vx * dt;
+                this.y += this.vy * dt;
+                this.alpha -= dt / this.life;
+                return this.alpha <= 0;
+            }
+
+            draw() {
+                ctx.save();
+                ctx.globalAlpha = Math.max(0, this.alpha);
+                ctx.fillStyle = this.color;
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, 3, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.restore();
+            }
+        }
+
+        class FloatingText {
+            constructor(x, y, text, color) {
+                this.x = x; this.y = y;
+                this.text = text;
+                this.color = color;
+                this.alpha = 1;
+                this.life = 1.0;
+            }
+
+            update(dt) {
+                this.y -= 22 * dt;
+                this.alpha -= dt / this.life;
+                return this.alpha <= 0;
+            }
+
+            draw() {
+                ctx.save();
+                ctx.globalAlpha = Math.max(0, this.alpha);
+                ctx.fillStyle = this.color;
+                ctx.font = 'bold 12px Inter';
+                ctx.fillText(this.text, this.x - 10, this.y);
+                ctx.restore();
+            }
+        }
+
+        function createSparks(x, y, color, count = 8) {
+            for (let i = 0; i < count; i++) {
+                game.particles.push(new Particle(x, y, color));
+            }
+        }
+
+        function createFloatingText(x, y, text, color) {
+            game.particles.push(new FloatingText(x, y, text, color));
+        }
+
+        function updateAI(dt) {
+            game.ai.timer += dt;
+            if (game.ai.timer >= game.ai.spawnInterval) {
+                game.ai.timer = 0;
+
+                const keys = ['swordsman', 'archer', 'shieldman', 'cavalry', 'mage', 'cleric', 'catapult'];
+                const weights = [30, 22, 18, 12, 8, 6, 4];
+                
+                let rnd = Math.random() * 100;
+                let chosen = 'swordsman';
+                for (let i = 0; i < keys.length; i++) {
+                    if (rnd < weights[i]) {
+                        chosen = keys[i];
+                        break;
+                    }
+                    rnd -= weights[i];
+                }
+
+                const spawnX = game.enemyCastle.x - 40;
+                game.units.push(new Unit(chosen, 'enemy', spawnX));
+            }
+        }
+
+        function spawnPlayerUnit(typeKey) {
+            sounds.init();
+            const config = UNIT_TYPES[typeKey];
+            if (game.gold >= config.cost && game.cooldowns[typeKey] <= 0) {
+                game.gold -= config.cost;
+                game.cooldowns[typeKey] = config.cooldown;
+                game.stats.summoned++;
+                
+                const spawnX = game.playerCastle.x + 40;
+                game.units.push(new Unit(typeKey, 'player', spawnX));
+                sounds.playSpawn();
+                updateUI();
+            }
+        }
+
+        function castFireball(targetX) {
+            if (game.gold >= 100 && game.cooldowns.fireball <= 0) {
+                game.gold -= 100;
+                game.cooldowns.fireball = 12.0;
+
+                game.units.filter(u => u.side === 'enemy' && Math.abs(u.x - targetX) <= 120).forEach(u => {
+                    u.takeDamage(200, 'spell');
+                });
+
+                createSparks(targetX, canvas.height * 0.65, "#f97316", 45);
+                sounds.playExplosion();
+                showBanner("Fireball Struck!");
+                game.activeSpellTargeting = null;
+                canvas.style.cursor = "default";
+                updateUI();
+            }
+        }
+
+        function castBlizzard(targetX) {
+            if (game.gold >= 120 && game.cooldowns.blizzard <= 0) {
+                game.gold -= 120;
+                game.cooldowns.blizzard = 14.0;
+
+                game.units.filter(u => u.side === 'enemy' && Math.abs(u.x - targetX) <= 140).forEach(u => {
+                    u.freezeTimer = 4.0;
+                    u.takeDamage(60, 'spell');
+                });
+
+                createSparks(targetX, canvas.height * 0.65, "#38bdf8", 45);
+                sounds.playFreeze();
+                showBanner("Blizzard Frozen!");
+                game.activeSpellTargeting = null;
+                canvas.style.cursor = "default";
+                updateUI();
+            }
+        }
+
+        function castRally() {
+            if (game.gold >= 80 && game.cooldowns.rally <= 0) {
+                game.gold -= 80;
+                game.cooldowns.rally = 15.0;
+
+                game.units.filter(u => u.side === 'player').forEach(u => {
+                    u.buffTimer = 6.0;
+                });
+
+                sounds.playFanfare(true);
+                showBanner("WAR CRY ACTIVE!");
+                updateUI();
+            }
+        }
+
+        function castDivineHeal() {
+            if (game.gold >= 90 && game.cooldowns.heal <= 0) {
+                game.gold -= 90;
+                game.cooldowns.heal = 16.0;
+
+                game.units.filter(u => u.side === 'player').forEach(u => {
+                    u.heal(160);
+                });
+
+                sounds.playHeal();
+                showBanner("SANCTUARY HEAL!");
+                updateUI();
+            }
+        }
+
+        function drawBackground() {
+            // Smooth Sky Gradient
+            const skyGradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
+            skyGradient.addColorStop(0, '#0b0f19');
+            skyGradient.addColorStop(0.5, '#1e1b4b');
+            skyGradient.addColorStop(1, '#0284c7');
+            ctx.fillStyle = skyGradient;
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Layer 1: Distant Curved Mountains
+            ctx.fillStyle = '#1e293b';
+            ctx.beginPath();
+            ctx.moveTo(0, canvas.height * 0.62);
+            ctx.bezierCurveTo(canvas.width * 0.25, canvas.height * 0.45, canvas.width * 0.4, canvas.height * 0.55, canvas.width * 0.65, canvas.height * 0.48);
+            ctx.bezierCurveTo(canvas.width * 0.8, canvas.height * 0.42, canvas.width * 0.9, canvas.height * 0.58, canvas.width, canvas.height * 0.62);
+            ctx.lineTo(canvas.width, canvas.height);
+            ctx.lineTo(0, canvas.height);
+            ctx.fill();
+
+            // Layer 2: Midground Rolling Green Hills
+            ctx.fillStyle = '#166534';
+            ctx.beginPath();
+            ctx.moveTo(0, canvas.height * 0.65);
+            ctx.quadraticCurveTo(canvas.width * 0.3, canvas.height * 0.58, canvas.width * 0.5, canvas.height * 0.63);
+            ctx.quadraticCurveTo(canvas.width * 0.75, canvas.height * 0.68, canvas.width, canvas.height * 0.65);
+            ctx.lineTo(canvas.width, canvas.height);
+            ctx.lineTo(0, canvas.height);
+            ctx.fill();
+
+            // Organic Curved Winding Dirt Path
+            const groundY = canvas.height * 0.65;
+            ctx.fillStyle = '#92400e';
+            ctx.beginPath();
+            ctx.moveTo(0, groundY - 20);
+            ctx.quadraticCurveTo(canvas.width * 0.5, groundY - 10, canvas.width, groundY - 20);
+            ctx.lineTo(canvas.width, groundY + 25);
+            ctx.quadraticCurveTo(canvas.width * 0.5, groundY + 35, 0, groundY + 25);
+            ctx.closePath();
+            ctx.fill();
+
+            // Dynamic Frontline Indicator
+            let playerXMax = game.playerCastle ? game.playerCastle.x : 0;
+            let enemyXMin = game.enemyCastle ? game.enemyCastle.x : canvas.width;
+
+            const pUnits = game.units.filter(u => u.side === 'player');
+            const eUnits = game.units.filter(u => u.side === 'enemy');
+
+            if (pUnits.length > 0) playerXMax = Math.max(...pUnits.map(u => u.x));
+            if (eUnits.length > 0) enemyXMin = Math.min(...eUnits.map(u => u.x));
+
+            const frontlineX = (playerXMax + enemyXMin) / 2;
+
+            ctx.strokeStyle = 'rgba(250, 204, 21, 0.45)';
+            ctx.setLineDash([6, 6]);
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(frontlineX, groundY - 80);
+            ctx.lineTo(frontlineX, groundY + 60);
+            ctx.stroke();
+            ctx.setLineDash([]);
+
+            const pct = Math.round((frontlineX / canvas.width) * 100);
+            document.getElementById('frontlineText').innerText = `Frontline: ${pct}%`;
+            if (pct > game.stats.peakFrontline) game.stats.peakFrontline = pct;
+        }
+
+        function updateUI() {
+            document.getElementById('goldText').innerText = Math.floor(game.gold);
+            document.getElementById('incomeText').innerText = `(+${game.incomeRate}/s)`;
+
+            if (game.playerCastle) {
+                const pPct = Math.max(0, (game.playerCastle.hp / game.playerCastle.maxHp) * 100);
+                document.getElementById('playerHpBar').style.width = `${pPct}%`;
+                document.getElementById('playerHpText').innerText = `${Math.ceil(game.playerCastle.hp)} / ${game.playerCastle.maxHp}`;
+            }
+
+            if (game.enemyCastle) {
+                const ePct = Math.max(0, (game.enemyCastle.hp / game.enemyCastle.maxHp) * 100);
+                document.getElementById('enemyHpBar').style.width = `${ePct}%`;
+                document.getElementById('enemyHpText').innerText = `${Math.ceil(game.enemyCastle.hp)} / ${game.enemyCastle.maxHp}`;
+            }
+
+            Object.keys(UNIT_TYPES).forEach(typeKey => {
+                const btn = document.getElementById(`spawn${typeKey.charAt(0).toUpperCase() + typeKey.slice(1)}`);
+                if (btn) {
+                    btn.disabled = game.gold < UNIT_TYPES[typeKey].cost || game.cooldowns[typeKey] > 0;
+                }
+            });
+
+            document.getElementById('spellFireball').disabled = game.gold < 100 || game.cooldowns.fireball > 0;
+            document.getElementById('spellBlizzard').disabled = game.gold < 120 || game.cooldowns.blizzard > 0;
+            document.getElementById('spellRally').disabled = game.gold < 80 || game.cooldowns.rally > 0;
+            document.getElementById('spellHeal').disabled = game.gold < 90 || game.cooldowns.heal > 0;
+
+            document.getElementById('lvlGoldMine').innerText = `Lvl ${game.upgrades.goldMineLvl}`;
+            document.getElementById('costGoldMine').innerText = game.upgrades.goldMineCost;
+            document.getElementById('buyGoldMine').disabled = game.gold < game.upgrades.goldMineCost;
+
+            document.getElementById('lvlCastleHp').innerText = `Lvl ${game.upgrades.castleHpLvl}`;
+            document.getElementById('costCastleHp').innerText = game.upgrades.castleHpCost;
+            document.getElementById('buyCastleHp').disabled = game.gold < game.upgrades.castleHpCost;
+
+            document.getElementById('lvlMeleeDmg').innerText = `Lvl ${game.upgrades.meleeDmgLvl}`;
+            document.getElementById('costMeleeDmg').innerText = game.upgrades.meleeDmgCost;
+            document.getElementById('buyMeleeDmg').disabled = game.gold < game.upgrades.meleeDmgCost;
+
+            document.getElementById('lvlRangedDmg').innerText = `Lvl ${game.upgrades.rangedDmgLvl}`;
+            document.getElementById('costRangedDmg').innerText = game.upgrades.rangedDmgCost;
+            document.getElementById('buyRangedDmg').disabled = game.gold < game.upgrades.rangedDmgCost;
+        }
+
+        function updateCooldowns(dt) {
+            Object.keys(game.cooldowns).forEach(key => {
+                if (game.cooldowns[key] > 0) {
+                    game.cooldowns[key] -= dt;
+                    const maxCd = UNIT_TYPES[key] ? UNIT_TYPES[key].cooldown : 15.0;
+                    const pct = Math.max(0, (game.cooldowns[key] / maxCd) * 100);
+                    const elem = document.getElementById(`cd${key.charAt(0).toUpperCase() + key.slice(1)}`);
+                    if (elem) elem.style.height = `${pct}%`;
+                }
+            });
+        }
+
+        function showBanner(text) {
+            const banner = document.getElementById('bannerMessage');
+            document.getElementById('bannerText').innerText = text;
+            banner.classList.remove('opacity-0');
+            setTimeout(() => banner.classList.add('opacity-0'), 2200);
+        }
+
+        // BINDINGS & LISTENERS
+        document.getElementById('spawnSwordsman').onclick = () => spawnPlayerUnit('swordsman');
+        document.getElementById('spawnArcher').onclick = () => spawnPlayerUnit('archer');
+        document.getElementById('spawnShieldman').onclick = () => spawnPlayerUnit('shieldman');
+        document.getElementById('spawnCavalry').onclick = () => spawnPlayerUnit('cavalry');
+        document.getElementById('spawnMage').onclick = () => spawnPlayerUnit('mage');
+        document.getElementById('spawnCleric').onclick = () => spawnPlayerUnit('cleric');
+        document.getElementById('spawnCatapult').onclick = () => spawnPlayerUnit('catapult');
+
+        document.getElementById('spellFireball').onclick = () => {
+            if (game.gold >= 100 && game.cooldowns.fireball <= 0) {
+                game.activeSpellTargeting = 'fireball';
+                canvas.style.cursor = "crosshair";
+                showBanner("Click Battlefield to Cast Fireball!");
+            }
+        };
+
+        document.getElementById('spellBlizzard').onclick = () => {
+            if (game.gold >= 120 && game.cooldowns.blizzard <= 0) {
+                game.activeSpellTargeting = 'blizzard';
+                canvas.style.cursor = "crosshair";
+                showBanner("Click Battlefield to Cast Blizzard!");
+            }
+        };
+
+        document.getElementById('spellRally').onclick = () => castRally();
+        document.getElementById('spellHeal').onclick = () => castDivineHeal();
+
+        canvas.addEventListener('click', (e) => {
+            const rect = canvas.getBoundingClientRect();
+            const clickX = e.clientX - rect.left;
+            const clickY = e.clientY - rect.top;
+
+            const hitChestIndex = game.chests.findIndex(c => Math.hypot(c.x - clickX, c.y - clickY) <= 30);
+            if (hitChestIndex !== -1) {
+                const chest = game.chests[hitChestIndex];
+                game.gold += chest.value;
+                game.stats.goldEarned += chest.value;
+                sounds.playCoin();
+                createFloatingText(chest.x, chest.y - 20, `+${chest.value}G GOLD!`, "#facc15");
+                game.chests.splice(hitChestIndex, 1);
+                updateUI();
+                return;
+            }
+
+            if (game.activeSpellTargeting === 'fireball') {
+                castFireball(clickX);
+            } else if (game.activeSpellTargeting === 'blizzard') {
+                castBlizzard(clickX);
+            }
+        });
+
+        window.addEventListener('keydown', (e) => {
+            if (!game.running) return;
+            if (e.key === '1') spawnPlayerUnit('swordsman');
+            if (e.key === '2') spawnPlayerUnit('archer');
+            if (e.key === '3') spawnPlayerUnit('shieldman');
+            if (e.key === '4') spawnPlayerUnit('cavalry');
+            if (e.key === '5') spawnPlayerUnit('mage');
+            if (e.key === '6') spawnPlayerUnit('cleric');
+            if (e.key === '7') spawnPlayerUnit('catapult');
+        });
+
+        const setStance = (stance) => {
+            game.stance = stance;
+            ['stanceAggro', 'stanceBal', 'stanceDef'].forEach(id => {
+                document.getElementById(id).className = "btn-action px-2.5 py-1 text-xs font-bold rounded-lg text-slate-400 hover:text-white flex items-center gap-1";
+            });
+            if (stance === 'aggressive') document.getElementById('stanceAggro').className = "btn-action px-2.5 py-1 text-xs font-bold rounded-lg bg-amber-600 text-white flex items-center gap-1";
+            if (stance === 'balanced') document.getElementById('stanceBal').className = "btn-action px-2.5 py-1 text-xs font-bold rounded-lg bg-blue-600 text-white flex items-center gap-1";
+            if (stance === 'defensive') document.getElementById('stanceDef').className = "btn-action px-2.5 py-1 text-xs font-bold rounded-lg bg-emerald-600 text-white flex items-center gap-1";
+        };
+
+        document.getElementById('stanceAggro').onclick = () => setStance('aggressive');
+        document.getElementById('stanceBal').onclick = () => setStance('balanced');
+        document.getElementById('stanceDef').onclick = () => setStance('defensive');
+
+        ['1x', '2x', '4x'].forEach(spd => {
+            document.getElementById(`speed${spd}`).onclick = () => {
+                game.speed = parseInt(spd);
+                ['1x', '2x', '4x'].forEach(s => {
+                    const btn = document.getElementById(`speed${s}`);
+                    btn.className = s === spd ? "px-2.5 py-1 text-xs rounded-lg font-bold bg-blue-600 text-white" : "px-2.5 py-1 text-xs rounded-lg font-bold text-slate-400 hover:text-white";
+                });
+            };
+        });
+
+        document.getElementById('soundToggle').onclick = () => {
+            sounds.enabled = !sounds.enabled;
+            document.getElementById('soundIcon').className = sounds.enabled ? "fa-solid fa-volume-high text-xs" : "fa-solid fa-volume-xmark text-xs text-red-400";
+        };
+
+        const upgradeModal = document.getElementById('upgradeModal');
+        document.getElementById('upgradeBtn').onclick = () => upgradeModal.classList.remove('opacity-0', 'pointer-events-none');
+        document.getElementById('closeUpgradeBtn').onclick = () => upgradeModal.classList.add('opacity-0', 'pointer-events-none');
+
+        document.getElementById('buyGoldMine').onclick = () => {
+            if (game.gold >= game.upgrades.goldMineCost) {
+                game.gold -= game.upgrades.goldMineCost;
+                game.upgrades.goldMineLvl++;
+                game.incomeRate += 3;
+                game.upgrades.goldMineCost = Math.round(game.upgrades.goldMineCost * 1.6);
+                updateUI();
+            }
+        };
+
+        document.getElementById('buyCastleHp').onclick = () => {
+            if (game.gold >= game.upgrades.castleHpCost) {
+                game.gold -= game.upgrades.castleHpCost;
+                game.upgrades.castleHpLvl++;
+                game.playerCastle.maxHp += 350;
+                game.playerCastle.hp = Math.min(game.playerCastle.maxHp, game.playerCastle.hp + 250);
+                game.upgrades.castleHpCost = Math.round(game.upgrades.castleHpCost * 1.5);
+                updateUI();
+            }
+        };
+
+        document.getElementById('buyMeleeDmg').onclick = () => {
+            if (game.gold >= game.upgrades.meleeDmgCost) {
+                game.gold -= game.upgrades.meleeDmgCost;
+                game.upgrades.meleeDmgLvl++;
+                game.upgrades.meleeDmgCost = Math.round(game.upgrades.meleeDmgCost * 1.6);
+                updateUI();
+            }
+        };
+
+        document.getElementById('buyRangedDmg').onclick = () => {
+            if (game.gold >= game.upgrades.rangedDmgCost) {
+                game.gold -= game.upgrades.rangedDmgCost;
+                game.upgrades.rangedDmgLvl++;
+                game.upgrades.rangedDmgCost = Math.round(game.upgrades.rangedDmgCost * 1.6);
+                updateUI();
+            }
+        };
+
+        document.querySelectorAll('.diff-btn').forEach(btn => {
+            btn.onclick = () => {
+                document.querySelectorAll('.diff-btn').forEach(b => b.className = "diff-btn py-2 text-xs font-bold rounded-lg border border-slate-700 bg-slate-800 text-slate-300");
+                btn.className = "diff-btn py-2 text-xs font-bold rounded-lg border border-amber-500 bg-amber-500/20 text-amber-300";
+                game.selectedDiff = btn.dataset.diff;
+            };
+        });
+
+        function startNewGame() {
+            resizeCanvas();
+            sounds.init();
+
+            const diffMult = game.selectedDiff === 'easy' ? 1.4 : game.selectedDiff === 'hard' ? 0.75 : 1.0;
+            const aiInterval = game.selectedDiff === 'easy' ? 5.5 : game.selectedDiff === 'hard' ? 2.8 : 3.8;
+
+            game = {
+                ...game,
+                running: true,
+                paused: false,
+                gold: 120,
+                incomeRate: 6,
+                elapsedTime: 0,
+                units: [],
+                projectiles: [],
+                particles: [],
+                chests: [],
+                stats: { summoned: 0, kills: 0, goldEarned: 120, peakFrontline: 50 },
+                cooldowns: { swordsman: 0, archer: 0, shieldman: 0, cavalry: 0, mage: 0, cleric: 0, catapult: 0, fireball: 0, blizzard: 0, rally: 0, heal: 0 },
+                upgrades: { goldMineLvl: 1, goldMineCost: 150, castleHpLvl: 1, castleHpCost: 200, meleeDmgLvl: 0, meleeDmgCost: 175, rangedDmgLvl: 0, rangedDmgCost: 175 },
+                playerCastle: new Castle('player', 100, 1200),
+                enemyCastle: new Castle('enemy', canvas.width - 100, Math.round(1200 * (2 - diffMult))),
+                ai: { timer: 0, spawnInterval: aiInterval },
+                chestTimer: 0
+            };
+
+            document.getElementById('mainModal').classList.add('opacity-0', 'pointer-events-none');
+            showBanner("BATTLE COMMENCED!");
+            updateUI();
+        }
+
+        document.getElementById('startGameBtn').onclick = startNewGame;
+
+        function endGame(playerWon) {
+            game.running = false;
+            sounds.playFanfare(playerWon);
+
+            const modal = document.getElementById('mainModal');
+            document.getElementById('modalTitle').innerText = playerWon ? "VICTORY IS YOURS!" : "CASTLE FALLEN!";
+            document.getElementById('modalSubtitle').innerText = playerWon 
+                ? "You have obliterated the enemy citadel and claimed total dominion over the realm!" 
+                : "The enemy army breached your defenses and destroyed your throne.";
+            
+            document.getElementById('statSummoned').innerText = game.stats.summoned;
+            document.getElementById('statKills').innerText = game.stats.kills;
+            document.getElementById('statGold').innerText = Math.round(game.stats.goldEarned);
+            document.getElementById('statFrontline').innerText = `${game.stats.peakFrontline}%`;
+            document.getElementById('statsContainer').classList.remove('hidden');
+
+            document.getElementById('startGameBtn').innerText = "PLAY AGAIN";
+            modal.classList.remove('opacity-0', 'pointer-events-none');
+        }
+
+        function gameLoop(timestamp) {
+            if (!game.lastTimestamp) game.lastTimestamp = timestamp;
+            let dt = (timestamp - game.lastTimestamp) / 1000;
+            game.lastTimestamp = timestamp;
+
+            dt = Math.min(dt, 0.1) * game.speed;
+
+            if (game.running) {
+                game.elapsedTime += dt;
+                game.gold += game.incomeRate * dt;
+                game.stats.goldEarned += game.incomeRate * dt;
+
+                game.chestTimer += dt;
+                if (game.chestTimer >= 22.0) {
+                    game.chestTimer = 0;
+                    game.chests.push(new GoldChest());
+                    showBanner("Treasure Chest Dropped!");
+                }
+
+                updateCooldowns(dt);
+                updateAI(dt);
+
+                game.playerCastle.update(dt);
+                game.enemyCastle.update(dt);
+
+                game.units.forEach(u => u.update(dt));
+                game.units = game.units.filter(u => u.hp > 0);
+
+                game.projectiles = game.projectiles.filter(p => !p.update(dt));
+                game.particles = game.particles.filter(p => !p.update(dt));
+                game.chests = game.chests.filter(c => !c.update(dt));
+
+                if (game.enemyCastle.hp <= 0) endGame(true);
+                else if (game.playerCastle.hp <= 0) endGame(false);
+
+                const mins = Math.floor(game.elapsedTime / 60).toString().padStart(2, '0');
+                const secs = Math.floor(game.elapsedTime % 60).toString().padStart(2, '0');
+                document.getElementById('timerText').innerHTML = `<i class="fa-regular fa-clock mr-1"></i>${mins}:${secs}`;
+
+                updateUI();
+            }
+
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            drawBackground();
+
+            if (game.playerCastle) game.playerCastle.draw();
+            if (game.enemyCastle) game.enemyCastle.draw();
+
+            game.chests.forEach(c => c.draw());
+            game.units.forEach(u => u.draw());
+            game.projectiles.forEach(p => p.draw());
+            game.particles.forEach(p => p.draw());
+
+            requestAnimationFrame(gameLoop);
+        }
+
+        requestAnimationFrame(gameLoop);
+    </script>
+</body>
+</html>

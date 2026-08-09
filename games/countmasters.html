@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>Count Masters 3D - Beatable & Random</title>
+    <title>Count Masters 3D - Glitch Free & Solvability Guaranteed</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Inter:wght@600;800&display=swap" rel="stylesheet">
@@ -181,7 +181,7 @@
         let scene, camera, renderer;
         let blueMaterial, redMaterial, trackMaterial;
         
-        let gameState = 'START'; // START, PLAYING, FINISH_RUN, GAMEOVER
+        let gameState = 'START';
         let currentLevel = 1;
         let totalCoins = 0;
         let levelLength = 180;
@@ -394,13 +394,12 @@
             return new THREE.CanvasTexture(canvas);
         }
 
-        function setupLevel() {
-            // Clean up old scene entities
+        function clearSceneEntities() {
             crowdMembers.forEach(m => scene.remove(m.mesh));
             crowdMembers = [];
 
             enemyGroups.forEach(eg => {
-                eg.members.forEach(m => scene.remove(m.mesh));
+                eg.members.forEach(m => eg.group.remove(m.mesh));
                 scene.remove(eg.group);
             });
             enemyGroups = [];
@@ -418,6 +417,10 @@
             particleSystems = [];
 
             if (trackMesh) scene.remove(trackMesh);
+        }
+
+        function setupLevel() {
+            clearSceneEntities();
 
             playerX = 0;
             playerZ = 0;
@@ -425,11 +428,10 @@
             finishClimbTimer = 0;
             highestStairReached = 1;
 
-            // Dynamic Level Scaling
             levelLength = 160 + (currentLevel * 15);
             forwardSpeed = baseSpeed + Math.min(0.10, currentLevel * 0.01);
 
-            // 1. Build Dynamic Track
+            // 1. Build Track
             const trackGeo = new THREE.BoxGeometry(10, 1, levelLength + 60);
             trackMesh = new THREE.Mesh(trackGeo, trackMaterial);
             trackMesh.position.set(0, -0.5, (levelLength + 10) / 2);
@@ -446,27 +448,28 @@
             rightRail.position.set(5.2, 0.3, (levelLength + 10) / 2);
             scene.add(rightRail);
 
-            // 2. Initial Crowd Member
+            // 2. Initial Player Crowd
             addCrowdMember(0, 0);
 
-            // 3. FULLY RANDOM & GUARANTEED SOLVABLE PROCEDURAL GENERATION
-            let currentZ = 30;
-            let maxPossibleCrowd = 1; // Tracks the theoretical max crowd if player chooses perfectly
+            // 3. SAFE & BEATABLE PROCEDURAL GENERATION
+            // Force first item to ALWAYS be a Gate at z=25 so player can safely grow crowd first!
+            let maxPossibleCrowd = spawnProceduralGatePair(25, 1);
+            let currentZ = 60; // Safe distance before any other obstacles/enemies spawn!
 
             while (currentZ < levelLength - 30) {
                 let randType = Math.random();
 
                 if (randType < 0.50) {
-                    // Spawn Math Gate Pair (Guaranteed at least 1 positive option)
+                    // Gate Pair
                     maxPossibleCrowd = spawnProceduralGatePair(currentZ, maxPossibleCrowd);
                     currentZ += 32;
                 } else if (randType < 0.75) {
-                    // Spawn Saw Blade Obstacle
-                    spawnSawBlade(currentZ, 0.07 + Math.min(0.06, currentLevel * 0.005));
+                    // Saw Blade
+                    spawnSawBlade(currentZ, 0.07 + Math.min(0.05, currentLevel * 0.005));
                     currentZ += 28;
                 } else {
-                    // Spawn Enemy Group (Scaled strictly lower than max possible crowd size)
-                    let maxAllowedEnemies = Math.max(2, Math.floor(maxPossibleCrowd * 0.65));
+                    // Enemy Group (Strictly capped relative to player's current potential size)
+                    let maxAllowedEnemies = Math.max(2, Math.floor(maxPossibleCrowd * 0.6));
                     let enemySize = Math.max(2, Math.floor(1 + Math.random() * maxAllowedEnemies));
 
                     spawnEnemyGroup(currentZ, enemySize);
@@ -475,7 +478,7 @@
                 }
             }
 
-            // 4. Multiplier Finish Staircase
+            // 4. Staircase
             spawnFinishStaircase(levelLength);
 
             updateCrowdDisplay();
@@ -485,21 +488,20 @@
             const gateGroup = new THREE.Group();
             gateGroup.position.z = zPos;
 
-            // Ensure at least ONE side is a positive modifier (+ or *) so level is solvable
-            const isLeftPositive = Math.random() > 0.5;
+            const isLeftPositive = Math.random() > 0.4;
 
             let leftOp = isLeftPositive ? (Math.random() > 0.5 ? '+' : '*') : '-';
             let rightOp = !isLeftPositive ? (Math.random() > 0.5 ? '+' : '*') : '-';
 
             let leftVal, rightVal;
 
-            if (leftOp === '+') leftVal = Math.floor(5 + Math.random() * 10 + currentLevel);
+            if (leftOp === '+') leftVal = Math.floor(5 + Math.random() * 8 + currentLevel);
             else if (leftOp === '*') leftVal = 2;
-            else leftVal = Math.floor(2 + Math.random() * 5);
+            else leftVal = Math.floor(2 + Math.random() * 4);
 
-            if (rightOp === '+') rightVal = Math.floor(5 + Math.random() * 10 + currentLevel);
+            if (rightOp === '+') rightVal = Math.floor(5 + Math.random() * 8 + currentLevel);
             else if (rightOp === '*') rightVal = 2;
-            else rightVal = Math.floor(2 + Math.random() * 5);
+            else rightVal = Math.floor(2 + Math.random() * 4);
 
             const leftData = { text: `${leftOp}${leftVal}`, val: leftVal, op: leftOp };
             const rightData = { text: `${rightOp}${rightVal}`, val: rightVal, op: rightOp };
@@ -528,7 +530,6 @@
                 rightData: rightData
             });
 
-            // Calculate theoretical max crowd yield on optimal path
             let optVal1 = leftOp === '+' ? maxCrowd + leftVal : (leftOp === '*' ? maxCrowd * leftVal : Math.max(1, maxCrowd - leftVal));
             let optVal2 = rightOp === '+' ? maxCrowd + rightVal : (rightOp === '*' ? maxCrowd * rightVal : Math.max(1, maxCrowd - rightVal));
             return Math.max(optVal1, optVal2);
@@ -575,7 +576,7 @@
             for (let i = 0; i < count; i++) {
                 const mesh = createCharacterMesh(redMaterial);
                 const angle = i * 0.7;
-                const r = 0.45 * Math.sqrt(i);
+                const r = 0.4 * Math.sqrt(i);
                 mesh.position.set(Math.cos(angle) * r, 0, Math.sin(angle) * r);
                 enemyCenter.add(mesh);
                 members.push({ mesh: mesh, localX: Math.cos(angle) * r, localZ: Math.sin(angle) * r });
@@ -621,7 +622,7 @@
         }
 
         function updateCrowdPositions() {
-            const spacing = 0.65;
+            const spacing = 0.55;
             crowdMembers.forEach((m, idx) => {
                 if (idx === 0) {
                     m.offsetX = 0;
@@ -633,7 +634,7 @@
                     m.offsetZ = r * Math.sin(phi);
                 }
 
-                const targetX = Math.max(-4.4, Math.min(4.4, playerX + m.offsetX));
+                const targetX = Math.max(-4.2, Math.min(4.2, playerX + m.offsetX));
                 const targetZ = playerZ + m.offsetZ;
 
                 m.mesh.position.x += (targetX - m.mesh.position.x) * 0.25;
@@ -673,7 +674,7 @@
 
             if (diff > 0) {
                 for (let i = 0; i < diff; i++) {
-                    addCrowdMember((Math.random() - 0.5) * 2, (Math.random() - 0.5) * 2);
+                    addCrowdMember((Math.random() - 0.5) * 1.5, (Math.random() - 0.5) * 1.5);
                 }
             } else if (diff < 0) {
                 const removeCount = Math.min(crowdMembers.length, Math.abs(diff));
@@ -693,18 +694,18 @@
         }
 
         function spawnPopParticles(pos, colorHex) {
-            const count = 8;
+            const count = 6;
             const pGroup = new THREE.Group();
             pGroup.position.copy(pos);
             const mat = new THREE.MeshBasicMaterial({ color: colorHex });
 
             const particles = [];
             for (let i = 0; i < count; i++) {
-                const pMesh = new THREE.Mesh(new THREE.SphereGeometry(0.12, 8, 8), mat);
+                const pMesh = new THREE.Mesh(new THREE.SphereGeometry(0.1, 8, 8), mat);
                 pMesh.userData = {
-                    vx: (Math.random() - 0.5) * 0.3,
-                    vy: Math.random() * 0.3 + 0.1,
-                    vz: (Math.random() - 0.5) * 0.3
+                    vx: (Math.random() - 0.5) * 0.25,
+                    vy: Math.random() * 0.25 + 0.1,
+                    vz: (Math.random() - 0.5) * 0.25
                 };
                 pGroup.add(pMesh);
                 particles.push(pMesh);
@@ -725,8 +726,8 @@
             window.addEventListener('pointermove', (e) => {
                 if (!isPointerDown || gameState !== 'PLAYING') return;
                 const deltaX = (e.clientX - pointerStartX) / window.innerWidth;
-                targetPlayerX = playerStartX + deltaX * 12;
-                targetPlayerX = Math.max(-4.2, Math.min(4.2, targetPlayerX));
+                targetPlayerX = playerStartX + deltaX * 10;
+                targetPlayerX = Math.max(-4.0, Math.min(4.0, targetPlayerX));
             });
 
             window.addEventListener('pointerup', () => { isPointerDown = false; });
@@ -759,10 +760,10 @@
         function animate() {
             requestAnimationFrame(animate);
 
-            // Particle Updates
+            // Particles
             for (let i = particleSystems.length - 1; i >= 0; i--) {
                 const ps = particleSystems[i];
-                ps.life -= 0.04;
+                ps.life -= 0.05;
                 ps.particles.forEach(p => {
                     p.position.x += p.userData.vx;
                     p.position.y += p.userData.vy;
@@ -776,9 +777,9 @@
             }
 
             if (gameState === 'PLAYING') {
-                if (keyLeft) targetPlayerX -= 0.22;
-                if (keyRight) targetPlayerX += 0.22;
-                targetPlayerX = Math.max(-4.2, Math.min(4.2, targetPlayerX));
+                if (keyLeft) targetPlayerX -= 0.20;
+                if (keyRight) targetPlayerX += 0.20;
+                targetPlayerX = Math.max(-4.0, Math.min(4.0, targetPlayerX));
 
                 playerX += (targetPlayerX - playerX) * 0.25;
                 playerZ += forwardSpeed;
@@ -804,14 +805,14 @@
                 const runnersToRemove = new Set();
                 obstacleEntities.forEach(obs => {
                     obs.mesh.position.x += obs.speed * obs.dir;
-                    if (obs.mesh.position.x > 3.2 || obs.mesh.position.x < -3.2) {
+                    if (obs.mesh.position.x > 3.0 || obs.mesh.position.x < -3.0) {
                         obs.dir *= -1;
                     }
                     obs.mesh.children[0].rotation.z += 0.2;
 
                     if (Math.abs(playerZ - obs.z) < 1.2) {
                         crowdMembers.forEach((m, idx) => {
-                            if (Math.abs(m.mesh.position.x - obs.mesh.position.x) < 1.5) {
+                            if (Math.abs(m.mesh.position.x - obs.mesh.position.x) < 1.3) {
                                 runnersToRemove.add(idx);
                             }
                         });
@@ -821,7 +822,7 @@
                 if (runnersToRemove.size > 0) {
                     const sortedIndices = Array.from(runnersToRemove).sort((a, b) => b - a);
                     sortedIndices.forEach(idx => {
-                        if (crowdMembers.length > 0) {
+                        if (idx < crowdMembers.length) {
                             const removed = crowdMembers.splice(idx, 1)[0];
                             spawnPopParticles(removed.mesh.position, 0x0284c7);
                             scene.remove(removed.mesh);
@@ -833,7 +834,7 @@
                     }
                 }
 
-                // 3. Enemy Clash Logic
+                // 3. Enemy Clashes (Fixed Safe Splicing Bug)
                 enemyGroups.forEach(eg => {
                     if (eg.active) {
                         const distToPlayer = eg.z - playerZ;
@@ -879,7 +880,7 @@
                     audio.playWin();
                 }
 
-                const crowdRadius = Math.sqrt(crowdMembers.length) * 0.65;
+                const crowdRadius = Math.sqrt(crowdMembers.length) * 0.55;
                 camera.position.x = playerX * 0.5;
                 camera.position.z = playerZ - 12 - crowdRadius * 0.5;
                 camera.position.y = 8 + crowdRadius * 0.4;

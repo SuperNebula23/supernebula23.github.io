@@ -2,8 +2,261 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>2048</title>
-  <link rel="stylesheet" href="style.css">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>2048 - Single File</title>
+  <style>
+    @import url("https://fonts.googleapis.com/css?family=Clear+Sans:bold,normal&display=swap");
+
+    html, body {
+      margin: 0;
+      padding: 0;
+      background: #faf8ef;
+      color: #776e65;
+      font-family: "Clear Sans", "Helvetica Neue", Arial, sans-serif;
+      font-size: 18px;
+    }
+
+    body {
+      margin: 40px 0;
+    }
+
+    .container {
+      width: 500px;
+      margin: 0 auto;
+    }
+
+    .heading:after {
+      content: "";
+      display: block;
+      clear: both;
+    }
+
+    h1.title {
+      font-size: 80px;
+      font-weight: bold;
+      margin: 0;
+      display: block;
+      float: left;
+    }
+
+    .scores-container {
+      float: right;
+      text-align: right;
+    }
+
+    .score-container, .best-container, .top-container {
+      position: relative;
+      display: inline-block;
+      background: #bbada0;
+      padding: 15px 18px;
+      font-size: 25px;
+      height: 25px;
+      line-height: 47px;
+      font-weight: bold;
+      border-radius: 3px;
+      color: white;
+      margin-top: 8px;
+      text-align: center;
+      min-width: 45px;
+    }
+
+    .score-container:after, .best-container:after, .top-container:after {
+      position: absolute;
+      width: 100%;
+      top: 10px;
+      left: 0;
+      text-transform: uppercase;
+      font-size: 11px;
+      line-height: 13px;
+      text-align: center;
+      color: #eee4da;
+      font-weight: bold;
+    }
+
+    .score-container:after { content: "SCORE"; }
+    .best-container:after { content: "BEST"; }
+    .top-container:after { content: "BEST TILE"; }
+
+    .above-game:after {
+      content: "";
+      display: block;
+      clear: both;
+    }
+
+    .game-intro {
+      float: left;
+      line-height: 42px;
+      margin-bottom: 0;
+    }
+
+    .restart-button {
+      display: inline-block;
+      background: #8f7a66;
+      border-radius: 3px;
+      padding: 0 20px;
+      text-decoration: none;
+      color: #f9f6f2;
+      height: 40px;
+      line-height: 40px;
+      cursor: pointer;
+      display: block;
+      text-align: center;
+      float: right;
+      font-weight: bold;
+    }
+
+    .game-container {
+      margin-top: 40px;
+      position: relative;
+      padding: 15px;
+      cursor: default;
+      background: #bbada0;
+      border-radius: 6px;
+      width: 500px;
+      height: 500px;
+      box-sizing: border-box;
+    }
+
+    .game-message {
+      display: none;
+      position: absolute;
+      top: 0;
+      right: 0;
+      bottom: 0;
+      left: 0;
+      background: rgba(238, 228, 218, 0.73);
+      z-index: 100;
+      text-align: center;
+      animation: fade-in 800ms ease;
+    }
+
+    .game-message p {
+      font-size: 60px;
+      font-weight: bold;
+      height: 60px;
+      line-height: 60px;
+      margin-top: 170px;
+      margin-bottom: 0;
+    }
+
+    .game-message .lower {
+      margin-top: 30px;
+    }
+
+    .game-message a {
+      display: inline-block;
+      background: #8f7a66;
+      border-radius: 3px;
+      padding: 0 20px;
+      text-decoration: none;
+      color: #f9f6f2;
+      height: 40px;
+      line-height: 40px;
+      margin-left: 9px;
+      cursor: pointer;
+    }
+
+    .game-message.game-won {
+      background: rgba(237, 194, 46, 0.5);
+      color: #f9f6f2;
+      display: block;
+    }
+
+    .game-message.game-over {
+      display: block;
+    }
+
+    .grid-container {
+      position: absolute;
+      z-index: 1;
+    }
+
+    .grid-row {
+      margin-bottom: 15px;
+    }
+
+    .grid-row:after {
+      content: "";
+      display: block;
+      clear: both;
+    }
+
+    .grid-cell {
+      width: 106.25px;
+      height: 106.25px;
+      margin-right: 15px;
+      float: left;
+      border-radius: 3px;
+      background: rgba(238, 228, 218, 0.35);
+    }
+
+    .grid-cell:last-child {
+      margin-right: 0;
+    }
+
+    .tile-container {
+      position: absolute;
+      z-index: 2;
+    }
+
+    .tile, .tile .tile-inner {
+      width: 107px;
+      height: 107px;
+      line-height: 107px;
+    }
+
+    .tile {
+      position: absolute;
+      transition: 100ms ease-in-out;
+      transition-property: transform;
+    }
+
+    .tile .tile-inner {
+      border-radius: 3px;
+      background: #eee4da;
+      text-align: center;
+      font-weight: bold;
+      z-index: 10;
+      font-size: 55px;
+    }
+
+    /* Tile Colors */
+    .tile-2 .tile-inner { background: #eee4da; color: #776e65; }
+    .tile-4 .tile-inner { background: #ede0c8; color: #776e65; }
+    .tile-8 .tile-inner { background: #f2b179; color: #f9f6f2; }
+    .tile-16 .tile-inner { background: #f59563; color: #f9f6f2; }
+    .tile-32 .tile-inner { background: #f67c5f; color: #f9f6f2; }
+    .tile-64 .tile-inner { background: #f65e3b; color: #f9f6f2; }
+    .tile-128 .tile-inner { background: #edcf72; color: #f9f6f2; font-size: 45px; }
+    .tile-256 .tile-inner { background: #edcc61; color: #f9f6f2; font-size: 45px; }
+    .tile-512 .tile-inner { background: #edc850; color: #f9f6f2; font-size: 45px; }
+    .tile-1024 .tile-inner { background: #edc53f; color: #f9f6f2; font-size: 35px; }
+    .tile-2048 .tile-inner { background: #edc22e; color: #f9f6f2; font-size: 35px; }
+    .tile-super .tile-inner { background: #3c3a32; color: #f9f6f2; font-size: 30px; }
+
+    /* Tile Positions */
+    .tile-position-1-1 { transform: translate(0px, 0px); }
+    .tile-position-1-2 { transform: translate(0px, 121px); }
+    .tile-position-1-3 { transform: translate(0px, 242px); }
+    .tile-position-1-4 { transform: translate(0px, 363px); }
+    .tile-position-2-1 { transform: translate(121px, 0px); }
+    .tile-position-2-2 { transform: translate(121px, 121px); }
+    .tile-position-2-3 { transform: translate(121px, 242px); }
+    .tile-position-2-4 { transform: translate(121px, 363px); }
+    .tile-position-3-1 { transform: translate(242px, 0px); }
+    .tile-position-3-2 { transform: translate(242px, 121px); }
+    .tile-position-3-3 { transform: translate(242px, 242px); }
+    .tile-position-3-4 { transform: translate(242px, 363px); }
+    .tile-position-4-1 { transform: translate(363px, 0px); }
+    .tile-position-4-2 { transform: translate(363px, 121px); }
+    .tile-position-4-3 { transform: translate(363px, 242px); }
+    .tile-position-4-4 { transform: translate(363px, 363px); }
+
+    @keyframes fade-in {
+      0% { opacity: 0; }
+      100% { opacity: 1; }
+    }
+  </style>
 </head>
 <body>
   <div class="container">
@@ -25,35 +278,23 @@
       <div class="game-message">
         <p></p>
         <div class="lower">
-	        <a class="keep-playing-button">Keep going</a>
+          <a class="keep-playing-button">Keep going</a>
           <a class="retry-button">Try again</a>
         </div>
       </div>
 
       <div class="grid-container">
         <div class="grid-row">
-          <div class="grid-cell"></div>
-          <div class="grid-cell"></div>
-          <div class="grid-cell"></div>
-          <div class="grid-cell"></div>
+          <div class="grid-cell"></div><div class="grid-cell"></div><div class="grid-cell"></div><div class="grid-cell"></div>
         </div>
         <div class="grid-row">
-          <div class="grid-cell"></div>
-          <div class="grid-cell"></div>
-          <div class="grid-cell"></div>
-          <div class="grid-cell"></div>
+          <div class="grid-cell"></div><div class="grid-cell"></div><div class="grid-cell"></div><div class="grid-cell"></div>
         </div>
         <div class="grid-row">
-          <div class="grid-cell"></div>
-          <div class="grid-cell"></div>
-          <div class="grid-cell"></div>
-          <div class="grid-cell"></div>
+          <div class="grid-cell"></div><div class="grid-cell"></div><div class="grid-cell"></div><div class="grid-cell"></div>
         </div>
         <div class="grid-row">
-          <div class="grid-cell"></div>
-          <div class="grid-cell"></div>
-          <div class="grid-cell"></div>
-          <div class="grid-cell"></div>
+          <div class="grid-cell"></div><div class="grid-cell"></div><div class="grid-cell"></div><div class="grid-cell"></div>
         </div>
       </div>
 
@@ -61,15 +302,428 @@
     </div>
   </div>
 
-  <script src="js/bind_polyfill.js"></script>
-  <script src="js/classlist_polyfill.js"></script>
-  <script src="js/animframe_polyfill.js"></script>
-  <script src="js/keyboard_input_manager.js"></script>
-  <script src="js/html_actuator.js"></script>
-  <script src="js/grid.js"></script>
-  <script src="js/tile.js"></script>
-  <script src="js/local_storage_manager.js"></script>
-  <script src="js/game_manager.js"></script>
-  <script src="js/application.js"></script>
+  <script>
+    document.addEventListener("DOMContentLoaded", function () {
+      // --- LocalStorage Manager ---
+      function LocalStorageManager() {
+        this.bestScoreKey = "2048_bestScore";
+        this.highestTileKey = "2048_highestTile";
+        this.gameStateKey = "2048_gameState";
+      }
+      LocalStorageManager.prototype.getBestScore = function () {
+        return parseInt(localStorage.getItem(this.bestScoreKey) || 0, 10);
+      };
+      LocalStorageManager.prototype.setBestScore = function (score) {
+        localStorage.setItem(this.bestScoreKey, score);
+      };
+      LocalStorageManager.prototype.getHighestTile = function () {
+        return parseInt(localStorage.getItem(this.highestTileKey) || 2, 10);
+      };
+      LocalStorageManager.prototype.setHighestTile = function (val) {
+        localStorage.setItem(this.highestTileKey, val);
+      };
+      LocalStorageManager.prototype.getGameState = function () {
+        var state = localStorage.getItem(this.gameStateKey);
+        return state ? JSON.parse(state) : null;
+      };
+      LocalStorageManager.prototype.setGameState = function (state) {
+        localStorage.setItem(this.gameStateKey, JSON.stringify(state));
+      };
+      LocalStorageManager.prototype.clearGameState = function () {
+        localStorage.removeItem(this.gameStateKey);
+      };
+
+      // --- Grid & Tile ---
+      function Tile(position, value) {
+        this.x = position.x;
+        this.y = position.y;
+        this.value = value || 2;
+        this.previousPosition = null;
+        this.mergedFrom = null;
+      }
+      Tile.prototype.savePosition = function () {
+        this.previousPosition = { x: this.x, y: this.y };
+      };
+      Tile.prototype.updatePosition = function (position) {
+        this.x = position.x;
+        this.y = position.y;
+      };
+      Tile.prototype.serialize = function () {
+        return { position: { x: this.x, y: this.y }, value: this.value };
+      };
+
+      function Grid(size, previousState) {
+        this.size = size;
+        this.cells = previousState ? this.fromState(previousState) : this.empty();
+      }
+      Grid.prototype.empty = function () {
+        var cells = [];
+        for (var x = 0; x < this.size; x++) {
+          var row = cells[x] = [];
+          for (var y = 0; y < this.size; y++) { row.push(null); }
+        }
+        return cells;
+      };
+      Grid.prototype.fromState = function (state) {
+        var cells = [];
+        for (var x = 0; x < this.size; x++) {
+          var row = cells[x] = [];
+          for (var y = 0; y < this.size; y++) {
+            var tile = state[x][y];
+            row.push(tile ? new Tile(tile.position, tile.value) : null);
+          }
+        }
+        return cells;
+      };
+      Grid.prototype.randomAvailableCell = function () {
+        var cells = this.availableCells();
+        if (cells.length) return cells[Math.floor(Math.random() * cells.length)];
+      };
+      Grid.prototype.availableCells = function () {
+        var cells = [];
+        this.eachCell(function (x, y, tile) { if (!tile) cells.push({ x: x, y: y }); });
+        return cells;
+      };
+      Grid.prototype.eachCell = function (callback) {
+        for (var x = 0; x < this.size; x++) {
+          for (var y = 0; y < this.size; y++) {
+            callback(x, y, this.cells[x][y]);
+          }
+        }
+      };
+      Grid.prototype.cellsAvailable = function () { return !!this.availableCells().length; };
+      Grid.prototype.cellAvailable = function (cell) { return !this.cellOccupied(cell); };
+      Grid.prototype.cellOccupied = function (cell) { return !!this.cellContent(cell); };
+      Grid.prototype.cellContent = function (cell) {
+        return this.withinBounds(cell) ? this.cells[cell.x][cell.y] : null;
+      };
+      Grid.prototype.insertTile = function (tile) { this.cells[tile.x][tile.y] = tile; };
+      Grid.prototype.removeTile = function (tile) { this.cells[tile.x][tile.y] = null; };
+      Grid.prototype.withinBounds = function (position) {
+        return position.x >= 0 && position.x < this.size && position.y >= 0 && position.y < this.size;
+      };
+      Grid.prototype.serialize = function () {
+        var cellState = [];
+        for (var x = 0; x < this.size; x++) {
+          var row = cellState[x] = [];
+          for (var y = 0; y < this.size; y++) {
+            row.push(this.cells[x][y] ? this.cells[x][y].serialize() : null);
+          }
+        }
+        return { size: this.size, cells: cellState };
+      };
+
+      // --- Actuator ---
+      function HTMLActuator() {
+        this.tileContainer = document.querySelector(".tile-container");
+        this.scoreContainer = document.querySelector(".score-container");
+        this.bestContainer = document.querySelector(".best-container");
+        this.topContainer = document.querySelector(".top-container");
+        this.messageContainer = document.querySelector(".game-message");
+        this.score = 0;
+      }
+      HTMLActuator.prototype.actuate = function (grid, metadata) {
+        var self = this;
+        window.requestAnimationFrame(function () {
+          self.clearContainer(self.tileContainer);
+          grid.cells.forEach(function (column) {
+            column.forEach(function (cell) {
+              if (cell) self.addTile(cell);
+            });
+          });
+          self.updateScore(metadata.score);
+          self.bestContainer.textContent = metadata.bestScore;
+          self.topContainer.textContent = metadata.highestTile;
+
+          if (metadata.terminated) {
+            if (metadata.over) self.message(false);
+            else if (metadata.won) self.message(true);
+          }
+        });
+      };
+      HTMLActuator.prototype.clearContainer = function (container) {
+        while (container.firstChild) container.removeChild(container.firstChild);
+      };
+      HTMLActuator.prototype.addTile = function (tile) {
+        var wrapper = document.createElement("div");
+        var inner = document.createElement("div");
+        var position = tile.previousPosition || { x: tile.x, y: tile.y };
+        var positionClass = "tile-position-" + (position.x + 1) + "-" + (position.y + 1);
+        var valueClass = tile.value <= 2048 ? "tile-" + tile.value : "tile-super";
+
+        wrapper.className = "tile " + valueClass + " " + positionClass;
+        inner.className = "tile-inner";
+        inner.textContent = tile.value;
+
+        if (tile.previousPosition) {
+          window.requestAnimationFrame(function () {
+            wrapper.className = "tile " + valueClass + " tile-position-" + (tile.x + 1) + "-" + (tile.y + 1);
+          });
+        }
+        wrapper.appendChild(inner);
+        this.tileContainer.appendChild(wrapper);
+      };
+      HTMLActuator.prototype.updateScore = function (score) {
+        this.clearContainer(this.scoreContainer);
+        var difference = score - this.score;
+        this.score = score;
+        this.scoreContainer.textContent = this.score;
+      };
+      HTMLActuator.prototype.message = function (won) {
+        var type = won ? "game-won" : "game-over";
+        var message = won ? "You win!" : "Game over!";
+        this.messageContainer.classList.add(type);
+        this.messageContainer.getElementsByTagName("p")[0].textContent = message;
+      };
+      HTMLActuator.prototype.clearMessage = function () {
+        this.messageContainer.classList.remove("game-won", "game-over");
+      };
+
+      // --- Input Manager ---
+      function KeyboardInputManager() {
+        this.events = {};
+        this.listen();
+      }
+      KeyboardInputManager.prototype.on = function (event, callback) {
+        if (!this.events[event]) this.events[event] = [];
+        this.events[event].push(callback);
+      };
+      KeyboardInputManager.prototype.emit = function (event, data) {
+        var callbacks = this.events[event];
+        if (callbacks) callbacks.forEach(function (cb) { cb(data); });
+      };
+      KeyboardInputManager.prototype.listen = function () {
+        var self = this;
+        var map = { 38: 0, 39: 1, 40: 2, 37: 3, 75: 0, 76: 1, 74: 2, 72: 3, 87: 0, 68: 1, 83: 2, 65: 3 };
+        document.addEventListener("keydown", function (event) {
+          var modifiers = event.altKey || event.ctrlKey || event.metaKey || event.shiftKey;
+          var mapped = map[event.which];
+          if (!modifiers && mapped !== undefined) {
+            event.preventDefault();
+            self.emit("move", mapped);
+          }
+          if (!modifiers && event.which === 82) self.restart.call(self, event);
+        });
+
+        this.bindButton(".restart-button", this.restart);
+        this.bindButton(".retry-button", this.restart);
+        this.bindButton(".keep-playing-button", this.keepPlaying);
+      };
+      KeyboardInputManager.prototype.restart = function (e) {
+        if (e) e.preventDefault();
+        this.emit("restart");
+      };
+      KeyboardInputManager.prototype.keepPlaying = function (e) {
+        if (e) e.preventDefault();
+        this.emit("keepPlaying");
+      };
+      KeyboardInputManager.prototype.bindButton = function (selector, fn) {
+        var button = document.querySelector(selector);
+        if (button) button.addEventListener("click", fn.bind(this));
+      };
+
+      // --- Game Manager ---
+      function GameManager(size, InputManager, Actuator, StorageManager) {
+        this.size = size;
+        this.inputManager = new InputManager();
+        this.storageManager = new StorageManager();
+        this.actuator = new Actuator();
+        this.startTiles = 2;
+
+        this.inputManager.on("move", this.move.bind(this));
+        this.inputManager.on("restart", this.restart.bind(this));
+        this.inputManager.on("keepPlaying", this.keepPlaying.bind(this));
+        this.setup();
+      }
+      GameManager.prototype.restart = function () {
+        this.storageManager.clearGameState();
+        this.actuator.clearMessage();
+        this.setup();
+      };
+      GameManager.prototype.keepPlaying = function () {
+        this.keepPlayingState = true;
+        this.actuator.clearMessage();
+      };
+      GameManager.prototype.isGameTerminated = function () {
+        return this.over || (this.won && !this.keepPlayingState);
+      };
+      GameManager.prototype.setup = function () {
+        var previousState = this.storageManager.getGameState();
+        if (previousState) {
+          this.grid = new Grid(previousState.grid.size, previousState.grid.cells);
+          this.score = previousState.score;
+          this.over = previousState.over;
+          this.won = previousState.won;
+          this.keepPlayingState = previousState.keepPlaying;
+        } else {
+          this.grid = new Grid(this.size);
+          this.score = 0;
+          this.over = false;
+          this.won = false;
+          this.keepPlayingState = false;
+          this.addStartTiles();
+        }
+        this.actuate();
+      };
+      GameManager.prototype.addStartTiles = function () {
+        for (var i = 0; i < this.startTiles; i++) this.addRandomTile();
+      };
+      GameManager.prototype.addRandomTile = function () {
+        if (this.grid.cellsAvailable()) {
+          var value = Math.random() < 0.9 ? 2 : 4;
+          var tile = new Tile(this.grid.randomAvailableCell(), value);
+          this.grid.insertTile(tile);
+        }
+      };
+      GameManager.prototype.getHighestTileOnGrid = function () {
+        var max = 2;
+        this.grid.eachCell(function (x, y, tile) {
+          if (tile && tile.value > max) max = tile.value;
+        });
+        return max;
+      };
+      GameManager.prototype.actuate = function () {
+        if (this.storageManager.getBestScore() < this.score) {
+          this.storageManager.setBestScore(this.score);
+        }
+        var currentMax = this.getHighestTileOnGrid();
+        var allTimeMax = this.storageManager.getHighestTile();
+        if (currentMax > allTimeMax) {
+          allTimeMax = currentMax;
+          this.storageManager.setHighestTile(allTimeMax);
+        }
+
+        if (this.isGameTerminated()) {
+          this.storageManager.clearGameState();
+        } else {
+          this.storageManager.setGameState(this.serialize());
+        }
+
+        this.actuator.actuate(this.grid, {
+          score: this.score,
+          over: this.over,
+          won: this.won,
+          bestScore: this.storageManager.getBestScore(),
+          highestTile: allTimeMax,
+          terminated: this.isGameTerminated()
+        });
+      };
+      GameManager.prototype.serialize = function () {
+        return {
+          grid: this.grid.serialize(),
+          score: this.score,
+          over: this.over,
+          won: this.won,
+          keepPlaying: this.keepPlayingState
+        };
+      };
+      GameManager.prototype.prepareTiles = function () {
+        this.grid.eachCell(function (x, y, tile) {
+          if (tile) {
+            tile.mergedFrom = null;
+            tile.savePosition();
+          }
+        });
+      };
+      GameManager.prototype.moveTile = function (tile, cell) {
+        this.grid.cells[tile.x][tile.y] = null;
+        this.grid.cells[cell.x][cell.y] = tile;
+        tile.updatePosition(cell);
+      };
+      GameManager.prototype.move = function (direction) {
+        var self = this;
+        if (this.isGameTerminated()) return;
+        var cell, tile;
+        var vector = this.getVector(direction);
+        var traversals = this.buildTraversals(vector);
+        var moved = false;
+
+        this.prepareTiles();
+
+        traversals.x.forEach(function (x) {
+          traversals.y.forEach(function (y) {
+            cell = { x: x, y: y };
+            tile = self.grid.cellContent(cell);
+
+            if (tile) {
+              var positions = self.findFarthestPosition(cell, vector);
+              var next = self.grid.cellContent(positions.next);
+
+              if (next && next.value === tile.value && !next.mergedFrom) {
+                var merged = new Tile(positions.next, tile.value * 2);
+                merged.mergedFrom = [tile, next];
+
+                self.grid.insertTile(merged);
+                self.grid.removeTile(tile);
+                tile.updatePosition(positions.next);
+
+                self.score += merged.value;
+                if (merged.value === 2048) self.won = true;
+              } else {
+                self.moveTile(tile, positions.farthest);
+              }
+
+              if (!self.positionsEqual(cell, tile)) moved = true;
+            }
+          });
+        });
+
+        if (moved) {
+          this.addRandomTile();
+          if (!this.movesAvailable()) this.over = true;
+          this.actuate();
+        }
+      };
+      GameManager.prototype.getVector = function (direction) {
+        var map = { 0: { x: 0, y: -1 }, 1: { x: 1, y: 0 }, 2: { x: 0, y: 1 }, 3: { x: -1, y: 0 } };
+        return map[direction];
+      };
+      GameManager.prototype.buildTraversals = function (vector) {
+        var traversals = { x: [], y: [] };
+        for (var pos = 0; pos < this.size; pos++) {
+          traversals.x.push(pos);
+          traversals.y.push(pos);
+        }
+        if (vector.x === 1) traversals.x = traversals.x.reverse();
+        if (vector.y === 1) traversals.y = traversals.y.reverse();
+        return traversals;
+      };
+      GameManager.prototype.findFarthestPosition = function (cell, vector) {
+        var previous;
+        do {
+          previous = cell;
+          cell = { x: previous.x + vector.x, y: previous.y + vector.y };
+        } while (this.grid.withinBounds(cell) && this.grid.cellAvailable(cell));
+        return { farthest: previous, next: cell };
+      };
+      GameManager.prototype.movesAvailable = function () {
+        return this.grid.cellsAvailable() || this.tileMatchesAvailable();
+      };
+      GameManager.prototype.tileMatchesAvailable = function () {
+        var self = this;
+        var tile;
+        for (var x = 0; x < this.size; x++) {
+          for (var y = 0; y < this.size; y++) {
+            tile = this.grid.cellContent({ x: x, y: y });
+            if (tile) {
+              for (var direction = 0; direction < 4; direction++) {
+                var vector = self.getVector(direction);
+                var cell = { x: x + vector.x, y: y + vector.y };
+                var other = self.grid.cellContent(cell);
+                if (other && other.value === tile.value) return true;
+              }
+            }
+          }
+        }
+        return false;
+      };
+      GameManager.prototype.positionsEqual = function (first, second) {
+        return first.x === second.x && first.y === second.y;
+      };
+
+      // Run Game
+      new GameManager(4, KeyboardInputManager, HTMLActuator, LocalStorageManager);
+    });
+  </script>
 </body>
 </html>

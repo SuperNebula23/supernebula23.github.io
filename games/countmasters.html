@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>Count Masters 3D - Fixed & Long Levels</title>
+    <title>Count Masters 3D - Fixed Textures & Action Packed</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Inter:wght@600;800&display=swap" rel="stylesheet">
@@ -184,7 +184,7 @@
         let gameState = 'START';
         let currentLevel = 1;
         let totalCoins = 0;
-        let levelLength = 450; // LONGER TRACKS
+        let levelLength = 500;
         let baseSpeed = 0.26;
         let forwardSpeed = 0.26;
         let playerX = 0;
@@ -450,8 +450,7 @@
             finishClimbTimer = 0;
             highestStairReached = 1;
 
-            // Significantly Longer Track Scaling
-            levelLength = 400 + (currentLevel * 50);
+            levelLength = 450 + (currentLevel * 50);
             forwardSpeed = baseSpeed + Math.min(0.12, currentLevel * 0.008);
 
             // 1. Build Track
@@ -474,33 +473,37 @@
             // 2. Initial Player Crowd
             addCrowdMember(0, 0);
 
-            // 3. SAFE & BEATABLE PROCEDURAL GENERATION (LONGER DISTANCES)
-            let maxPossibleCrowd = spawnProceduralGatePair(30, 1);
-            let currentZ = 70;
+            // 3. PACKED & HIGH-DENSITY PROCEDURAL GENERATION
+            let maxPossibleCrowd = spawnProceduralGatePair(22, 1);
+            let currentZ = 42;
 
             while (currentZ < levelLength - 40) {
                 let randType = Math.random();
 
-                if (randType < 0.45) {
+                if (randType < 0.40) {
                     // Gate Pair
                     maxPossibleCrowd = spawnProceduralGatePair(currentZ, maxPossibleCrowd);
-                    currentZ += 38;
-                } else if (randType < 0.72) {
-                    // Saw Blade
-                    spawnSawBlade(currentZ, 0.07 + Math.min(0.05, currentLevel * 0.005));
-                    currentZ += 32;
+                    currentZ += 22;
+                } else if (randType < 0.70) {
+                    // Saw Blade or Swinging Pendulum
+                    if (Math.random() > 0.5) {
+                        spawnSawBlade(currentZ, 0.07 + Math.min(0.05, currentLevel * 0.005));
+                    } else {
+                        spawnPendulumHammer(currentZ);
+                    }
+                    currentZ += 20;
                 } else {
                     // Enemy Group
-                    let maxAllowedEnemies = Math.max(2, Math.floor(maxPossibleCrowd * 0.65));
-                    let enemySize = Math.max(2, Math.floor(1 + Math.random() * maxAllowedEnemies));
+                    let maxAllowedEnemies = Math.max(3, Math.floor(maxPossibleCrowd * 0.55));
+                    let enemySize = Math.max(2, Math.floor(2 + Math.random() * maxAllowedEnemies));
 
                     spawnEnemyGroup(currentZ, enemySize);
                     maxPossibleCrowd = Math.max(1, maxPossibleCrowd - enemySize);
-                    currentZ += 40;
+                    currentZ += 24;
                 }
             }
 
-            // 4. Clean Single Staircase
+            // 4. Clean Single Staircase with Correct Texture Orientation
             spawnFinishStaircase(levelLength);
 
             updateCrowdDisplay();
@@ -510,7 +513,7 @@
             const gateGroup = new THREE.Group();
             gateGroup.position.z = zPos;
 
-            const isLeftPositive = Math.random() > 0.4;
+            const isLeftPositive = Math.random() > 0.35;
 
             let leftOp = isLeftPositive ? (Math.random() > 0.5 ? '+' : '*') : '-';
             let rightOp = !isLeftPositive ? (Math.random() > 0.5 ? '+' : '*') : '-';
@@ -590,6 +593,33 @@
             });
         }
 
+        function spawnPendulumHammer(zPos) {
+            const pendulumGroup = new THREE.Group();
+            pendulumGroup.position.set(0, 6.0, zPos);
+
+            const rodGeo = new THREE.CylinderGeometry(0.1, 0.1, 5.5);
+            const rodMat = new THREE.MeshStandardMaterial({ color: 0x475569 });
+            const rod = new THREE.Mesh(rodGeo, rodMat);
+            rod.position.y = -2.75;
+            pendulumGroup.add(rod);
+
+            const headGeo = new THREE.BoxGeometry(1.8, 1.2, 1.2);
+            const headMat = new THREE.MeshStandardMaterial({ color: 0xd97706, metalness: 0.6 });
+            const head = new THREE.Mesh(headGeo, headMat);
+            head.position.y = -5.5;
+            head.castShadow = true;
+            pendulumGroup.add(head);
+
+            scene.add(pendulumGroup);
+            obstacleEntities.push({
+                mesh: pendulumGroup,
+                z: zPos,
+                type: 'PENDULUM',
+                swingSpeed: 0.04 + Math.random() * 0.02,
+                angle: Math.random() * Math.PI
+            });
+        }
+
         function spawnEnemyGroup(zPos, count) {
             const members = [];
             const enemyCenter = new THREE.Group();
@@ -615,32 +645,38 @@
                 const mult = i + 1;
                 const stairGeo = new THREE.BoxGeometry(10, 0.8 * mult, 3.5);
                 const stairMat = new THREE.MeshPhongMaterial({ color: colors[i % colors.length] });
-                const stair = new THREE.Mesh(stairGeo, stairMat);
-                stair.position.set(0, (0.8 * mult) / 2, startZ + i * 3.5);
-                stair.receiveShadow = true;
 
-                // Clean 2D Canvas texture painted ONLY on the step face (no duplicate floating planes)
+                // Clean 2D Canvas texture with CORRECT orientation (Flipped properly)
                 const canvas = document.createElement('canvas');
-                canvas.width = 256;
-                canvas.height = 128;
+                canvas.width = 512;
+                canvas.height = 256;
                 const ctx = canvas.getContext('2d');
+
+                // Clear background
                 ctx.fillStyle = '#ffffff';
-                ctx.fillRect(0, 0, 256, 128);
+                ctx.fillRect(0, 0, 512, 256);
+
+                // Correct Upside-Down Canvas Transformation
+                ctx.translate(256, 128);
+                ctx.scale(-1, -1);
+
                 ctx.fillStyle = '#0f172a';
-                ctx.font = '900 70px "Fredoka One", sans-serif';
+                ctx.font = '900 130px "Fredoka One", sans-serif';
                 ctx.textAlign = 'center';
                 ctx.textBaseline = 'middle';
-                ctx.fillText(`${mult}x`, 128, 64);
+                ctx.fillText(`${mult}x`, 0, 0);
 
                 const tex = new THREE.CanvasTexture(canvas);
                 const stepFaceMat = new THREE.MeshBasicMaterial({ map: tex });
 
-                // Apply texture strictly to step front
+                // Map texture directly to step front face
                 const faceMaterials = [
                     stairMat, stairMat, stairMat, stairMat,
                     stairMat, stepFaceMat
                 ];
-                stair.material = faceMaterials;
+                const stair = new THREE.Mesh(stairGeo, faceMaterials);
+                stair.position.set(0, (0.8 * mult) / 2, startZ + i * 3.5);
+                stair.receiveShadow = true;
 
                 scene.add(stair);
                 finishStairs.push({ mesh: stair, mult: mult });
@@ -841,18 +877,27 @@
                     }
                 });
 
-                // 2. Saw Blade Collisions
+                // 2. Obstacle Collisions (Saw Blades & Pendulum Hammers)
                 const runnersToRemove = new Set();
                 obstacleEntities.forEach(obs => {
-                    obs.mesh.position.x += obs.speed * obs.dir;
-                    if (obs.mesh.position.x > 3.0 || obs.mesh.position.x < -3.0) {
-                        obs.dir *= -1;
+                    let obsX = obs.mesh.position.x;
+
+                    if (obs.type === 'SAW') {
+                        obs.mesh.position.x += obs.speed * obs.dir;
+                        if (obs.mesh.position.x > 3.0 || obs.mesh.position.x < -3.0) {
+                            obs.dir *= -1;
+                        }
+                        obs.mesh.children[0].rotation.z += 0.2;
+                        obsX = obs.mesh.position.x;
+                    } else if (obs.type === 'PENDULUM') {
+                        obs.angle += obs.swingSpeed;
+                        obs.mesh.rotation.z = Math.sin(obs.angle) * 1.1;
+                        obsX = Math.sin(obs.mesh.rotation.z) * -5.5;
                     }
-                    obs.mesh.children[0].rotation.z += 0.2;
 
                     if (Math.abs(playerZ - obs.z) < 1.2) {
                         crowdMembers.forEach((m, idx) => {
-                            if (Math.abs(m.mesh.position.x - obs.mesh.position.x) < 1.3) {
+                            if (Math.abs(m.mesh.position.x - obsX) < 1.3) {
                                 runnersToRemove.add(idx);
                             }
                         });

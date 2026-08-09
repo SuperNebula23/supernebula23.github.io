@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>Count Masters 3D - Glitch Free & Solvability Guaranteed</title>
+    <title>Count Masters 3D - Fixed & Long Levels</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Inter:wght@600;800&display=swap" rel="stylesheet">
@@ -184,9 +184,9 @@
         let gameState = 'START';
         let currentLevel = 1;
         let totalCoins = 0;
-        let levelLength = 180;
-        let baseSpeed = 0.24;
-        let forwardSpeed = 0.24;
+        let levelLength = 450; // LONGER TRACKS
+        let baseSpeed = 0.26;
+        let forwardSpeed = 0.26;
         let playerX = 0;
         let playerZ = 0;
         let targetPlayerX = 0;
@@ -301,9 +301,9 @@
 
             scene = new THREE.Scene();
             scene.background = new THREE.Color(0xbae6fd);
-            scene.fog = new THREE.FogExp2(0xbae6fd, 0.007);
+            scene.fog = new THREE.FogExp2(0xbae6fd, 0.005);
 
-            camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 300);
+            camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 400);
             camera.position.set(0, 8, -12);
             camera.lookAt(0, 1.5, 5);
 
@@ -323,8 +323,8 @@
             dirLight.shadow.mapSize.width = 2048;
             dirLight.shadow.mapSize.height = 2048;
             dirLight.shadow.camera.near = 0.5;
-            dirLight.shadow.camera.far = 180;
-            const d = 35;
+            dirLight.shadow.camera.far = 250;
+            const d = 40;
             dirLight.shadow.camera.left = -d;
             dirLight.shadow.camera.right = d;
             dirLight.shadow.camera.top = d;
@@ -376,47 +376,69 @@
             return new THREE.CanvasTexture(canvas);
         }
 
-        function createStairTexture(multiplierText) {
-            const canvas = document.createElement('canvas');
-            canvas.width = 256;
-            canvas.height = 128;
-            const ctx = canvas.getContext('2d');
-
-            ctx.fillStyle = '#ffffff';
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-            ctx.fillStyle = '#0f172a';
-            ctx.font = '900 64px "Fredoka One", sans-serif';
-            ctx.textAlign = 'center';
-            ctx.textBaseline = 'middle';
-            ctx.fillText(multiplierText, canvas.width / 2, canvas.height / 2);
-
-            return new THREE.CanvasTexture(canvas);
+        function disposeHierarchy(parent) {
+            while (parent.children.length > 0) {
+                const child = parent.children[0];
+                if (child.children && child.children.length > 0) {
+                    disposeHierarchy(child);
+                }
+                if (child.geometry) child.geometry.dispose();
+                if (child.material) {
+                    if (Array.isArray(child.material)) {
+                        child.material.forEach(m => {
+                            if (m.map) m.map.dispose();
+                            m.dispose();
+                        });
+                    } else {
+                        if (child.material.map) child.material.map.dispose();
+                        child.material.dispose();
+                    }
+                }
+                parent.remove(child);
+            }
         }
 
         function clearSceneEntities() {
-            crowdMembers.forEach(m => scene.remove(m.mesh));
+            crowdMembers.forEach(m => {
+                disposeHierarchy(m.mesh);
+                scene.remove(m.mesh);
+            });
             crowdMembers = [];
 
             enemyGroups.forEach(eg => {
-                eg.members.forEach(m => eg.group.remove(m.mesh));
+                disposeHierarchy(eg.group);
                 scene.remove(eg.group);
             });
             enemyGroups = [];
 
-            gateEntities.forEach(g => scene.remove(g.group));
+            gateEntities.forEach(g => {
+                disposeHierarchy(g.group);
+                scene.remove(g.group);
+            });
             gateEntities = [];
 
-            obstacleEntities.forEach(o => scene.remove(o.mesh));
+            obstacleEntities.forEach(o => {
+                disposeHierarchy(o.mesh);
+                scene.remove(o.mesh);
+            });
             obstacleEntities = [];
 
-            finishStairs.forEach(s => scene.remove(s));
+            finishStairs.forEach(s => {
+                disposeHierarchy(s.mesh);
+                scene.remove(s.mesh);
+            });
             finishStairs = [];
 
-            particleSystems.forEach(p => scene.remove(p.mesh));
+            particleSystems.forEach(p => {
+                disposeHierarchy(p.mesh);
+                scene.remove(p.mesh);
+            });
             particleSystems = [];
 
-            if (trackMesh) scene.remove(trackMesh);
+            if (trackMesh) {
+                disposeHierarchy(trackMesh);
+                scene.remove(trackMesh);
+            }
         }
 
         function setupLevel() {
@@ -428,8 +450,9 @@
             finishClimbTimer = 0;
             highestStairReached = 1;
 
-            levelLength = 160 + (currentLevel * 15);
-            forwardSpeed = baseSpeed + Math.min(0.10, currentLevel * 0.01);
+            // Significantly Longer Track Scaling
+            levelLength = 400 + (currentLevel * 50);
+            forwardSpeed = baseSpeed + Math.min(0.12, currentLevel * 0.008);
 
             // 1. Build Track
             const trackGeo = new THREE.BoxGeometry(10, 1, levelLength + 60);
@@ -451,34 +474,33 @@
             // 2. Initial Player Crowd
             addCrowdMember(0, 0);
 
-            // 3. SAFE & BEATABLE PROCEDURAL GENERATION
-            // Force first item to ALWAYS be a Gate at z=25 so player can safely grow crowd first!
-            let maxPossibleCrowd = spawnProceduralGatePair(25, 1);
-            let currentZ = 60; // Safe distance before any other obstacles/enemies spawn!
+            // 3. SAFE & BEATABLE PROCEDURAL GENERATION (LONGER DISTANCES)
+            let maxPossibleCrowd = spawnProceduralGatePair(30, 1);
+            let currentZ = 70;
 
-            while (currentZ < levelLength - 30) {
+            while (currentZ < levelLength - 40) {
                 let randType = Math.random();
 
-                if (randType < 0.50) {
+                if (randType < 0.45) {
                     // Gate Pair
                     maxPossibleCrowd = spawnProceduralGatePair(currentZ, maxPossibleCrowd);
-                    currentZ += 32;
-                } else if (randType < 0.75) {
+                    currentZ += 38;
+                } else if (randType < 0.72) {
                     // Saw Blade
                     spawnSawBlade(currentZ, 0.07 + Math.min(0.05, currentLevel * 0.005));
-                    currentZ += 28;
+                    currentZ += 32;
                 } else {
-                    // Enemy Group (Strictly capped relative to player's current potential size)
-                    let maxAllowedEnemies = Math.max(2, Math.floor(maxPossibleCrowd * 0.6));
+                    // Enemy Group
+                    let maxAllowedEnemies = Math.max(2, Math.floor(maxPossibleCrowd * 0.65));
                     let enemySize = Math.max(2, Math.floor(1 + Math.random() * maxAllowedEnemies));
 
                     spawnEnemyGroup(currentZ, enemySize);
                     maxPossibleCrowd = Math.max(1, maxPossibleCrowd - enemySize);
-                    currentZ += 35;
+                    currentZ += 40;
                 }
             }
 
-            // 4. Staircase
+            // 4. Clean Single Staircase
             spawnFinishStaircase(levelLength);
 
             updateCrowdDisplay();
@@ -495,11 +517,11 @@
 
             let leftVal, rightVal;
 
-            if (leftOp === '+') leftVal = Math.floor(5 + Math.random() * 8 + currentLevel);
+            if (leftOp === '+') leftVal = Math.floor(5 + Math.random() * 10 + currentLevel);
             else if (leftOp === '*') leftVal = 2;
             else leftVal = Math.floor(2 + Math.random() * 4);
 
-            if (rightOp === '+') rightVal = Math.floor(5 + Math.random() * 8 + currentLevel);
+            if (rightOp === '+') rightVal = Math.floor(5 + Math.random() * 10 + currentLevel);
             else if (rightOp === '*') rightVal = 2;
             else rightVal = Math.floor(2 + Math.random() * 4);
 
@@ -588,21 +610,37 @@
 
         function spawnFinishStaircase(startZ) {
             const colors = [0xef4444, 0xf97316, 0xeab308, 0x22c55e, 0x06b6d4, 0x3b82f6, 0xa855f7, 0xec4899, 0x10b981, 0x6366f1];
+            
             for (let i = 0; i < 10; i++) {
                 const mult = i + 1;
-                const stairGeo = new THREE.BoxGeometry(10, 0.8 * mult, 3.0);
+                const stairGeo = new THREE.BoxGeometry(10, 0.8 * mult, 3.5);
                 const stairMat = new THREE.MeshPhongMaterial({ color: colors[i % colors.length] });
                 const stair = new THREE.Mesh(stairGeo, stairMat);
-                stair.position.set(0, (0.8 * mult) / 2, startZ + i * 3.0);
+                stair.position.set(0, (0.8 * mult) / 2, startZ + i * 3.5);
                 stair.receiveShadow = true;
-                
-                const tex = createStairTexture(`${mult}x`);
-                const labelMat = new THREE.MeshBasicMaterial({ map: tex });
-                const labelGeo = new THREE.PlaneGeometry(3, 0.6);
-                const labelMesh = new THREE.Mesh(labelGeo, labelMat);
-                labelMesh.position.set(0, (0.8 * mult) - 0.4, -1.51);
-                labelMesh.rotation.y = Math.PI;
-                stair.add(labelMesh);
+
+                // Clean 2D Canvas texture painted ONLY on the step face (no duplicate floating planes)
+                const canvas = document.createElement('canvas');
+                canvas.width = 256;
+                canvas.height = 128;
+                const ctx = canvas.getContext('2d');
+                ctx.fillStyle = '#ffffff';
+                ctx.fillRect(0, 0, 256, 128);
+                ctx.fillStyle = '#0f172a';
+                ctx.font = '900 70px "Fredoka One", sans-serif';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText(`${mult}x`, 128, 64);
+
+                const tex = new THREE.CanvasTexture(canvas);
+                const stepFaceMat = new THREE.MeshBasicMaterial({ map: tex });
+
+                // Apply texture strictly to step front
+                const faceMaterials = [
+                    stairMat, stairMat, stairMat, stairMat,
+                    stairMat, stepFaceMat
+                ];
+                stair.material = faceMaterials;
 
                 scene.add(stair);
                 finishStairs.push({ mesh: stair, mult: mult });
@@ -682,6 +720,7 @@
                     if (crowdMembers.length > 0) {
                         const removed = crowdMembers.pop();
                         spawnPopParticles(removed.mesh.position, 0x0284c7);
+                        disposeHierarchy(removed.mesh);
                         scene.remove(removed.mesh);
                     }
                 }
@@ -771,6 +810,7 @@
                     p.userData.vy -= 0.015;
                 });
                 if (ps.life <= 0) {
+                    disposeHierarchy(ps.mesh);
                     scene.remove(ps.mesh);
                     particleSystems.splice(i, 1);
                 }
@@ -825,6 +865,7 @@
                         if (idx < crowdMembers.length) {
                             const removed = crowdMembers.splice(idx, 1)[0];
                             spawnPopParticles(removed.mesh.position, 0x0284c7);
+                            disposeHierarchy(removed.mesh);
                             scene.remove(removed.mesh);
                             audio.playPop();
                         }
@@ -834,7 +875,7 @@
                     }
                 }
 
-                // 3. Enemy Clashes (Fixed Safe Splicing Bug)
+                // 3. Enemy Clashes
                 enemyGroups.forEach(eg => {
                     if (eg.active) {
                         const distToPlayer = eg.z - playerZ;
@@ -857,6 +898,8 @@
                                 spawnPopParticles(pRunner.mesh.position, 0x0284c7);
                                 spawnPopParticles(eRunner.mesh.position, 0xe11d48);
 
+                                disposeHierarchy(pRunner.mesh);
+                                disposeHierarchy(eRunner.mesh);
                                 scene.remove(pRunner.mesh);
                                 eg.group.remove(eRunner.mesh);
 
@@ -890,7 +933,7 @@
                 finishClimbTimer += 0.03;
                 playerZ += forwardSpeed * 0.8;
 
-                const stairIndex = Math.min(9, Math.floor((playerZ - levelLength) / 3.0));
+                const stairIndex = Math.min(9, Math.floor((playerZ - levelLength) / 3.5));
                 highestStairReached = stairIndex + 1;
                 const targetY = (0.8 * highestStairReached);
 

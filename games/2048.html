@@ -3,9 +3,13 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>2048 - Single File</title>
+  <title>2048</title>
   <style>
     @import url("https://fonts.googleapis.com/css?family=Clear+Sans:bold,normal&display=swap");
+
+    * {
+      box-sizing: border-box;
+    }
 
     html, body {
       margin: 0;
@@ -48,26 +52,27 @@
       position: relative;
       display: inline-block;
       background: #bbada0;
-      padding: 15px 18px;
-      font-size: 25px;
-      height: 25px;
+      padding: 15px 15px;
+      font-size: 22px;
+      height: 55px;
       line-height: 47px;
       font-weight: bold;
       border-radius: 3px;
       color: white;
       margin-top: 8px;
       text-align: center;
-      min-width: 45px;
+      min-width: 65px;
+      margin-left: 5px;
     }
 
     .score-container:after, .best-container:after, .top-container:after {
       position: absolute;
       width: 100%;
-      top: 10px;
+      top: 8px;
       left: 0;
       text-transform: uppercase;
-      font-size: 11px;
-      line-height: 13px;
+      font-size: 10px;
+      line-height: 10px;
       text-align: center;
       color: #eee4da;
       font-weight: bold;
@@ -99,7 +104,6 @@
       height: 40px;
       line-height: 40px;
       cursor: pointer;
-      display: block;
       text-align: center;
       float: right;
       font-weight: bold;
@@ -234,19 +238,22 @@
     .tile-2048 .tile-inner { background: #edc22e; color: #f9f6f2; font-size: 35px; }
     .tile-super .tile-inner { background: #3c3a32; color: #f9f6f2; font-size: 30px; }
 
-    /* Tile Positions */
+    /* Positions mapped to standard grid system */
     .tile-position-1-1 { transform: translate(0px, 0px); }
     .tile-position-1-2 { transform: translate(0px, 121px); }
     .tile-position-1-3 { transform: translate(0px, 242px); }
     .tile-position-1-4 { transform: translate(0px, 363px); }
+
     .tile-position-2-1 { transform: translate(121px, 0px); }
     .tile-position-2-2 { transform: translate(121px, 121px); }
     .tile-position-2-3 { transform: translate(121px, 242px); }
     .tile-position-2-4 { transform: translate(121px, 363px); }
+
     .tile-position-3-1 { transform: translate(242px, 0px); }
     .tile-position-3-2 { transform: translate(242px, 121px); }
     .tile-position-3-3 { transform: translate(242px, 242px); }
     .tile-position-3-4 { transform: translate(242px, 363px); }
+
     .tile-position-4-1 { transform: translate(363px, 0px); }
     .tile-position-4-2 { transform: translate(363px, 121px); }
     .tile-position-4-3 { transform: translate(363px, 242px); }
@@ -447,8 +454,9 @@
       HTMLActuator.prototype.addTile = function (tile) {
         var wrapper = document.createElement("div");
         var inner = document.createElement("div");
-        var position = tile.previousPosition || { x: tile.x, y: tile.y };
-        var positionClass = "tile-position-" + (position.x + 1) + "-" + (position.y + 1);
+        
+        // Render position using 1-indexed (X is columns, Y is rows)
+        var positionClass = "tile-position-" + (tile.x + 1) + "-" + (tile.y + 1);
         var valueClass = tile.value <= 2048 ? "tile-" + tile.value : "tile-super";
 
         wrapper.className = "tile " + valueClass + " " + positionClass;
@@ -465,7 +473,6 @@
       };
       HTMLActuator.prototype.updateScore = function (score) {
         this.clearContainer(this.scoreContainer);
-        var difference = score - this.score;
         this.score = score;
         this.scoreContainer.textContent = this.score;
       };
@@ -721,7 +728,7 @@
         return first.x === second.x && first.y === second.y;
       };
 
-      // Run Game
+      // Start Game
       new GameManager(4, KeyboardInputManager, HTMLActuator, LocalStorageManager);
     });
   </script>

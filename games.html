@@ -45,6 +45,7 @@
       display: flex;
       flex-direction: column;
       overflow-x: hidden;
+      position: relative;
     }
 
     header.site-header {
@@ -431,46 +432,102 @@
       background: #e04e00;
     }
 
-    /* Emoji Chat Box Styles */
-    .chat-box {
-      background: #06121a;
-      border: 2px solid #000;
-      border-radius: 6px;
-      padding: 8px;
-      height: 130px;
-      overflow-y: auto;
-      display: flex;
-      flex-direction: column;
-      gap: 6px;
-      font-size: 8px;
-    }
-
-    .chat-msg {
-      background: #152d3e;
-      padding: 6px;
-      border-radius: 4px;
-      border-left: 3px solid var(--neon-cyan);
-      word-break: break-word;
-    }
-
     .emoji-picker-bar {
       display: flex;
-      gap: 4px;
+      gap: 6px;
       flex-wrap: wrap;
       margin-top: 4px;
     }
 
     .emoji-btn {
       background: #0b1d28;
-      border: 1px solid #000;
-      font-size: 14px;
-      padding: 4px 6px;
-      border-radius: 4px;
+      border: 2px solid #000;
+      font-size: 18px;
+      padding: 6px 10px;
+      border-radius: 6px;
       cursor: pointer;
+      box-shadow: 0 2px 0 #000;
     }
 
     .emoji-btn:hover {
       background: var(--border-accent);
+      transform: translateY(-2px);
+    }
+
+    /* Floating Emoji Animation Element */
+    .floating-emoji {
+      position: fixed;
+      font-size: 48px;
+      pointer-events: none;
+      z-index: 9999;
+      animation: floatUpFade 2.5s forwards ease-out;
+      filter: drop-shadow(0 4px 8px rgba(0,0,0,0.8));
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .floating-emoji .sender-tag {
+      font-size: 9px;
+      background: rgba(0, 0, 0, 0.85);
+      color: var(--text-gold);
+      padding: 3px 6px;
+      border-radius: 4px;
+      border: 1px solid #000;
+      font-family: 'Press Start 2P', cursive;
+      margin-bottom: 4px;
+      white-space: nowrap;
+    }
+
+    @keyframes floatUpFade {
+      0% {
+        opacity: 0;
+        transform: translateY(20px) scale(0.6);
+      }
+      15% {
+        opacity: 1;
+        transform: translateY(0px) scale(1.2);
+      }
+      80% {
+        opacity: 1;
+      }
+      100% {
+        opacity: 0;
+        transform: translateY(-120px) scale(1);
+      }
+    }
+
+    /* Toast Notification CSS */
+    .toast-container {
+      position: fixed;
+      top: 70px;
+      right: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      z-index: 2000;
+      pointer-events: none;
+    }
+
+    .toast-msg {
+      background: #0b1d28;
+      border: 3px solid var(--neon-cyan);
+      box-shadow: 0 4px 0 #000;
+      border-radius: 8px;
+      padding: 10px 14px;
+      font-size: 8px;
+      color: #fff;
+      line-height: 1.4;
+      animation: slideInRight 0.3s forwards ease-out, fadeOutToast 0.5s 3.5s forwards ease-in;
+    }
+
+    @keyframes slideInRight {
+      from { transform: translateX(100%); opacity: 0; }
+      to { transform: translateX(0); opacity: 1; }
+    }
+
+    @keyframes fadeOutToast {
+      to { opacity: 0; transform: translateY(-10px); }
     }
 
     main.content-area {
@@ -659,6 +716,9 @@
   </style>
 </head>
 <body>
+
+  <!-- Toast Notification Container -->
+  <div id="toastContainer" class="toast-container"></div>
 
   <header class="site-header">
     <a class="brand-title" href="#">
@@ -1240,7 +1300,7 @@
           <div class="achievements-list" id="achievementsList"></div>
         </div>
 
-        <!-- RIGHT COLUMN: Friends, Manual Add & Emoji Chat -->
+        <!-- RIGHT COLUMN: Friends, Manual Add & Direct Emoji Picker -->
         <div style="display: flex; flex-direction: column; gap: 10px;">
           <label>➕ ADD FRIEND BY CODE:</label>
           <div style="display: flex; gap: 6px;">
@@ -1253,23 +1313,19 @@
             <p style="font-size: 8px; color: #b0cadb;">No friends added yet! Copy and send your invite link or code to a friend.</p>
           </div>
 
-          <label>💬 LIVE EMOJI CHAT:</label>
-          <div class="chat-box" id="chatMessages">
-            <div class="chat-msg">System: Connect to a friend to start chatting!</div>
-          </div>
+          <label>✨ SEND EMOJI REACTION TO FRIEND:</label>
+          <select class="category-select" id="friendRecipientSelect" style="width: 100%; font-size: 8px; padding: 8px;">
+            <option value="">SELECT FRIEND TO EMOJI...</option>
+          </select>
           <div class="emoji-picker-bar">
-            <button class="emoji-btn" onclick="sendChatEmoji('👍')">👍</button>
-            <button class="emoji-btn" onclick="sendChatEmoji('🔥')">🔥</button>
-            <button class="emoji-btn" onclick="sendChatEmoji('🚀')">🚀</button>
-            <button class="emoji-btn" onclick="sendChatEmoji('🎮')">🎮</button>
-            <button class="emoji-btn" onclick="sendChatEmoji('❤️')">❤️</button>
-            <button class="emoji-btn" onclick="sendChatEmoji('😂')">😂</button>
-            <button class="emoji-btn" onclick="sendChatEmoji('💩')">💩</button>
-            <button class="emoji-btn" onclick="sendChatEmoji('👑')">👑</button>
-          </div>
-          <div style="display: flex; gap: 6px;">
-            <input type="text" id="chatTextInput" placeholder="TYPE MESSAGE..." style="font-size: 8px;" onkeypress="if(event.key==='Enter') sendCustomChatMessage()">
-            <button class="modal-btn" onclick="sendCustomChatMessage()" style="font-size: 8px; padding: 6px 10px;">SEND</button>
+            <button class="emoji-btn" onclick="sendEmojiToFriend('👍')">👍</button>
+            <button class="emoji-btn" onclick="sendEmojiToFriend('🔥')">🔥</button>
+            <button class="emoji-btn" onclick="sendEmojiToFriend('🚀')">🚀</button>
+            <button class="emoji-btn" onclick="sendEmojiToFriend('🎮')">🎮</button>
+            <button class="emoji-btn" onclick="sendEmojiToFriend('❤️')">❤️</button>
+            <button class="emoji-btn" onclick="sendEmojiToFriend('😂')">😂</button>
+            <button class="emoji-btn" onclick="sendEmojiToFriend('💩')">💩</button>
+            <button class="emoji-btn" onclick="sendEmojiToFriend('👑')">👑</button>
           </div>
         </div>
       </div>
@@ -1309,9 +1365,10 @@
         if (!parsed.favorites) parsed.favorites = [];
         if (!parsed.avatar) parsed.avatar = '👤';
         if (!parsed.theme) parsed.theme = 'default';
+        if (!parsed.currentlyPlaying) parsed.currentlyPlaying = 'In Lobby';
         return parsed;
       }
-      return { username: 'PLAYER 1', avatar: '👤', theme: 'default', xp: 0, categoryStats: {}, gameStats: {}, history: [], favorites: [] };
+      return { username: 'PLAYER 1', avatar: '👤', theme: 'default', xp: 0, categoryStats: {}, gameStats: {}, history: [], favorites: [], currentlyPlaying: 'In Lobby' };
     }
 
     function saveAccountData(data) {
@@ -1358,10 +1415,14 @@
       acc.history.unshift(gameTitle);
       if (acc.history.length > 10) acc.history.pop();
 
+      // Immediately set currently playing status
+      acc.currentlyPlaying = gameTitle;
+
       const finalAmount = isVipName(acc.username) ? baseXP * 2 : baseXP;
       acc.xp += finalAmount;
 
       saveAccountData(acc);
+      broadcastStatusChange();
     }
 
     function toggleFavorite(gameTitle) {
@@ -1644,9 +1705,9 @@
       }
     }
 
-    /* ==========================================
-       FIXED FRIENDS & EMOJI CHAT ENGINE (PEERJS)
-       ========================================== */
+    /* =======================================================
+       FRIENDS, SINGLE-FRIEND EMOJI & NOTIFICATIONS ENGINE (PEERJS)
+       ======================================================= */
 
     let myPeer = null;
     let myAssignedPeerId = '';
@@ -1664,6 +1725,41 @@
       return `sn_${cleanName}_${savedSessionId}`;
     }
 
+    function showToast(message) {
+      const container = document.getElementById('toastContainer');
+      const toast = document.createElement('div');
+      toast.className = 'toast-msg';
+      toast.textContent = message;
+      container.appendChild(toast);
+
+      setTimeout(() => {
+        if (toast.parentNode) toast.parentNode.removeChild(toast);
+      }, 4000);
+    }
+
+    function spawnFloatingEmoji(senderName, emojiSymbol) {
+      const container = document.body;
+      const floatingEl = document.createElement('div');
+      floatingEl.className = 'floating-emoji';
+
+      const randomX = Math.floor(Math.random() * (window.innerWidth - 120)) + 40;
+      const randomY = Math.floor(Math.random() * 200) + (window.innerHeight - 300);
+
+      floatingEl.style.left = `${randomX}px`;
+      floatingEl.style.top = `${randomY}px`;
+
+      floatingEl.innerHTML = `
+        <div class="sender-tag">${senderName}</div>
+        <div>${emojiSymbol}</div>
+      `;
+
+      container.appendChild(floatingEl);
+
+      setTimeout(() => {
+        if (floatingEl.parentNode) floatingEl.parentNode.removeChild(floatingEl);
+      }, 2500);
+    }
+
     function initP2P() {
       const acc = getAccount();
       myAssignedPeerId = generateUniquePeerId(acc.username);
@@ -1675,7 +1771,7 @@
         myAssignedPeerId = id;
         checkUrlForConnectParam();
         pingAllSavedFriends();
-        setInterval(pingAllSavedFriends, 5000); 
+        setInterval(pingAllSavedFriends, 4000); 
       });
 
       myPeer.on('connection', (conn) => {
@@ -1697,7 +1793,6 @@
         }
 
         sendPresencePacket(conn);
-        appendChatMessage('System', `Connected with friend!`);
       });
 
       conn.on('data', (data) => {
@@ -1707,6 +1802,10 @@
       conn.on('close', () => {
         delete activeConnections[conn.peer];
         if (friendStatuses[conn.peer]) {
+          const oldName = friendStatuses[conn.peer].username || 'A friend';
+          if (friendStatuses[conn.peer].online) {
+            showToast(`🔴 ${oldName} went offline.`);
+          }
           friendStatuses[conn.peer].online = false;
         }
         renderFriendsUI();
@@ -1715,20 +1814,32 @@
 
     function sendPresencePacket(conn) {
       const acc = getAccount();
-      const currentGame = acc.history && acc.history.length > 0 ? acc.history[0] : 'In Lobby';
 
       conn.send({
         type: 'PRESENCE_UPDATE',
         username: acc.username,
         avatar: acc.avatar || '👤',
         status: 'ONLINE',
-        currentGame: currentGame,
+        currentGame: acc.currentlyPlaying || 'In Lobby',
         timestamp: Date.now()
+      });
+    }
+
+    function broadcastStatusChange() {
+      Object.values(activeConnections).forEach(conn => {
+        if (conn.open) {
+          sendPresencePacket(conn);
+        }
       });
     }
 
     function handleP2PData(peerId, data) {
       if (data.type === 'PRESENCE_UPDATE') {
+        const prevStatus = friendStatuses[peerId];
+        const isNewConnection = !prevStatus;
+        const wasOffline = prevStatus && !prevStatus.online;
+        const gameChanged = prevStatus && prevStatus.currentGame !== data.currentGame;
+
         friendStatuses[peerId] = {
           username: data.username,
           avatar: data.avatar,
@@ -1737,11 +1848,18 @@
           lastSeen: Date.now(),
           online: true
         };
+
+        if (isNewConnection || wasOffline) {
+          showToast(`🟢 ${data.username} is now online!`);
+        } else if (gameChanged) {
+          showToast(`🎮 ${data.username} is now playing: ${data.currentGame}`);
+        }
+
         renderFriendsUI();
+      } else if (data.type === 'EMOJI_REACTION') {
+        spawnFloatingEmoji(data.sender, data.emoji);
       } else if (data.type === 'JOIN_LOBBY_REQUEST') {
         alert(`${data.fromUsername} wants to join your game: ${data.game}!`);
-      } else if (data.type === 'CHAT_MSG') {
-        appendChatMessage(data.sender, data.text);
       }
     }
 
@@ -1749,7 +1867,8 @@
       const now = Date.now();
 
       friendsList.forEach(friendId => {
-        if (friendStatuses[friendId] && (now - friendStatuses[friendId].lastSeen > 8000)) {
+        if (friendStatuses[friendId] && friendStatuses[friendId].online && (now - friendStatuses[friendId].lastSeen > 8000)) {
+          showToast(`🔴 ${friendStatuses[friendId].username} went offline.`);
           friendStatuses[friendId].online = false;
         }
 
@@ -1814,47 +1933,44 @@
       }
     }
 
-    function sendChatEmoji(emoji) {
-      broadcastChatMessage(emoji);
-    }
+    function sendEmojiToFriend(emoji) {
+      const select = document.getElementById('friendRecipientSelect');
+      const targetFriendId = select.value;
 
-    function sendCustomChatMessage() {
-      const input = document.getElementById('chatTextInput');
-      const text = input.value.trim();
-      if (!text) return;
-      broadcastChatMessage(text);
-      input.value = '';
-    }
+      if (!targetFriendId) {
+        alert("Please select an online friend to send an emoji to!");
+        return;
+      }
 
-    function broadcastChatMessage(msg) {
-      const acc = getAccount();
-      let sentToAny = false;
+      const conn = activeConnections[targetFriendId];
+      if (conn && conn.open) {
+        const acc = getAccount();
+        conn.send({
+          type: 'EMOJI_REACTION',
+          sender: acc.username,
+          emoji: emoji
+        });
 
-      Object.values(activeConnections).forEach(conn => {
-        if (conn.open) {
-          conn.send({
-            type: 'CHAT_MSG',
-            sender: acc.username,
-            text: msg
-          });
-          sentToAny = true;
-        }
-      });
-
-      appendChatMessage(acc.username + ' (You)', msg);
-      if (!sentToAny) {
-        appendChatMessage('System', 'No friends online to receive chat!');
+        // Trigger local floating animation preview
+        spawnFloatingEmoji('You', emoji);
+      } else {
+        alert("Selected friend is not currently online!");
       }
     }
 
-    function appendChatMessage(sender, text) {
-      const box = document.getElementById('chatMessages');
-      if (!box) return;
-      const msgDiv = document.createElement('div');
-      msgDiv.className = 'chat-msg';
-      msgDiv.innerHTML = `<strong>${sender}:</strong> ${text}`;
-      box.appendChild(msgDiv);
-      box.scrollTop = box.scrollHeight;
+    function sendDirectEmojiToPeer(friendId, emoji) {
+      const conn = activeConnections[friendId];
+      if (conn && conn.open) {
+        const acc = getAccount();
+        conn.send({
+          type: 'EMOJI_REACTION',
+          sender: acc.username,
+          emoji: emoji
+        });
+        spawnFloatingEmoji('You', emoji);
+      } else {
+        alert("Friend is offline!");
+      }
     }
 
     function joinFriendsGame(friendId) {
@@ -1883,18 +1999,29 @@
 
     function renderFriendsUI() {
       const container = document.getElementById('friendsListContainer');
+      const select = document.getElementById('friendRecipientSelect');
+
       if (!container) return;
 
       if (friendsList.length === 0) {
         container.innerHTML = `<p style="font-size: 8px; color: #b0cadb;">No friends added yet! Copy and send your invite link or code to a friend.</p>`;
+        if (select) select.innerHTML = `<option value="">NO FRIENDS AVAILABLE</option>`;
         return;
       }
 
       container.innerHTML = '';
+      if (select) select.innerHTML = `<option value="">SELECT FRIEND TO EMOJI...</option>`;
 
       friendsList.forEach(friendId => {
         const info = friendStatuses[friendId] || { username: friendId.replace('sn_', '').substring(0, 10).toUpperCase(), avatar: '👤', online: false, currentGame: 'Unknown' };
         const isOnline = info.online;
+
+        if (isOnline && select) {
+          const opt = document.createElement('option');
+          opt.value = friendId;
+          opt.textContent = `${info.avatar} ${info.username}`;
+          select.appendChild(opt);
+        }
 
         const div = document.createElement('div');
         div.style.cssText = `
@@ -1918,9 +2045,13 @@
               <div style="color: #b0cadb; font-size: 7px;">PLAYING: ${isOnline ? info.currentGame : '---'}</div>
             </div>
           </div>
-          ${isOnline && info.currentGame !== 'In Lobby' ? `
-            <button class="modal-btn" onclick="joinFriendsGame('${friendId}')" style="font-size: 7px; padding: 4px 6px;">🚀 JOIN GAME</button>
-          ` : ''}
+          <div style="display: flex; gap: 4px;">
+            ${isOnline ? `
+              <button class="modal-btn" onclick="sendDirectEmojiToPeer('${friendId}', '👍')" style="font-size: 7px; padding: 4px 6px;">👍</button>
+              <button class="modal-btn" onclick="sendDirectEmojiToPeer('${friendId}', '🔥')" style="font-size: 7px; padding: 4px 6px;">🔥</button>
+              ${info.currentGame !== 'In Lobby' ? `<button class="modal-btn" onclick="joinFriendsGame('${friendId}')" style="font-size: 7px; padding: 4px 6px;">🚀 JOIN</button>` : ''}
+            ` : ''}
+          </div>
         `;
 
         container.appendChild(div);
@@ -1928,6 +2059,11 @@
     }
 
     document.addEventListener('DOMContentLoaded', () => {
+      // Clear status to Lobby upon fresh page load
+      const acc = getAccount();
+      acc.currentlyPlaying = 'In Lobby';
+      saveAccountData(acc);
+
       updateUI();
       setTimeout(initP2P, 1000);
     });

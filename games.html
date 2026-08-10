@@ -280,7 +280,6 @@
       overflow-y: auto;
     }
 
-    /* Side-by-side Layout for Edit Profile & Friends */
     .modal-grid-layout {
       display: grid;
       grid-template-columns: 1fr 1fr;
@@ -430,6 +429,48 @@
 
     .modal-btn:hover {
       background: #e04e00;
+    }
+
+    /* Emoji Chat Box Styles */
+    .chat-box {
+      background: #06121a;
+      border: 2px solid #000;
+      border-radius: 6px;
+      padding: 8px;
+      height: 130px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      font-size: 8px;
+    }
+
+    .chat-msg {
+      background: #152d3e;
+      padding: 6px;
+      border-radius: 4px;
+      border-left: 3px solid var(--neon-cyan);
+      word-break: break-word;
+    }
+
+    .emoji-picker-bar {
+      display: flex;
+      gap: 4px;
+      flex-wrap: wrap;
+      margin-top: 4px;
+    }
+
+    .emoji-btn {
+      background: #0b1d28;
+      border: 1px solid #000;
+      font-size: 14px;
+      padding: 4px 6px;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+
+    .emoji-btn:hover {
+      background: var(--border-accent);
     }
 
     main.content-area {
@@ -1145,9 +1186,12 @@
   <!-- Profile, Achievements & Integrated Friends Modal -->
   <div class="modal-overlay" id="accountModal">
     <div class="modal-card">
-      <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #000; padding-bottom: 8px;">
+      <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #000; padding-bottom: 8px; flex-wrap: wrap; gap: 6px;">
         <h2>ACCOUNT & FRIENDS <span id="modalVipBadge" style="display:none; color: var(--text-gold);">👑 VIP</span></h2>
-        <button class="modal-btn" onclick="copyInviteLink()" style="font-size: 8px; padding: 6px 10px;">📋 COPY INVITE LINK</button>
+        <div style="display: flex; gap: 6px;">
+          <button class="modal-btn" onclick="copyMyCode()" style="font-size: 8px; padding: 6px 8px;">🔑 COPY CODE</button>
+          <button class="modal-btn" onclick="copyInviteLink()" style="font-size: 8px; padding: 6px 8px;">📋 LINK</button>
+        </div>
       </div>
 
       <div class="modal-grid-layout">
@@ -1196,11 +1240,36 @@
           <div class="achievements-list" id="achievementsList"></div>
         </div>
 
-        <!-- RIGHT COLUMN: Friends & Lobby List -->
+        <!-- RIGHT COLUMN: Friends, Manual Add & Emoji Chat -->
         <div style="display: flex; flex-direction: column; gap: 10px;">
-          <label>👥 FRIENDS & LOBBY:</label>
-          <div id="friendsListContainer" style="display: flex; flex-direction: column; gap: 8px; background: #0b1d28; padding: 10px; border-radius: 6px; border: 2px solid #000; min-height: 250px;">
-            <p style="font-size: 8px; color: #b0cadb;">No friends added yet! Copy and send your invite link to a friend to connect.</p>
+          <label>➕ ADD FRIEND BY CODE:</label>
+          <div style="display: flex; gap: 6px;">
+            <input type="text" id="manualFriendInput" placeholder="PASTE FRIEND CODE" style="font-size: 8px;">
+            <button class="modal-btn" onclick="addFriendManual()" style="font-size: 8px; padding: 6px 10px;">CONNECT</button>
+          </div>
+
+          <label>👥 FRIENDS LIST:</label>
+          <div id="friendsListContainer" style="display: flex; flex-direction: column; gap: 8px; background: #0b1d28; padding: 10px; border-radius: 6px; border: 2px solid #000; max-height: 150px; overflow-y: auto;">
+            <p style="font-size: 8px; color: #b0cadb;">No friends added yet! Copy and send your invite link or code to a friend.</p>
+          </div>
+
+          <label>💬 LIVE EMOJI CHAT:</label>
+          <div class="chat-box" id="chatMessages">
+            <div class="chat-msg">System: Connect to a friend to start chatting!</div>
+          </div>
+          <div class="emoji-picker-bar">
+            <button class="emoji-btn" onclick="sendChatEmoji('👍')">👍</button>
+            <button class="emoji-btn" onclick="sendChatEmoji('🔥')">🔥</button>
+            <button class="emoji-btn" onclick="sendChatEmoji('🚀')">🚀</button>
+            <button class="emoji-btn" onclick="sendChatEmoji('🎮')">🎮</button>
+            <button class="emoji-btn" onclick="sendChatEmoji('❤️')">❤️</button>
+            <button class="emoji-btn" onclick="sendChatEmoji('😂')">😂</button>
+            <button class="emoji-btn" onclick="sendChatEmoji('💩')">💩</button>
+            <button class="emoji-btn" onclick="sendChatEmoji('👑')">👑</button>
+          </div>
+          <div style="display: flex; gap: 6px;">
+            <input type="text" id="chatTextInput" placeholder="TYPE MESSAGE..." style="font-size: 8px;" onkeypress="if(event.key==='Enter') sendCustomChatMessage()">
+            <button class="modal-btn" onclick="sendCustomChatMessage()" style="font-size: 8px; padding: 6px 10px;">SEND</button>
           </div>
         </div>
       </div>
@@ -1576,27 +1645,34 @@
     }
 
     /* ==========================================
-       FRIENDS & LOBBY ENGINE (PEERJS)
+       FIXED FRIENDS & EMOJI CHAT ENGINE (PEERJS)
        ========================================== */
 
     let myPeer = null;
+    let myAssignedPeerId = '';
     const activeConnections = {}; 
     const friendsList = JSON.parse(localStorage.getItem('sn_p2p_friends') || '[]');
     const friendStatuses = {}; 
 
-    function getSanitizedPeerId(username) {
+    function generateUniquePeerId(username) {
+      let savedSessionId = sessionStorage.getItem('sn_peer_session_id');
+      if (!savedSessionId) {
+        savedSessionId = Math.random().toString(36).substring(2, 8);
+        sessionStorage.setItem('sn_peer_session_id', savedSessionId);
+      }
       const cleanName = (username || 'PLAYER').toLowerCase().replace(/[^a-z0-9]/g, '');
-      return `sn_game_peer_${cleanName}`;
+      return `sn_${cleanName}_${savedSessionId}`;
     }
 
     function initP2P() {
       const acc = getAccount();
-      const myPeerId = getSanitizedPeerId(acc.username);
+      myAssignedPeerId = generateUniquePeerId(acc.username);
 
-      myPeer = new Peer(myPeerId);
+      myPeer = new Peer(myAssignedPeerId);
 
       myPeer.on('open', (id) => {
         console.log('Peer Node Active. ID:', id);
+        myAssignedPeerId = id;
         checkUrlForConnectParam();
         pingAllSavedFriends();
         setInterval(pingAllSavedFriends, 5000); 
@@ -1607,9 +1683,7 @@
       });
 
       myPeer.on('error', (err) => {
-        if (err.type === 'unavailable-id') {
-          console.warn('Peer ID taken. Another tab with this username may be active.');
-        }
+        console.warn('PeerJS Error:', err);
       });
     }
 
@@ -1623,6 +1697,7 @@
         }
 
         sendPresencePacket(conn);
+        appendChatMessage('System', `Connected with friend!`);
       });
 
       conn.on('data', (data) => {
@@ -1665,6 +1740,8 @@
         renderFriendsUI();
       } else if (data.type === 'JOIN_LOBBY_REQUEST') {
         alert(`${data.fromUsername} wants to join your game: ${data.game}!`);
+      } else if (data.type === 'CHAT_MSG') {
+        appendChatMessage(data.sender, data.text);
       }
     }
 
@@ -1687,13 +1764,38 @@
       renderFriendsUI();
     }
 
-    function copyInviteLink() {
-      const acc = getAccount();
-      const myPeerId = getSanitizedPeerId(acc.username);
-      const inviteUrl = `${window.location.origin}${window.location.pathname}#connect=${myPeerId}`;
+    function addFriendManual() {
+      const input = document.getElementById('manualFriendInput');
+      const friendId = input.value.trim();
+      if (!friendId) return;
 
+      if (friendId === myAssignedPeerId) {
+        alert("You cannot add yourself!");
+        return;
+      }
+
+      if (!friendsList.includes(friendId)) {
+        friendsList.push(friendId);
+        localStorage.setItem('sn_p2p_friends', JSON.stringify(friendsList));
+      }
+
+      const conn = myPeer.connect(friendId);
+      setupConnection(conn);
+      input.value = '';
+      alert('Connecting to friend...');
+      renderFriendsUI();
+    }
+
+    function copyMyCode() {
+      navigator.clipboard.writeText(myAssignedPeerId).then(() => {
+        alert(`Your Friend Code copied!\nCode: ${myAssignedPeerId}`);
+      });
+    }
+
+    function copyInviteLink() {
+      const inviteUrl = `${window.location.origin}${window.location.pathname}#connect=${myAssignedPeerId}`;
       navigator.clipboard.writeText(inviteUrl).then(() => {
-        alert('Invite link copied! Send it to a friend. When they open it, you will connect.');
+        alert('Invite link copied! Send it to a friend.');
       });
     }
 
@@ -1701,12 +1803,58 @@
       const hash = window.location.hash;
       if (hash.includes('#connect=')) {
         const targetPeerId = hash.replace('#connect=', '');
-        const acc = getAccount();
-        if (targetPeerId !== getSanitizedPeerId(acc.username)) {
+        if (targetPeerId && targetPeerId !== myAssignedPeerId) {
+          if (!friendsList.includes(targetPeerId)) {
+            friendsList.push(targetPeerId);
+            localStorage.setItem('sn_p2p_friends', JSON.stringify(friendsList));
+          }
           const conn = myPeer.connect(targetPeerId);
           setupConnection(conn);
         }
       }
+    }
+
+    function sendChatEmoji(emoji) {
+      broadcastChatMessage(emoji);
+    }
+
+    function sendCustomChatMessage() {
+      const input = document.getElementById('chatTextInput');
+      const text = input.value.trim();
+      if (!text) return;
+      broadcastChatMessage(text);
+      input.value = '';
+    }
+
+    function broadcastChatMessage(msg) {
+      const acc = getAccount();
+      let sentToAny = false;
+
+      Object.values(activeConnections).forEach(conn => {
+        if (conn.open) {
+          conn.send({
+            type: 'CHAT_MSG',
+            sender: acc.username,
+            text: msg
+          });
+          sentToAny = true;
+        }
+      });
+
+      appendChatMessage(acc.username + ' (You)', msg);
+      if (!sentToAny) {
+        appendChatMessage('System', 'No friends online to receive chat!');
+      }
+    }
+
+    function appendChatMessage(sender, text) {
+      const box = document.getElementById('chatMessages');
+      if (!box) return;
+      const msgDiv = document.createElement('div');
+      msgDiv.className = 'chat-msg';
+      msgDiv.innerHTML = `<strong>${sender}:</strong> ${text}`;
+      box.appendChild(msgDiv);
+      box.scrollTop = box.scrollHeight;
     }
 
     function joinFriendsGame(friendId) {
@@ -1738,14 +1886,14 @@
       if (!container) return;
 
       if (friendsList.length === 0) {
-        container.innerHTML = `<p style="font-size: 8px; color: #b0cadb;">No friends added yet! Copy and send your invite link to a friend to connect.</p>`;
+        container.innerHTML = `<p style="font-size: 8px; color: #b0cadb;">No friends added yet! Copy and send your invite link or code to a friend.</p>`;
         return;
       }
 
       container.innerHTML = '';
 
       friendsList.forEach(friendId => {
-        const info = friendStatuses[friendId] || { username: friendId.replace('sn_game_peer_', '').toUpperCase(), avatar: '👤', online: false, currentGame: 'Unknown' };
+        const info = friendStatuses[friendId] || { username: friendId.replace('sn_', '').substring(0, 10).toUpperCase(), avatar: '👤', online: false, currentGame: 'Unknown' };
         const isOnline = info.online;
 
         const div = document.createElement('div');

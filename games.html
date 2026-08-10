@@ -8,6 +8,9 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+  
+  <!-- PeerJS for WebRTC Direct Friend Connections -->
+  <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
 
   <style>
     :root {
@@ -267,14 +270,22 @@
       box-shadow: 0 10px 0 #000;
       border-radius: 12px;
       padding: 24px;
-      width: 90%;
-      max-width: 480px;
+      width: 95%;
+      max-width: 900px;
       display: flex;
       flex-direction: column;
       gap: 14px;
       text-align: center;
       max-height: 90vh;
       overflow-y: auto;
+    }
+
+    /* Side-by-side Layout for Edit Profile & Friends */
+    .modal-grid-layout {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+      text-align: left;
     }
 
     .modal-card h2 {
@@ -286,6 +297,8 @@
       font-size: 9px;
       color: #b0cadb;
       text-align: left;
+      display: block;
+      margin-bottom: 4px;
     }
 
     .modal-card input[type="text"] {
@@ -297,12 +310,13 @@
       font-size: 10px;
       border-radius: 6px;
       outline: none;
+      width: 100%;
     }
 
     .avatar-picker {
       display: flex;
       gap: 8px;
-      justify-content: center;
+      justify-content: flex-start;
       flex-wrap: wrap;
     }
 
@@ -592,7 +606,8 @@
       transform: translateY(-1px);
     }
 
-    @media (max-width: 600px) {
+    @media (max-width: 768px) {
+      .modal-grid-layout { grid-template-columns: 1fr; }
       header.site-header { padding: 10px 14px; }
       .brand-title span { display: none; }
       .category-select { font-size: 8px; }
@@ -1127,54 +1142,70 @@
     </section>
   </main>
 
-  <!-- Profile & Achievements Modal -->
+  <!-- Profile, Achievements & Integrated Friends Modal -->
   <div class="modal-overlay" id="accountModal">
     <div class="modal-card">
-      <h2>EDIT PROFILE <span id="modalVipBadge" style="display:none; color: var(--text-gold);">👑 VIP</span></h2>
-      
-      <label>AVATAR ICON:</label>
-      <div class="avatar-picker">
-        <div class="avatar-opt" onclick="selectAvatar('👤')">👤</div>
-        <div class="avatar-opt" onclick="selectAvatar('👾')">👾</div>
-        <div class="avatar-opt" onclick="selectAvatar('🤖')">🤖</div>
-        <div class="avatar-opt" onclick="selectAvatar('🐱')">🐱</div>
-        <div class="avatar-opt" onclick="selectAvatar('🥷')">🥷</div>
-        <div class="avatar-opt" onclick="selectAvatar('🚀')">🚀</div>
-        <div class="avatar-opt" onclick="selectAvatar('👑')">👑</div>
-        <div class="avatar-opt" onclick="selectAvatar('🔥')">🔥</div>
+      <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #000; padding-bottom: 8px;">
+        <h2>ACCOUNT & FRIENDS <span id="modalVipBadge" style="display:none; color: var(--text-gold);">👑 VIP</span></h2>
+        <button class="modal-btn" onclick="copyInviteLink()" style="font-size: 8px; padding: 6px 10px;">📋 COPY INVITE LINK</button>
       </div>
 
-      <label for="usernameInput">DISPLAY NAME:</label>
-      <input type="text" id="usernameInput" maxlength="20" placeholder="ENTER NAME">
+      <div class="modal-grid-layout">
+        <!-- LEFT COLUMN: Account Profile Settings -->
+        <div style="display: flex; flex-direction: column; gap: 10px;">
+          <label>AVATAR ICON:</label>
+          <div class="avatar-picker">
+            <div class="avatar-opt" onclick="selectAvatar('👤')">👤</div>
+            <div class="avatar-opt" onclick="selectAvatar('👾')">👾</div>
+            <div class="avatar-opt" onclick="selectAvatar('🤖')">🤖</div>
+            <div class="avatar-opt" onclick="selectAvatar('🐱')">🐱</div>
+            <div class="avatar-opt" onclick="selectAvatar('🥷')">🥷</div>
+            <div class="avatar-opt" onclick="selectAvatar('🚀')">🚀</div>
+            <div class="avatar-opt" onclick="selectAvatar('👑')">👑</div>
+            <div class="avatar-opt" onclick="selectAvatar('🔥')">🔥</div>
+          </div>
 
-      <label>THEME ACCENT:</label>
-      <div class="theme-picker">
-        <div class="theme-btn" style="background: #f85800;" onclick="selectTheme('default')"></div>
-        <div class="theme-btn" style="background: #00ffff;" onclick="selectTheme('cyan')"></div>
-        <div class="theme-btn" style="background: #ff00ff;" onclick="selectTheme('pink')"></div>
-        <div class="theme-btn" style="background: #73bf2e;" onclick="selectTheme('green')"></div>
-        <div class="theme-btn" style="background: #f8b800;" onclick="selectTheme('gold')"></div>
+          <label for="usernameInput">DISPLAY NAME:</label>
+          <input type="text" id="usernameInput" maxlength="20" placeholder="ENTER NAME">
+
+          <label>THEME ACCENT:</label>
+          <div class="theme-picker">
+            <div class="theme-btn" style="background: #f85800;" onclick="selectTheme('default')"></div>
+            <div class="theme-btn" style="background: #00ffff;" onclick="selectTheme('cyan')"></div>
+            <div class="theme-btn" style="background: #ff00ff;" onclick="selectTheme('pink')"></div>
+            <div class="theme-btn" style="background: #73bf2e;" onclick="selectTheme('green')"></div>
+            <div class="theme-btn" style="background: #f8b800;" onclick="selectTheme('gold')"></div>
+          </div>
+
+          <div style="text-align: left; font-size: 9px; color: var(--text-gold); margin-top: 5px; display: flex; justify-content: space-between;">
+            <div><span id="modalLvl">LEVEL 1</span> - <span id="modalXp">0 XP</span></div>
+            <div id="vipStatusText" style="color: var(--neon-cyan); display: none;">2X XP BOOST ACTIVE!</div>
+          </div>
+
+          <div class="xp-progress-bar">
+            <div class="xp-progress-fill" id="xpFill"></div>
+          </div>
+
+          <div class="profile-stats-box">
+            <div>MOST PLAYED: <span id="statMostPlayed">NONE</span></div>
+            <div>TOP GENRE: <span id="statFavCategory">NONE</span></div>
+            <div>TOTAL PLAYS: <span id="statTotalPlays">0</span></div>
+          </div>
+
+          <label>🏆 ACHIEVEMENTS:</label>
+          <div class="achievements-list" id="achievementsList"></div>
+        </div>
+
+        <!-- RIGHT COLUMN: Friends & Lobby List -->
+        <div style="display: flex; flex-direction: column; gap: 10px;">
+          <label>👥 FRIENDS & LOBBY:</label>
+          <div id="friendsListContainer" style="display: flex; flex-direction: column; gap: 8px; background: #0b1d28; padding: 10px; border-radius: 6px; border: 2px solid #000; min-height: 250px;">
+            <p style="font-size: 8px; color: #b0cadb;">No friends added yet! Copy and send your invite link to a friend to connect.</p>
+          </div>
+        </div>
       </div>
 
-      <div style="text-align: left; font-size: 9px; color: var(--text-gold); margin-top: 5px; display: flex; justify-content: space-between;">
-        <div><span id="modalLvl">LEVEL 1</span> - <span id="modalXp">0 XP</span></div>
-        <div id="vipStatusText" style="color: var(--neon-cyan); display: none;">2X XP BOOST ACTIVE!</div>
-      </div>
-
-      <div class="xp-progress-bar">
-        <div class="xp-progress-fill" id="xpFill"></div>
-      </div>
-
-      <div class="profile-stats-box">
-        <div>MOST PLAYED: <span id="statMostPlayed">NONE</span></div>
-        <div>TOP GENRE: <span id="statFavCategory">NONE</span></div>
-        <div>TOTAL PLAYS: <span id="statTotalPlays">0</span></div>
-      </div>
-
-      <label>🏆 ACHIEVEMENTS:</label>
-      <div class="achievements-list" id="achievementsList"></div>
-
-      <button class="modal-btn" onclick="saveProfile()">SAVE & CLOSE</button>
+      <button class="modal-btn" onclick="saveProfile()" style="margin-top: 10px;">SAVE & CLOSE</button>
     </div>
   </div>
 
@@ -1223,7 +1254,6 @@
       const mainCards = Array.from(document.querySelectorAll('#mainGamesGrid .game-card'));
       if (mainCards.length === 0) return;
 
-      // Calculate days elapsed since epoch to get a daily index
       const now = new Date();
       const daysSinceEpoch = Math.floor(now.getTime() / (1000 * 60 * 60 * 24));
       const dailyIndex = daysSinceEpoch % mainCards.length;
@@ -1526,6 +1556,7 @@
 
     function openAccountModal() {
       updateUI();
+      renderFriendsUI();
       document.getElementById('accountModal').classList.add('active');
     }
 
@@ -1537,9 +1568,221 @@
       acc.theme = tempTheme;
       saveAccountData(acc);
       document.getElementById('accountModal').classList.remove('active');
+      
+      if (myPeer) {
+        myPeer.destroy();
+        initP2P();
+      }
     }
 
-    document.addEventListener('DOMContentLoaded', updateUI);
+    /* ==========================================
+       FRIENDS & LOBBY ENGINE (PEERJS)
+       ========================================== */
+
+    let myPeer = null;
+    const activeConnections = {}; 
+    const friendsList = JSON.parse(localStorage.getItem('sn_p2p_friends') || '[]');
+    const friendStatuses = {}; 
+
+    function getSanitizedPeerId(username) {
+      const cleanName = (username || 'PLAYER').toLowerCase().replace(/[^a-z0-9]/g, '');
+      return `sn_game_peer_${cleanName}`;
+    }
+
+    function initP2P() {
+      const acc = getAccount();
+      const myPeerId = getSanitizedPeerId(acc.username);
+
+      myPeer = new Peer(myPeerId);
+
+      myPeer.on('open', (id) => {
+        console.log('Peer Node Active. ID:', id);
+        checkUrlForConnectParam();
+        pingAllSavedFriends();
+        setInterval(pingAllSavedFriends, 5000); 
+      });
+
+      myPeer.on('connection', (conn) => {
+        setupConnection(conn);
+      });
+
+      myPeer.on('error', (err) => {
+        if (err.type === 'unavailable-id') {
+          console.warn('Peer ID taken. Another tab with this username may be active.');
+        }
+      });
+    }
+
+    function setupConnection(conn) {
+      conn.on('open', () => {
+        activeConnections[conn.peer] = conn;
+
+        if (!friendsList.includes(conn.peer)) {
+          friendsList.push(conn.peer);
+          localStorage.setItem('sn_p2p_friends', JSON.stringify(friendsList));
+        }
+
+        sendPresencePacket(conn);
+      });
+
+      conn.on('data', (data) => {
+        handleP2PData(conn.peer, data);
+      });
+
+      conn.on('close', () => {
+        delete activeConnections[conn.peer];
+        if (friendStatuses[conn.peer]) {
+          friendStatuses[conn.peer].online = false;
+        }
+        renderFriendsUI();
+      });
+    }
+
+    function sendPresencePacket(conn) {
+      const acc = getAccount();
+      const currentGame = acc.history && acc.history.length > 0 ? acc.history[0] : 'In Lobby';
+
+      conn.send({
+        type: 'PRESENCE_UPDATE',
+        username: acc.username,
+        avatar: acc.avatar || '👤',
+        status: 'ONLINE',
+        currentGame: currentGame,
+        timestamp: Date.now()
+      });
+    }
+
+    function handleP2PData(peerId, data) {
+      if (data.type === 'PRESENCE_UPDATE') {
+        friendStatuses[peerId] = {
+          username: data.username,
+          avatar: data.avatar,
+          status: data.status,
+          currentGame: data.currentGame,
+          lastSeen: Date.now(),
+          online: true
+        };
+        renderFriendsUI();
+      } else if (data.type === 'JOIN_LOBBY_REQUEST') {
+        alert(`${data.fromUsername} wants to join your game: ${data.game}!`);
+      }
+    }
+
+    function pingAllSavedFriends() {
+      const now = Date.now();
+
+      friendsList.forEach(friendId => {
+        if (friendStatuses[friendId] && (now - friendStatuses[friendId].lastSeen > 8000)) {
+          friendStatuses[friendId].online = false;
+        }
+
+        if (!activeConnections[friendId] || !activeConnections[friendId].open) {
+          const conn = myPeer.connect(friendId);
+          setupConnection(conn);
+        } else {
+          sendPresencePacket(activeConnections[friendId]);
+        }
+      });
+
+      renderFriendsUI();
+    }
+
+    function copyInviteLink() {
+      const acc = getAccount();
+      const myPeerId = getSanitizedPeerId(acc.username);
+      const inviteUrl = `${window.location.origin}${window.location.pathname}#connect=${myPeerId}`;
+
+      navigator.clipboard.writeText(inviteUrl).then(() => {
+        alert('Invite link copied! Send it to a friend. When they open it, you will connect.');
+      });
+    }
+
+    function checkUrlForConnectParam() {
+      const hash = window.location.hash;
+      if (hash.includes('#connect=')) {
+        const targetPeerId = hash.replace('#connect=', '');
+        const acc = getAccount();
+        if (targetPeerId !== getSanitizedPeerId(acc.username)) {
+          const conn = myPeer.connect(targetPeerId);
+          setupConnection(conn);
+        }
+      }
+    }
+
+    function joinFriendsGame(friendId) {
+      const friend = friendStatuses[friendId];
+      if (!friend || !friend.currentGame || friend.currentGame === 'In Lobby') {
+        alert('Friend is not currently playing a game.');
+        return;
+      }
+
+      if (activeConnections[friendId]) {
+        const acc = getAccount();
+        activeConnections[friendId].send({
+          type: 'JOIN_LOBBY_REQUEST',
+          fromUsername: acc.username,
+          game: friend.currentGame
+        });
+      }
+
+      const cards = Array.from(document.querySelectorAll('#mainGamesGrid .game-card'));
+      const match = cards.find(c => c.querySelector('h3').textContent === friend.currentGame);
+      if (match) {
+        const playBtn = match.querySelector('.play-btn');
+        window.location.href = playBtn.getAttribute('href');
+      }
+    }
+
+    function renderFriendsUI() {
+      const container = document.getElementById('friendsListContainer');
+      if (!container) return;
+
+      if (friendsList.length === 0) {
+        container.innerHTML = `<p style="font-size: 8px; color: #b0cadb;">No friends added yet! Copy and send your invite link to a friend to connect.</p>`;
+        return;
+      }
+
+      container.innerHTML = '';
+
+      friendsList.forEach(friendId => {
+        const info = friendStatuses[friendId] || { username: friendId.replace('sn_game_peer_', '').toUpperCase(), avatar: '👤', online: false, currentGame: 'Unknown' };
+        const isOnline = info.online;
+
+        const div = document.createElement('div');
+        div.style.cssText = `
+          background: #152d3e;
+          border: 2px solid ${isOnline ? 'var(--green-pipe)' : '#444'};
+          border-radius: 6px;
+          padding: 8px;
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          font-size: 8px;
+        `;
+
+        div.innerHTML = `
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <span style="font-size: 14px;">${info.avatar}</span>
+            <div>
+              <div style="color: ${isOnline ? 'var(--text-gold)' : '#888'}; font-weight: bold; margin-bottom: 2px;">
+                ${info.username} <span style="color: ${isOnline ? 'var(--green-pipe)' : '#ff4757'};">(${isOnline ? 'ONLINE' : 'OFFLINE'})</span>
+              </div>
+              <div style="color: #b0cadb; font-size: 7px;">PLAYING: ${isOnline ? info.currentGame : '---'}</div>
+            </div>
+          </div>
+          ${isOnline && info.currentGame !== 'In Lobby' ? `
+            <button class="modal-btn" onclick="joinFriendsGame('${friendId}')" style="font-size: 7px; padding: 4px 6px;">🚀 JOIN GAME</button>
+          ` : ''}
+        `;
+
+        container.appendChild(div);
+      });
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      updateUI();
+      setTimeout(initP2P, 1000);
+    });
   </script>
 </body>
 </html>

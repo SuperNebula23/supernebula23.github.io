@@ -729,6 +729,15 @@
     </a>
 
     <div class="header-right">
+      <!-- Language Dropdown -->
+      <div class="category-select-wrapper">
+        <select class="category-select" id="langSelect" onchange="changeLanguage(this.value)">
+          <option value="en">🌐 English</option>
+          <option value="ja">🌐 日本語</option>
+        </select>
+        <span class="select-arrow">▼</span>
+      </div>
+
       <div class="account-badge" id="headerAccountBadge" onclick="openAccountModal()">
         <span id="badgeAvatar">👤</span>
         <div id="badgeUsername">PLAYER</div>
@@ -742,14 +751,14 @@
     <section id="home-view" class="view-section">
       <div class="hero-banner">
         <h1>✨ SUPERNEBULA GAMES ✨</h1>
-        <p>CHOOSE YOUR GAME & EARN XP!</p>
+        <p data-i18n="heroSub">CHOOSE YOUR GAME & EARN XP!</p>
       </div>
 
       <!-- GAME OF THE DAY HERO SLOT -->
       <div class="featured-hero" id="gameOfTheDaySlot">
         <div class="featured-icon" id="gotdIcon">🎲</div>
         <div class="featured-info">
-          <h2 id="gotdTitle">🔥 GAME OF THE DAY</h2>
+          <h2 id="gotdTitle" data-i18n="gotdHeader">🔥 GAME OF THE DAY</h2>
           <p id="gotdDesc">Loading today's featured pick...</p>
           <a class="play-btn" id="gotdLink" href="#" style="max-width: 200px;">
             <span class="play-btn-text">PLAY (+10 XP)</span>
@@ -759,18 +768,18 @@
 
       <!-- Controls & Search -->
       <div class="controls-bar">
-        <input type="text" id="searchInput" class="search-input" placeholder="SEARCH GAMES..." oninput="handleSearchAndFilter()">
+        <input type="text" id="searchInput" class="search-input" placeholder="SEARCH GAMES..." data-i18n-ph="searchPlaceholder" oninput="handleSearchAndFilter()">
         <div class="category-select-wrapper">
           <select class="category-select" id="categoryFilter" onchange="handleSearchAndFilter()">
-            <option value="all">ALL CATEGORIES</option>
-            <option value="arcade">ARCADE</option>
-            <option value="platformer">PLATFORMER</option>
-            <option value="puzzle">PUZZLE</option>
-            <option value="racing">RACING</option>
-            <option value="simulation">SIMULATION</option>
-            <option value="strategy">STRATEGY</option>
-            <option value="survival">SURVIVAL</option>
-            <option value="tycoon">TYCOON</option>
+            <option value="all" data-i18n="catAll">ALL CATEGORIES</option>
+            <option value="arcade" data-i18n="catArcade">ARCADE</option>
+            <option value="platformer" data-i18n="catPlatformer">PLATFORMER</option>
+            <option value="puzzle" data-i18n="catPuzzle">PUZZLE</option>
+            <option value="racing" data-i18n="catRacing">RACING</option>
+            <option value="simulation" data-i18n="catSimulation">SIMULATION</option>
+            <option value="strategy" data-i18n="catStrategy">STRATEGY</option>
+            <option value="survival" data-i18n="catSurvival">SURVIVAL</option>
+            <option value="tycoon" data-i18n="catTycoon">TYCOON</option>
           </select>
           <span class="select-arrow">▼</span>
         </div>
@@ -778,35 +787,35 @@
 
       <!-- Tag Filters -->
       <div class="tag-container">
-        <button class="tag-btn active" onclick="filterByTag('all', this)">#ALL</button>
-        <button class="tag-btn" onclick="filterByTag('multiplayer', this)">#MULTIPLAYER</button>
-        <button class="tag-btn" onclick="filterByTag('retro', this)">#RETRO</button>
-        <button class="tag-btn" onclick="filterByTag('puzzle', this)">#PUZZLE</button>
-        <button class="tag-btn" onclick="filterByTag('3d', this)">#3D</button>
-        <button class="tag-btn" onclick="filterByTag('physics', this)">#PHYSICS</button>
-        <button class="tag-btn" onclick="filterByTag('runner', this)">#RUNNER</button>
+        <button class="tag-btn active" onclick="filterByTag('all', this)" data-i18n="tagAll">#ALL</button>
+        <button class="tag-btn" onclick="filterByTag('multiplayer', this)" data-i18n="tagMultiplayer">#MULTIPLAYER</button>
+        <button class="tag-btn" onclick="filterByTag('retro', this)" data-i18n="tagRetro">#RETRO</button>
+        <button class="tag-btn" onclick="filterByTag('puzzle', this)" data-i18n="tagPuzzle">#PUZZLE</button>
+        <button class="tag-btn" onclick="filterByTag('3d', this)" data-i18n="tag3d">#3D</button>
+        <button class="tag-btn" onclick="filterByTag('physics', this)" data-i18n="tagPhysics">#PHYSICS</button>
+        <button class="tag-btn" onclick="filterByTag('runner', this)" data-i18n="tagRunner">#RUNNER</button>
       </div>
 
       <!-- RECENTLY PLAYED -->
       <div id="recently-played-section" style="display: none; width: 100%;">
-        <h2 class="section-heading">🕒 RECENTLY PLAYED</h2>
+        <h2 class="section-heading" data-i18n="headingRecentlyPlayed">🕒 RECENTLY PLAYED</h2>
         <div class="games-grid" id="recentlyPlayedGrid"></div>
       </div>
 
       <!-- FAVORITES SECTION -->
       <div id="favorites-section" style="display: none; width: 100%;">
-        <h2 class="section-heading">❤️ YOUR FAVORITES</h2>
+        <h2 class="section-heading" data-i18n="headingFavorites">❤️ YOUR FAVORITES</h2>
         <div class="games-grid" id="favoritesGrid"></div>
       </div>
 
       <!-- RECOMMENDED FOR YOU SECTION -->
       <div id="recommended-section" style="width: 100%;">
-        <h2 class="section-heading">🔥 RECOMMENDED FOR YOU</h2>
+        <h2 class="section-heading" data-i18n="headingRecommended">🔥 RECOMMENDED FOR YOU</h2>
         <div class="games-grid" id="recommendedGrid"></div>
       </div>
 
       <!-- ALL GAMES SECTION -->
-      <h2 class="section-heading" id="allGamesHeading">ALL GAMES</h2>
+      <h2 class="section-heading" id="allGamesHeading" data-i18n="headingAllGames">ALL GAMES</h2>
       <div class="games-grid" id="mainGamesGrid">
 
         <div class="game-card" data-category="arcade" data-tags="retro,arcade" data-name="flappy bird">
@@ -952,7 +961,7 @@
           </div>
         </div>
 
-        <div class="game-card" data-category="strategy" data-tags="multiplayer" data-name="dots and boxes">
+        <div class="game-card" data-category="strategy" data-tags="multiplayer,strategy" data-name="dots and boxes">
           <div class="fav-btn" onclick="toggleFavorite('DOTS AND BOXES')">❤️</div>
           <span class="card-badge neon">MULTIPLAYER</span>
           <div class="card-icon">✏️</div>
@@ -1247,17 +1256,17 @@
   <div class="modal-overlay" id="accountModal">
     <div class="modal-card">
       <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #000; padding-bottom: 8px; flex-wrap: wrap; gap: 6px;">
-        <h2>ACCOUNT & FRIENDS <span id="modalVipBadge" style="display:none; color: var(--text-gold);">👑 VIP</span></h2>
+        <h2><span data-i18n="modalTitle">ACCOUNT & FRIENDS</span> <span id="modalVipBadge" style="display:none; color: var(--text-gold);">👑 VIP</span></h2>
         <div style="display: flex; gap: 6px;">
-          <button class="modal-btn" onclick="copyMyCode()" style="font-size: 8px; padding: 6px 8px;">🔑 COPY CODE</button>
-          <button class="modal-btn" onclick="copyInviteLink()" style="font-size: 8px; padding: 6px 8px;">📋 LINK</button>
+          <button class="modal-btn" onclick="copyMyCode()" style="font-size: 8px; padding: 6px 8px;" data-i18n="btnCopyCode">🔑 COPY CODE</button>
+          <button class="modal-btn" onclick="copyInviteLink()" style="font-size: 8px; padding: 6px 8px;" data-i18n="btnCopyLink">📋 LINK</button>
         </div>
       </div>
 
       <div class="modal-grid-layout">
         <!-- LEFT COLUMN: Account Profile Settings -->
         <div style="display: flex; flex-direction: column; gap: 10px;">
-          <label>AVATAR ICON:</label>
+          <label data-i18n="lblAvatar">AVATAR ICON:</label>
           <div class="avatar-picker">
             <div class="avatar-opt" onclick="selectAvatar('👤')">👤</div>
             <div class="avatar-opt" onclick="selectAvatar('👾')">👾</div>
@@ -1269,10 +1278,10 @@
             <div class="avatar-opt" onclick="selectAvatar('🔥')">🔥</div>
           </div>
 
-          <label for="usernameInput">DISPLAY NAME:</label>
-          <input type="text" id="usernameInput" maxlength="20" placeholder="ENTER NAME">
+          <label for="usernameInput" data-i18n="lblDisplayName">DISPLAY NAME:</label>
+          <input type="text" id="usernameInput" maxlength="20" placeholder="ENTER NAME" data-i18n-ph="placeholderEnterName">
 
-          <label>THEME ACCENT:</label>
+          <label data-i18n="lblThemeAccent">THEME ACCENT:</label>
           <div class="theme-picker">
             <div class="theme-btn" style="background: #f85800;" onclick="selectTheme('default')"></div>
             <div class="theme-btn" style="background: #00ffff;" onclick="selectTheme('cyan')"></div>
@@ -1283,7 +1292,7 @@
 
           <div style="text-align: left; font-size: 9px; color: var(--text-gold); margin-top: 5px; display: flex; justify-content: space-between;">
             <div><span id="modalLvl">LEVEL 1</span> - <span id="modalXp">0 XP</span></div>
-            <div id="vipStatusText" style="color: var(--neon-cyan); display: none;">2X XP BOOST ACTIVE!</div>
+            <div id="vipStatusText" style="color: var(--neon-cyan); display: none;" data-i18n="vipBoostText">2X XP BOOST ACTIVE!</div>
           </div>
 
           <div class="xp-progress-bar">
@@ -1291,31 +1300,31 @@
           </div>
 
           <div class="profile-stats-box">
-            <div>MOST PLAYED: <span id="statMostPlayed">NONE</span></div>
-            <div>TOP GENRE: <span id="statFavCategory">NONE</span></div>
-            <div>TOTAL PLAYS: <span id="statTotalPlays">0</span></div>
+            <div><span data-i18n="lblMostPlayed">MOST PLAYED</span>: <span id="statMostPlayed">NONE</span></div>
+            <div><span data-i18n="lblTopGenre">TOP GENRE</span>: <span id="statFavCategory">NONE</span></div>
+            <div><span data-i18n="lblTotalPlays">TOTAL PLAYS</span>: <span id="statTotalPlays">0</span></div>
           </div>
 
-          <label>🏆 ACHIEVEMENTS:</label>
+          <label data-i18n="lblAchievements">🏆 ACHIEVEMENTS:</label>
           <div class="achievements-list" id="achievementsList"></div>
         </div>
 
         <!-- RIGHT COLUMN: Friends, Manual Add & Direct Emoji Picker -->
         <div style="display: flex; flex-direction: column; gap: 10px;">
-          <label>➕ ADD FRIEND BY CODE:</label>
+          <label data-i18n="lblAddFriend">➕ ADD FRIEND BY CODE:</label>
           <div style="display: flex; gap: 6px;">
-            <input type="text" id="manualFriendInput" placeholder="PASTE FRIEND CODE" style="font-size: 8px;">
-            <button class="modal-btn" onclick="addFriendManual()" style="font-size: 8px; padding: 6px 10px;">CONNECT</button>
+            <input type="text" id="manualFriendInput" placeholder="PASTE FRIEND CODE" data-i18n-ph="placeholderPasteCode" style="font-size: 8px;">
+            <button class="modal-btn" onclick="addFriendManual()" style="font-size: 8px; padding: 6px 10px;" data-i18n="btnConnect">CONNECT</button>
           </div>
 
-          <label>👥 FRIENDS LIST:</label>
+          <label data-i18n="lblFriendsList">👥 FRIENDS LIST:</label>
           <div id="friendsListContainer" style="display: flex; flex-direction: column; gap: 8px; background: #0b1d28; padding: 10px; border-radius: 6px; border: 2px solid #000; max-height: 150px; overflow-y: auto;">
-            <p style="font-size: 8px; color: #b0cadb;">No friends added yet! Copy and send your invite link or code to a friend.</p>
+            <p style="font-size: 8px; color: #b0cadb;" data-i18n="txtNoFriends">No friends added yet! Copy and send your invite link or code to a friend.</p>
           </div>
 
-          <label>✨ SEND EMOJI REACTION TO FRIEND:</label>
+          <label data-i18n="lblSendEmoji">✨ SEND EMOJI REACTION TO FRIEND:</label>
           <select class="category-select" id="friendRecipientSelect" style="width: 100%; font-size: 8px; padding: 8px;">
-            <option value="">SELECT FRIEND TO EMOJI...</option>
+            <option value="" data-i18n="optSelectFriend">SELECT FRIEND TO EMOJI...</option>
           </select>
           <div class="emoji-picker-bar">
             <button class="emoji-btn" onclick="sendEmojiToFriend('👍')">👍</button>
@@ -1330,7 +1339,7 @@
         </div>
       </div>
 
-      <button class="modal-btn" onclick="saveProfile()" style="margin-top: 10px;">SAVE & CLOSE</button>
+      <button class="modal-btn" onclick="saveProfile()" style="margin-top: 10px;" data-i18n="btnSaveClose">SAVE & CLOSE</button>
     </div>
   </div>
 
@@ -1340,6 +1349,130 @@
     let tempAvatar = '👤';
     let tempTheme = 'default';
     let activeTagFilter = 'all';
+    let currentLang = 'en';
+
+    /* TRANSLATION DICTIONARY */
+    const translations = {
+      en: {
+        heroSub: "CHOOSE YOUR GAME & EARN XP!",
+        gotdHeader: "🔥 GAME OF THE DAY",
+        searchPlaceholder: "SEARCH GAMES...",
+        catAll: "ALL CATEGORIES",
+        catArcade: "ARCADE",
+        catPlatformer: "PLATFORMER",
+        catPuzzle: "PUZZLE",
+        catRacing: "RACING",
+        catSimulation: "SIMULATION",
+        catStrategy: "STRATEGY",
+        catSurvival: "SURVIVAL",
+        catTycoon: "TYCOON",
+        tagAll: "#ALL",
+        tagMultiplayer: "#MULTIPLAYER",
+        tagRetro: "#RETRO",
+        tagPuzzle: "#PUZZLE",
+        tag3d: "#3D",
+        tagPhysics: "#PHYSICS",
+        tagRunner: "#RUNNER",
+        headingRecentlyPlayed: "🕒 RECENTLY PLAYED",
+        headingFavorites: "❤️ YOUR FAVORITES",
+        headingRecommended: "🔥 RECOMMENDED FOR YOU",
+        headingAllGames: "ALL GAMES",
+        modalTitle: "ACCOUNT & FRIENDS",
+        btnCopyCode: "🔑 COPY CODE",
+        btnCopyLink: "📋 LINK",
+        lblAvatar: "AVATAR ICON:",
+        lblDisplayName: "DISPLAY NAME:",
+        placeholderEnterName: "ENTER NAME",
+        lblThemeAccent: "THEME ACCENT:",
+        vipBoostText: "2X XP BOOST ACTIVE!",
+        lblMostPlayed: "MOST PLAYED",
+        lblTopGenre: "TOP GENRE",
+        lblTotalPlays: "TOTAL PLAYS",
+        lblAchievements: "🏆 ACHIEVEMENTS:",
+        lblAddFriend: "➕ ADD FRIEND BY CODE:",
+        placeholderPasteCode: "PASTE FRIEND CODE",
+        btnConnect: "CONNECT",
+        lblFriendsList: "👥 FRIENDS LIST:",
+        txtNoFriends: "No friends added yet! Copy and send your invite link or code to a friend.",
+        lblSendEmoji: "✨ SEND EMOJI REACTION TO FRIEND:",
+        optSelectFriend: "SELECT FRIEND TO EMOJI...",
+        btnSaveClose: "SAVE & CLOSE",
+        playBtnNormal: "PLAY (+10 XP)",
+        playBtnVip: "PLAY (+20 XP 👑)",
+        none: "NONE"
+      },
+      ja: {
+        heroSub: "ゲームを選んでXPを獲得しよう！",
+        gotdHeader: "🔥 本日のオススメゲーム",
+        searchPlaceholder: "ゲームを検索...",
+        catAll: "すべてのカテゴリ",
+        catArcade: "アーケード",
+        catPlatformer: "プラットフォーム",
+        catPuzzle: "パズル",
+        catRacing: "レース",
+        catSimulation: "シミュレーション",
+        catStrategy: "ストラテジー",
+        catSurvival: "サバイバル",
+        catTycoon: "タイクーン",
+        tagAll: "#すべて",
+        tagMultiplayer: "#マルチプレイ",
+        tagRetro: "#レトロ",
+        tagPuzzle: "#パズル",
+        tag3d: "#3D",
+        tagPhysics: "#物理",
+        tagRunner: "#ランナー",
+        headingRecentlyPlayed: "🕒 最近プレイしたゲーム",
+        headingFavorites: "❤️ お気に入り",
+        headingRecommended: "🔥 あなたへのオススメ",
+        headingAllGames: "すべてのゲーム",
+        modalTitle: "アカウント & フレンド",
+        btnCopyCode: "🔑 コードをコピー",
+        btnCopyLink: "📋 リンク",
+        lblAvatar: "アバターアイコン:",
+        lblDisplayName: "表示名:",
+        placeholderEnterName: "名前を入力",
+        lblThemeAccent: "テーマカラー:",
+        vipBoostText: "XP 2倍ブースト適用中！",
+        lblMostPlayed: "最多プレイ",
+        lblTopGenre: "好きなジャンル",
+        lblTotalPlays: "総プレイ数",
+        lblAchievements: "🏆 実績:",
+        lblAddFriend: "➕ コードでフレンド追加:",
+        placeholderPasteCode: "コードを貼り付け",
+        btnConnect: "接続",
+        lblFriendsList: "👥 フレンドリスト:",
+        txtNoFriends: "フレンドがまだいません！招待リンクまたはコードを送信してください。",
+        lblSendEmoji: "✨ リアクションを送る:",
+        optSelectFriend: "フレンドを選択...",
+        btnSaveClose: "保存して閉じる",
+        playBtnNormal: "プレイ (+10 XP)",
+        playBtnVip: "プレイ (+20 XP 👑)",
+        none: "なし"
+      }
+    };
+
+    function changeLanguage(lang) {
+      currentLang = lang;
+      const dict = translations[lang] || translations.en;
+
+      // Translate text elements
+      document.querySelectorAll('[data-i18n]').forEach(el => {
+        const key = el.getAttribute('data-i18n');
+        if (dict[key]) {
+          el.textContent = dict[key];
+        }
+      });
+
+      // Translate inputs placeholder
+      document.querySelectorAll('[data-i18n-ph]').forEach(el => {
+        const key = el.getAttribute('data-i18n-ph');
+        if (dict[key]) {
+          el.placeholder = dict[key];
+        }
+      });
+
+      updateUI();
+    }
 
     const ACHIEVEMENTS = [
       { id: 'first_play', title: 'FIRST STEPS', desc: 'Play your first game', icon: '🎮', check: acc => (Object.values(acc.gameStats || {}).reduce((a,b)=>a+b,0)) >= 1 },
@@ -1392,7 +1525,8 @@
       const href = playBtn.getAttribute('href');
       const cat = selectedCard.getAttribute('data-category');
 
-      document.getElementById('gotdTitle').textContent = `🔥 GAME OF THE DAY: ${title}`;
+      const dict = translations[currentLang] || translations.en;
+      document.getElementById('gotdTitle').textContent = `${dict.gotdHeader}: ${title}`;
       document.getElementById('gotdDesc').textContent = desc;
       document.getElementById('gotdIcon').textContent = icon;
       
@@ -1443,6 +1577,7 @@
       const level = Math.floor(acc.xp / XP_PER_LEVEL) + 1;
       const currentLevelXP = acc.xp % XP_PER_LEVEL;
       const isVip = isVipName(acc.username);
+      const dict = translations[currentLang] || translations.en;
 
       document.body.className = acc.theme ? `theme-${acc.theme}` : '';
 
@@ -1476,7 +1611,7 @@
 
       const btnTexts = document.querySelectorAll('.play-btn-text');
       btnTexts.forEach(btn => {
-        btn.textContent = isVip ? 'PLAY (+20 XP 👑)' : 'PLAY (+10 XP)';
+        btn.textContent = isVip ? dict.playBtnVip : dict.playBtnNormal;
       });
 
       const favBtns = document.querySelectorAll('.fav-btn');
@@ -1643,6 +1778,7 @@
 
     function renderProfileStats(acc) {
       let topGame = 'NONE', maxGamePlays = 0, totalPlays = 0;
+      const dict = translations[currentLang] || translations.en;
 
       for (const [game, count] of Object.entries(acc.gameStats || {})) {
         totalPlays += count;
@@ -1660,8 +1796,8 @@
         }
       }
 
-      document.getElementById('statMostPlayed').textContent = maxGamePlays > 0 ? `${topGame} (${maxGamePlays}x)` : 'NONE';
-      document.getElementById('statFavCategory').textContent = topCategory;
+      document.getElementById('statMostPlayed').textContent = maxGamePlays > 0 ? `${topGame} (${maxGamePlays}x)` : dict.none;
+      document.getElementById('statFavCategory').textContent = topCategory !== 'NONE' ? topCategory : dict.none;
       document.getElementById('statTotalPlays').textContent = totalPlays;
     }
 
@@ -2000,17 +2136,18 @@
     function renderFriendsUI() {
       const container = document.getElementById('friendsListContainer');
       const select = document.getElementById('friendRecipientSelect');
+      const dict = translations[currentLang] || translations.en;
 
       if (!container) return;
 
       if (friendsList.length === 0) {
-        container.innerHTML = `<p style="font-size: 8px; color: #b0cadb;">No friends added yet! Copy and send your invite link or code to a friend.</p>`;
+        container.innerHTML = `<p style="font-size: 8px; color: #b0cadb;" data-i18n="txtNoFriends">${dict.txtNoFriends}</p>`;
         if (select) select.innerHTML = `<option value="">NO FRIENDS AVAILABLE</option>`;
         return;
       }
 
       container.innerHTML = '';
-      if (select) select.innerHTML = `<option value="">SELECT FRIEND TO EMOJI...</option>`;
+      if (select) select.innerHTML = `<option value="" data-i18n="optSelectFriend">${dict.optSelectFriend}</option>`;
 
       friendsList.forEach(friendId => {
         const info = friendStatuses[friendId] || { username: friendId.replace('sn_', '').substring(0, 10).toUpperCase(), avatar: '👤', online: false, currentGame: 'Unknown' };
